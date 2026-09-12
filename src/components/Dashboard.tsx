@@ -5,7 +5,6 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { OttoScene } from '@/components/OttoScene';
 import { cn } from '@/lib/utils';
 import { languages, translations, type Language } from '../i18n';
-import { APPROVED_MOBILE_MOCKUP } from '@/approvedMobileMockup';
 
 interface DashboardProps {
   onSelectModule: (module: ModuleId) => void;
@@ -65,7 +64,7 @@ export function Dashboard({
       <div className="otto-approved-mobile-home" aria-label="Главная страница OTTO">
         <img
           className="otto-approved-mobile-home-image"
-          src={APPROVED_MOBILE_MOCKUP}
+          src="/otto/approved-mobile-home.webp"
           alt="Тренажёр OTTO — Zertifikat A1"
           draggable={false}
         />
