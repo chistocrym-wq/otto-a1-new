@@ -85,3 +85,5 @@ jobs:
           git add -A
           git commit -m "Import uploaded Otto A1 project archive"
           git push origin HEAD:main
+
+# retry after exact overlay repair
