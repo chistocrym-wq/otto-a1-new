@@ -12,6 +12,7 @@ import './ottoSceneAssets.css';
 import './ottoSplash.css';
 import './ottoFinalPolish.css';
 import './ottoHomePremium.css';
+import './ottoHomeApprovedFix.css';
 import '@/data/lesen/registerExtraSets';
 
 // Everything below is only needed once the user navigates away from the
