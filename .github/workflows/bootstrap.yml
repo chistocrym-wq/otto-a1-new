@@ -27,15 +27,24 @@ jobs:
 
           cat \
             .bootstrap/images/part01.b64 \
-            .bootstrap/images/part02.b64 \
+            .bootstrap/images/part02a.b64 \
+            .bootstrap/images/part02b.b64 \
             .bootstrap/images/part03.b64 \
             .bootstrap/images/part04.b64 \
             .bootstrap/images/part05.b64 \
             .bootstrap/images/part06.b64 \
             .bootstrap/images/part07.b64 \
-            .bootstrap/images/part08.b64 \
-            .bootstrap/images/part09.b64 \
-            .bootstrap/images/part10.b64 \
+            .bootstrap/images/part08a1.b64 \
+            .bootstrap/images/part08a2.b64 \
+            .bootstrap/images/part08b.b64 \
+            .bootstrap/images/part09a1.b64 \
+            .bootstrap/images/part09a2.b64 \
+            .bootstrap/images/part09b1.b64 \
+            .bootstrap/images/part09b2.b64 \
+            .bootstrap/images/part10a1.b64 \
+            .bootstrap/images/part10a2.b64 \
+            .bootstrap/images/part10b1.b64 \
+            .bootstrap/images/part10b2.b64 \
             .bootstrap/images/part11.b64 \
             .bootstrap/images/part12.b64 \
             .bootstrap/images/part13a.b64 \
