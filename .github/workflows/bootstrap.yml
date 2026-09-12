@@ -1,4 +1,4 @@
-name: Bootstrap project base
+name: Bootstrap archive project
 
 on:
   push:
@@ -18,7 +18,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore verified project base
+      - name: Save archive overlay
+        run: |
+          set -euo pipefail
+          cat .bootstrap/text-overlay.part1.b64 .bootstrap/text-overlay.part2.b64 > /tmp/text-overlay.b64
+          base64 -d /tmp/text-overlay.b64 > /tmp/text-overlay.zip
+          unzip -t /tmp/text-overlay.zip
+
+      - name: Restore verified heavy project base
         run: |
           set -euo pipefail
           git clone https://github.com/chistocrym-wq/-1-.git /tmp/base
@@ -28,7 +35,12 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           rsync -a --exclude=.git /tmp/base/ ./
 
-      - name: Restore Otto image assets
+      - name: Apply files from uploaded archive
+        run: |
+          set -euo pipefail
+          unzip -o /tmp/text-overlay.zip -d "$GITHUB_WORKSPACE"
+
+      - name: Restore Otto image poses
         run: |
           set -euo pipefail
           mkdir -p public/otto
@@ -49,26 +61,27 @@ jobs:
           root = Path('public')
           src = Image.open(root / 'otto' / 'otto-guide.webp').convert('RGBA')
           for n in (192, 512):
-              canvas = Image.new('RGBA', (n, n), (15, 118, 110, 255))
+              canvas = Image.new('RGBA', (n, n), (17, 141, 132, 255))
               im = src.copy()
               im.thumbnail((int(n * .88), int(n * .88)), Image.Resampling.LANCZOS)
               canvas.alpha_composite(im, ((n-im.width)//2, (n-im.height)//2))
-              canvas.convert('RGB').save(root / f'otto-icon-{n}.png', optimize=True)
+              canvas.save(root / f'otto-icon-{n}.png', optimize=True)
           PY
 
-      - name: Verify project build
+      - name: Verify project
         run: |
           set -euo pipefail
           npm ci
           npm run typecheck
           npm run build
 
-      - name: Replace bootstrap repository with project
+      - name: Replace bootstrap repository with restored project
         run: |
           set -euo pipefail
-          rm -rf .bootstrap .transfer-final-test .github/workflows/bootstrap.yml
+          rm -rf .bootstrap .transfer-final-test .transfer-note .transfer-state .transfer-test
+          rm -f .github/workflows/bootstrap.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Restore Otto project base"
+          git commit -m "Import uploaded Otto A1 project archive"
           git push origin HEAD:main
