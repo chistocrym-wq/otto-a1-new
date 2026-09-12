@@ -11,7 +11,7 @@ import './ottoViewport.css';
 import './ottoSceneAssets.css';
 import './ottoSplash.css';
 import './ottoFinalPolish.css';
-import './ottoApprovedMobile.css';
+import './ottoHomeReact.css';
 import '@/data/lesen/registerExtraSets';
 
 // Everything below is only needed once the user navigates away from the
