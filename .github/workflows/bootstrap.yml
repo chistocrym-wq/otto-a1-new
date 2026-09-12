@@ -1,4 +1,4 @@
-name: Bootstrap user archive
+name: Bootstrap project base
 
 on:
   push:
@@ -18,11 +18,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Preserve archive overlay
-        run: |
-          set -euo pipefail
-          cp -R .bootstrap /tmp/bootstrap
-
       - name: Restore verified project base
         run: |
           set -euo pipefail
@@ -32,12 +27,6 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           rsync -a --exclude=.git /tmp/base/ ./
-
-      - name: Apply exact text and style overlay from uploaded archive
-        run: |
-          set -euo pipefail
-          cat /tmp/bootstrap/text-overlay.part*.b64 | base64 -d > /tmp/text-overlay.zip
-          unzip -o /tmp/text-overlay.zip -d .
 
       - name: Restore Otto image assets
         run: |
@@ -74,12 +63,12 @@ jobs:
           npm run typecheck
           npm run build
 
-      - name: Replace bootstrap repository with imported project
+      - name: Replace bootstrap repository with project
         run: |
           set -euo pipefail
           rm -rf .bootstrap .transfer-final-test .github/workflows/bootstrap.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Import project from user archive"
+          git commit -m "Restore Otto project base"
           git push origin HEAD:main
