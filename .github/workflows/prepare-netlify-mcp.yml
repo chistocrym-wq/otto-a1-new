@@ -1,0 +1,30 @@
+name: Prepare Netlify MCP bundle
+
+on:
+  push:
+    paths:
+      - '.github/workflows/prepare-netlify-mcp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Netlify MCP
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/netlify-mcp-bundle
+          cd /tmp/netlify-mcp-bundle
+          npm init -y
+          npm install --no-audit --no-fund @netlify/mcp@1.15.1
+          tar -czf "$GITHUB_WORKSPACE/netlify-mcp-bundle.tgz" node_modules package.json package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netlify-mcp-bundle
+          path: netlify-mcp-bundle.tgz
+          if-no-files-found: error
+          retention-days: 1
