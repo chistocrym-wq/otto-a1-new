@@ -1,0 +1,363 @@
+/* Approved premium home-screen preview. Imported last on purpose so it can
+   override the legacy one-viewport compression without touching learning screens. */
+
+.otto-view-home .otto-app-content {
+  max-width: 1180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px clamp(10px, 2vw, 22px) 18px;
+  scrollbar-width: none;
+}
+
+.otto-view-home .otto-app-content::-webkit-scrollbar { display: none; }
+
+.otto-view-home .otto-home-screen {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.otto-view-home .otto-dashboard-screen,
+.otto-premium-home {
+  display: flex;
+  height: auto;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 18px;
+  overflow: visible;
+  padding-bottom: 10px !important;
+}
+
+.otto-premium-hero {
+  position: relative;
+  min-height: 355px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.92);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 80% 13%, rgba(255,255,255,.78), transparent 24%),
+    radial-gradient(circle at 13% 8%, rgba(255,244,213,.64), transparent 26%),
+    linear-gradient(145deg, #f7fbf8 0%, #eef8f5 42%, #dff4ef 100%);
+  box-shadow: 0 20px 48px rgba(10,101,94,.12);
+  isolation: isolate;
+}
+
+.otto-premium-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(255,255,255,.88) 0%, rgba(255,255,255,.66) 44%, rgba(255,255,255,.05) 72%);
+  pointer-events: none;
+}
+
+.otto-premium-hero-copy {
+  position: relative;
+  z-index: 4;
+  width: 57%;
+  padding: 34px 0 28px 34px;
+}
+
+.otto-premium-brand {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  color: var(--otto-ink, #101a35);
+  font-weight: 1000;
+  line-height: .88;
+  letter-spacing: -.05em;
+}
+
+.otto-premium-brand-prefix {
+  font-size: clamp(32px, 5vw, 52px);
+}
+
+.otto-premium-brand-name {
+  margin-top: 4px;
+  color: var(--otto-brand, #0f7d74);
+  font-size: clamp(55px, 8.3vw, 86px);
+}
+
+.otto-premium-brand-swoosh {
+  position: absolute;
+  right: -6px;
+  bottom: -15px;
+  width: 78%;
+  height: 15px;
+  border-top: 5px solid #18a99d;
+  border-radius: 50%;
+  transform: rotate(-2deg);
+}
+
+.otto-premium-hero h1 {
+  margin-top: 27px;
+  color: #17213d;
+  font-size: clamp(24px, 3.3vw, 34px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+
+.otto-premium-hero-line {
+  margin-top: 4px;
+  color: #5e6b82;
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.otto-premium-encouragement {
+  margin-top: 24px;
+  color: var(--otto-brand, #0f7d74);
+  font-family: "Segoe Print", "Comic Sans MS", cursive;
+  font-size: clamp(17px, 2.2vw, 24px);
+  font-weight: 800;
+  transform: rotate(-4deg);
+}
+
+.otto-premium-hero-art {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.otto-premium-hero-art img {
+  position: absolute;
+  right: -1%;
+  bottom: -26%;
+  width: min(100%, 500px);
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 18px 24px rgba(15,23,42,.13));
+}
+
+.otto-premium-landscape {
+  position: absolute;
+  z-index: 0;
+  right: -3%;
+  bottom: -22px;
+  width: 70%;
+  height: 47%;
+  opacity: .44;
+  background:
+    radial-gradient(ellipse at 22% 100%, rgba(15,125,116,.18) 0 25%, transparent 26%),
+    radial-gradient(ellipse at 56% 100%, rgba(15,125,116,.15) 0 23%, transparent 24%),
+    radial-gradient(ellipse at 88% 100%, rgba(15,125,116,.12) 0 28%, transparent 29%),
+    linear-gradient(180deg, transparent 0 64%, rgba(15,125,116,.07) 64% 100%);
+}
+
+.otto-premium-progress-card {
+  position: relative;
+  z-index: 7;
+  display: flex;
+  width: calc(100% - 36px);
+  align-items: center;
+  gap: 16px;
+  margin: -48px 18px 0;
+  border: 1px solid rgba(255,255,255,.95);
+  border-radius: 25px;
+  background: rgba(255,255,255,.97);
+  padding: 17px 20px;
+  color: var(--otto-ink, #101a35);
+  text-align: left;
+  box-shadow: 0 17px 38px rgba(15,23,42,.10);
+  backdrop-filter: blur(10px);
+}
+
+.otto-premium-progress-card:active { transform: scale(.995); }
+
+.otto-premium-progress-icon {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  place-items: center;
+  border-radius: 20px;
+  background: #e5f7f4;
+  color: var(--otto-brand, #0f7d74);
+}
+
+.otto-premium-progress-icon svg { width: 31px; height: 31px; }
+.otto-premium-progress-body { display: block; min-width: 0; flex: 1; }
+.otto-premium-progress-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.otto-premium-progress-heading strong { font-size: clamp(20px, 2.5vw, 28px); font-weight: 950; letter-spacing: -.025em; }
+.otto-premium-progress-heading b { color: var(--otto-brand, #0f7d74); font-size: clamp(20px, 2.5vw, 28px); font-weight: 950; }
+.otto-premium-progress-line { display: block; margin-top: 10px; }
+.otto-premium-progress-stats { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 10px; color: #59667d; font-size: 13px; font-weight: 700; }
+.otto-premium-progress-stats > span { display: inline-flex; align-items: center; gap: 7px; }
+.otto-premium-progress-stats svg { width: 17px; height: 17px; color: #18a99d; }
+
+.otto-premium-section { margin: 0 6px; }
+.otto-premium-section > h2 { margin: 0 0 12px; color: var(--otto-ink, #101a35); font-size: clamp(23px, 3vw, 31px); font-weight: 950; letter-spacing: -.025em; }
+
+.otto-premium-module-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.otto-premium-module-card {
+  display: flex;
+  min-height: 104px;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(255,255,255,.95);
+  border-radius: 22px;
+  padding: 15px 16px;
+  color: #14223c;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(15,23,42,.055);
+}
+.otto-premium-module-card.is-schreiben { background: linear-gradient(135deg, #fff7f4, #f8e3db); }
+.otto-premium-module-card.is-sprechen { background: linear-gradient(135deg, #f5fcf9, #def3e9); }
+.otto-premium-module-card.is-lesen { background: linear-gradient(135deg, #fffdf5, #f7efd8); }
+.otto-premium-module-card.is-horen { background: linear-gradient(135deg, #fafaff, #e8e6f7); }
+.otto-premium-module-card:active { transform: scale(.988); }
+
+.otto-premium-module-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  place-items: center;
+  border-radius: 19px;
+  color: #0f7d74;
+  background: rgba(255,255,255,.58);
+}
+.otto-premium-module-icon svg { width: 29px; height: 29px; stroke-width: 2.25; }
+.otto-premium-module-copy { display: block; min-width: 0; flex: 1; }
+.otto-premium-module-copy strong { display: block; font-size: clamp(19px, 2.1vw, 24px); font-weight: 950; line-height: 1.05; }
+.otto-premium-module-copy small { display: block; margin-top: 4px; color: #617089; font-size: 14px; font-weight: 650; }
+.otto-premium-chevron { width: 21px; height: 21px; flex: 0 0 21px; color: #0f6f6a; }
+
+.otto-premium-exam-card {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin: 0 6px;
+  border: 1px solid #d1f1ee;
+  border-radius: 24px;
+  background: #e4f7f5;
+  padding: 17px 18px;
+  box-shadow: 0 10px 25px rgba(15,125,116,.07);
+}
+.otto-premium-exam-icon { display: grid; width: 62px; height: 62px; place-items: center; border-radius: 20px; color: white; background: linear-gradient(145deg,#17a99d,#0f7d74); }
+.otto-premium-exam-icon svg { width: 32px; height: 32px; }
+.otto-premium-exam-copy strong { display: block; color: #13223d; font-size: clamp(21px, 2.5vw, 29px); font-weight: 950; line-height: 1.05; }
+.otto-premium-exam-copy small { display: block; max-width: 540px; margin-top: 5px; color: #527078; font-size: 14px; line-height: 1.35; }
+.otto-premium-exam-button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border-radius: 16px; background: linear-gradient(135deg,#138c84,#0a655e); padding: 11px 18px; color: white; font-size: 15px; font-weight: 900; box-shadow: 0 9px 20px rgba(10,101,94,.18); }
+.otto-premium-exam-button svg { width: 18px; height: 18px; }
+
+.otto-premium-materials { padding-bottom: 4px; }
+.otto-premium-materials-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px; }
+.otto-premium-material-card {
+  display: flex;
+  min-height: 132px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(232,239,240,.95);
+  border-radius: 21px;
+  background: rgba(255,255,255,.97);
+  padding: 15px 10px;
+  color: #17213d;
+  text-align: center;
+  box-shadow: 0 9px 22px rgba(15,23,42,.05);
+}
+.otto-premium-material-icon { display: grid; width: 47px; height: 47px; place-items: center; border-radius: 16px; background: #e7f7f5; color: #0f7d74; }
+.otto-premium-material-card:nth-child(2) .otto-premium-material-icon { background: #fff4d8; color: #b17a00; }
+.otto-premium-material-card:nth-child(3) .otto-premium-material-icon { background: #e7f2fa; color: #216e92; }
+.otto-premium-material-icon svg { width: 24px; height: 24px; }
+.otto-premium-material-card strong { display: block; margin-top: 9px; font-size: 16px; font-weight: 950; line-height: 1.08; }
+.otto-premium-material-card small { display: block; margin-top: 5px; color: #718097; font-size: 12px; line-height: 1.25; }
+
+/* Bottom navigation for the approved home concept. */
+.otto-bottom-nav-inner {
+  max-width: 1180px;
+  border-radius: 24px 24px 0 0 !important;
+  background: rgba(255,255,255,.97);
+}
+.otto-bottom-nav-item { min-height: var(--otto-nav-height) !important; gap: 3px !important; font-size: 10px !important; }
+.otto-bottom-nav-icon { width: 22px !important; height: 22px !important; }
+
+@media (min-width: 900px) {
+  .otto-premium-module-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .otto-premium-module-card { min-height: 116px; }
+  .otto-premium-hero-art { width: 46%; }
+  .otto-premium-hero-art img { right: 3%; width: 460px; }
+  .otto-premium-progress-card { width: calc(100% - 64px); margin-right: 32px; margin-left: 32px; }
+  .otto-premium-section,
+  .otto-premium-exam-card { margin-right: 18px; margin-left: 18px; }
+}
+
+@media (max-width: 640px) {
+  .otto-view-home .otto-app-content { padding: 6px 8px 14px; }
+  .otto-view-home .otto-dashboard-screen { gap: 13px; }
+  .otto-premium-hero { min-height: 282px; border-radius: 24px; }
+  .otto-premium-hero-copy { width: 58%; padding: 22px 0 20px 18px; }
+  .otto-premium-brand-prefix { font-size: clamp(26px, 8vw, 35px); }
+  .otto-premium-brand-name { font-size: clamp(47px, 15vw, 62px); }
+  .otto-premium-brand-swoosh { bottom: -11px; height: 12px; border-top-width: 4px; }
+  .otto-premium-hero h1 { margin-top: 21px; font-size: 22px; }
+  .otto-premium-hero-line { font-size: 12px; }
+  .otto-premium-encouragement { margin-top: 15px; font-size: 15px; }
+  .otto-premium-hero-art { right: -5%; width: 58%; }
+  .otto-premium-hero-art img { right: -7%; bottom: -18%; width: 100%; min-width: 250px; }
+  .otto-premium-landscape { width: 88%; opacity: .34; }
+
+  .otto-premium-progress-card { width: calc(100% - 20px); gap: 9px; margin: -35px 10px 0; border-radius: 21px; padding: 12px 13px; }
+  .otto-premium-progress-icon { width: 48px; height: 48px; flex-basis: 48px; border-radius: 16px; }
+  .otto-premium-progress-icon svg { width: 24px; height: 24px; }
+  .otto-premium-progress-heading strong,
+  .otto-premium-progress-heading b { font-size: 19px; }
+  .otto-premium-progress-line { margin-top: 7px; }
+  .otto-premium-progress-stats { gap: 5px 14px; margin-top: 7px; font-size: 10px; }
+  .otto-premium-progress-stats svg { width: 14px; height: 14px; }
+
+  .otto-premium-section { margin: 0 3px; }
+  .otto-premium-section > h2 { margin-bottom: 9px; font-size: 22px; }
+  .otto-premium-module-grid { gap: 8px; }
+  .otto-premium-module-card { min-height: 88px; gap: 8px; border-radius: 18px; padding: 10px 9px; }
+  .otto-premium-module-icon { width: 46px; height: 46px; flex-basis: 46px; border-radius: 15px; }
+  .otto-premium-module-icon svg { width: 24px; height: 24px; }
+  .otto-premium-module-copy strong { font-size: 17px; }
+  .otto-premium-module-copy small { margin-top: 2px; font-size: 11px; }
+  .otto-premium-chevron { width: 17px; height: 17px; flex-basis: 17px; }
+
+  .otto-premium-exam-card { gap: 9px; margin: 0 3px; border-radius: 19px; padding: 12px 11px; }
+  .otto-premium-exam-icon { width: 48px; height: 48px; border-radius: 15px; }
+  .otto-premium-exam-icon svg { width: 25px; height: 25px; }
+  .otto-premium-exam-copy strong { font-size: 18px; }
+  .otto-premium-exam-copy small { margin-top: 3px; font-size: 10px; }
+  .otto-premium-exam-button { min-height: 42px; border-radius: 14px; padding: 9px 12px; font-size: 12px; }
+
+  .otto-premium-materials-grid { gap: 7px; }
+  .otto-premium-material-card { min-height: 108px; border-radius: 17px; padding: 11px 5px; }
+  .otto-premium-material-icon { width: 38px; height: 38px; border-radius: 13px; }
+  .otto-premium-material-icon svg { width: 20px; height: 20px; }
+  .otto-premium-material-card strong { margin-top: 7px; font-size: 13px; }
+  .otto-premium-material-card small { margin-top: 3px; font-size: 9px; }
+
+  .otto-bottom-nav-item { font-size: 9px !important; }
+  .otto-bottom-nav-icon { width: 21px !important; height: 21px !important; }
+}
+
+@media (max-width: 370px) {
+  .otto-premium-hero { min-height: 258px; }
+  .otto-premium-hero-copy { width: 61%; padding-left: 14px; }
+  .otto-premium-brand-prefix { font-size: 24px; }
+  .otto-premium-brand-name { font-size: 45px; }
+  .otto-premium-hero h1 { font-size: 20px; }
+  .otto-premium-encouragement { display: none; }
+  .otto-premium-hero-art { right: -10%; width: 61%; }
+  .otto-premium-progress-stats { display: grid; gap: 4px; }
+  .otto-premium-module-card { min-height: 84px; }
+  .otto-premium-module-icon { width: 42px; height: 42px; flex-basis: 42px; }
+  .otto-premium-module-copy strong { font-size: 15px; }
+  .otto-premium-module-copy small { font-size: 10px; }
+  .otto-premium-exam-card { grid-template-columns: auto minmax(0,1fr); }
+  .otto-premium-exam-button { grid-column: 1 / -1; width: 100%; }
+  .otto-premium-material-card small { display: none; }
+}
