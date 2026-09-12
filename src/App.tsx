@@ -11,6 +11,7 @@ import './ottoViewport.css';
 import './ottoSceneAssets.css';
 import './ottoSplash.css';
 import './ottoFinalPolish.css';
+import './ottoApprovedMobile.css';
 import '@/data/lesen/registerExtraSets';
 
 // Everything below is only needed once the user navigates away from the
@@ -92,7 +93,18 @@ export default function App() {
         <main className="otto-app-content relative z-10 mx-auto max-w-4xl">
           {globalEye && <PageTranslationEye scopeId="otto-current-task" />}
           <div id={globalEye ? 'otto-current-task' : undefined} className={view === null ? 'otto-home-screen' : 'otto-inner-screen'}>
-            {view === null && <Dashboard onSelectModule={setView} onOpenInstructions={() => setView('instructions')} onOpenExamGuide={() => setView('exam-guide')} onOpenMockExam={() => setView('mock-exam')} onOpenNews={() => setView('news')} onOpenAccount={() => setView('account')} progress={progress} />}
+            {view === null && (
+              <Dashboard
+                onSelectModule={setView}
+                onOpenInstructions={() => setView('instructions')}
+                onOpenExamGuide={() => setView('exam-guide')}
+                onOpenMockExam={() => setView('mock-exam')}
+                onOpenNews={() => setView('news')}
+                onOpenAccount={() => setView('account')}
+                onOpenSettings={() => setView('settings')}
+                progress={progress}
+              />
+            )}
             <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
               {view === 'modules' && <ModulesHub progress={progress} onSelectModule={setView} />}
               {view === 'account' && <AccountPage progress={progress} />}
