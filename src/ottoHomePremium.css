@@ -1,0 +1,364 @@
+/* Pixel-matched implementation of the approved OTTO home mockup.
+   Home only: learning screens keep their existing styles. */
+
+.otto-view-home .otto-app-content {
+  width: min(100%, 782px) !important;
+  max-width: 782px !important;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 calc(76px + env(safe-area-inset-bottom)) !important;
+  background: linear-gradient(180deg, #f4fcfc 0%, #f8fcfc 58%, #eefafa 100%);
+  container-type: inline-size;
+  scrollbar-width: none;
+}
+
+.otto-view-home .otto-app-content::-webkit-scrollbar { display: none; }
+.otto-view-home .otto-home-screen { height: auto !important; min-height: 100%; overflow: visible !important; }
+.otto-view-home .otto-dashboard-screen,
+.otto-premium-home {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
+  padding: 0 !important;
+  background: linear-gradient(180deg, #f5fdfd 0%, #f8fcfc 100%);
+}
+
+/* HERO — same proportions, position and crop as the approved mockup. */
+.otto-premium-hero {
+  position: relative;
+  width: 100%;
+  height: 62.55cqw;
+  min-height: 235px;
+  max-height: 489px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 9% 23%, rgba(255,255,255,.97) 0 8%, transparent 9%),
+    radial-gradient(circle at 77% 14%, rgba(255,255,255,.92) 0 9%, transparent 10%),
+    linear-gradient(180deg, #c8f5fb 0%, #e6faf8 56%, #d6f5ef 100%);
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.otto-premium-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: .88;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 782 489'%3E%3Cg opacity='.64'%3E%3Cpath fill='%23b4e9df' d='M0 382h782v107H0z'/%3E%3Cpath fill='%238bd0c5' d='M0 421c103-25 177-18 277 2s227 20 505-16v82H0z'/%3E%3Cg fill='%239bd5bb'%3E%3Ccircle cx='52' cy='345' r='34'/%3E%3Ccircle cx='92' cy='357' r='45'/%3E%3Ccircle cx='706' cy='345' r='48'/%3E%3Ccircle cx='754' cy='359' r='37'/%3E%3C/g%3E%3Cg fill='%2385c2b3'%3E%3Cpath d='M531 256h186v13H531zM540 269h13v64h-13zM588 269h13v64h-13zM636 269h13v64h-13zM684 269h13v64h-13z'/%3E%3Cpath d='M540 333c5-26 19-39 36-39s31 13 36 39h-8c-4-20-15-30-28-30s-24 10-28 30h-8Zm96 0c5-26 19-39 36-39s31 13 36 39h-8c-4-20-15-30-28-30s-24 10-28 30h-8Z'/%3E%3C/g%3E%3Cg fill='%2376b5ae'%3E%3Cpath d='M598 116h18v135h-18zM589 116h36l-18-47-18 47ZM656 151h20v101h-20zM647 151h38l-19-44-19 44Z'/%3E%3C/g%3E%3Cg fill='%23a4c9c0'%3E%3Cpath d='M112 287h92v70h-92zM125 251h15v36h-15zM176 238h14v49h-14zM121 251h23l-12-30-11 30ZM171 238h24l-12-34-12 34Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-position: center bottom;
+  background-size: cover;
+  pointer-events: none;
+}
+
+.otto-premium-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.11) 38%, rgba(255,255,255,0) 66%);
+  pointer-events: none;
+}
+
+.otto-premium-landscape { display: none; }
+
+.otto-premium-hero-copy {
+  position: absolute;
+  z-index: 4;
+  left: 7.05cqw;
+  top: 6.9cqw;
+  width: 45.5cqw;
+  padding: 0;
+}
+
+.otto-premium-brand {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  color: #0b2945;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 950;
+  line-height: .88;
+  letter-spacing: -.045em;
+}
+
+.otto-premium-brand-prefix {
+  font-size: clamp(28px, 6.0cqw, 47px);
+}
+
+.otto-premium-brand-name {
+  margin-top: 1.0cqw;
+  color: #0b2945;
+  font-size: clamp(48px, 10.7cqw, 84px);
+  letter-spacing: -.055em;
+}
+
+.otto-premium-brand-swoosh {
+  position: absolute;
+  left: 0;
+  bottom: -2.5cqw;
+  width: 31.5cqw;
+  height: 2.5cqw;
+  border-top: clamp(4px, .65cqw, 5px) solid #13a8a7;
+  border-radius: 50%;
+  transform: rotate(-1.5deg);
+}
+
+.otto-premium-hero h1 {
+  margin: 5.8cqw 0 0;
+  color: #10213e;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: clamp(17px, 3.65cqw, 28px);
+  font-weight: 850;
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+
+.otto-premium-hero-line {
+  margin: .95cqw 0 0;
+  color: #132844;
+  font-size: clamp(11px, 2.15cqw, 17px);
+  font-weight: 560;
+  line-height: 1.22;
+}
+
+.otto-premium-encouragement {
+  position: absolute;
+  left: 3.6cqw;
+  top: 35.5cqw;
+  margin: 0;
+  color: #087c82;
+  font-family: "Segoe Print", "Comic Sans MS", cursive;
+  font-size: clamp(14px, 3.6cqw, 28px);
+  font-weight: 750;
+  line-height: 1.05;
+  transform: rotate(-5deg);
+}
+
+.otto-premium-hero-art {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.otto-premium-hero-art img {
+  position: absolute;
+  top: 3.0cqw;
+  right: -4.8cqw;
+  width: auto;
+  height: 75.5cqw;
+  min-height: 285px;
+  max-height: 590px;
+  max-width: none;
+  object-fit: contain;
+  object-position: top center;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 2.0cqw 2.7cqw rgba(19,52,60,.10));
+}
+
+/* PROGRESS */
+.otto-premium-progress-card {
+  position: relative;
+  z-index: 7;
+  display: flex;
+  width: calc(100% - 4.3cqw);
+  min-height: 20.7cqw;
+  align-items: center;
+  gap: 2.7cqw;
+  margin: 0 2.15cqw;
+  border: 1px solid rgba(255,255,255,.98);
+  border-radius: 3.2cqw;
+  background: rgba(255,255,255,.97);
+  padding: 3.1cqw 3.0cqw;
+  color: #10213e;
+  text-align: left;
+  box-shadow: 0 1.3cqw 3.8cqw rgba(37,98,103,.10);
+}
+
+.otto-premium-progress-card:active { transform: none; }
+.otto-premium-progress-icon {
+  display: grid;
+  width: 11.8cqw;
+  height: 11.8cqw;
+  flex: 0 0 11.8cqw;
+  place-items: center;
+  border-radius: 50%;
+  background: #dff8f6;
+  color: #0a9ca5;
+}
+.otto-premium-progress-icon svg { width: 7.7cqw; height: 7.7cqw; }
+.otto-premium-progress-body { display: block; min-width: 0; flex: 1; }
+.otto-premium-progress-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 2cqw; }
+.otto-premium-progress-heading strong,
+.otto-premium-progress-heading b {
+  font-size: clamp(18px, 4.35cqw, 34px);
+  font-weight: 900;
+  letter-spacing: -.025em;
+  line-height: 1;
+}
+.otto-premium-progress-heading b { color: #0aa5a8; }
+.otto-premium-progress-line { display: block; margin-top: 1.8cqw; }
+.otto-premium-progress-track { display: block; height: 2.35cqw; overflow: hidden; border-radius: 999px; background: #d9edef; }
+.otto-premium-progress-track i { display: block; height: 100%; min-width: 0; border-radius: inherit; background: linear-gradient(90deg,#16b7b6,#0aa4a7); }
+.otto-premium-progress-stats { display: flex; align-items: center; justify-content: space-between; gap: 2cqw; margin-top: 1.9cqw; color: #29415b; font-size: clamp(10px, 2.15cqw, 17px); font-weight: 520; white-space: nowrap; }
+.otto-premium-progress-stats > span { display: inline-flex; align-items: center; gap: 1.25cqw; }
+.otto-premium-progress-stats svg { width: 3.6cqw; height: 3.6cqw; flex: 0 0 3.6cqw; color: #08a7ae; }
+
+/* MAIN SECTIONS */
+.otto-premium-section { margin: 4.25cqw 2.15cqw 0; }
+.otto-premium-section > h2 {
+  margin: 0 0 2.2cqw 1.0cqw;
+  color: #10183a;
+  font-size: clamp(19px, 4.45cqw, 35px);
+  font-weight: 900;
+  letter-spacing: -.035em;
+  line-height: 1;
+}
+
+.otto-premium-module-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 2.0cqw; }
+.otto-premium-module-card {
+  display: flex;
+  min-height: 17.0cqw;
+  align-items: center;
+  gap: 2.0cqw;
+  border: 1px solid rgba(255,255,255,.98);
+  border-radius: 2.4cqw;
+  padding: 2.35cqw 2.4cqw;
+  color: #10213e;
+  text-align: left;
+  box-shadow: 0 .9cqw 2.6cqw rgba(24,67,77,.045);
+}
+.otto-premium-module-card.is-schreiben { background: linear-gradient(135deg,#fff5f1 0%,#fae4dd 100%); }
+.otto-premium-module-card.is-sprechen { background: linear-gradient(135deg,#f2fff9 0%,#dff7ee 100%); }
+.otto-premium-module-card.is-lesen { background: linear-gradient(135deg,#fffdf3 0%,#f9efd6 100%); }
+.otto-premium-module-card.is-horen { background: linear-gradient(135deg,#faf9ff 0%,#e7e4fb 100%); }
+.otto-premium-module-card:active { transform: none; }
+.otto-premium-module-icon { display: grid; width: 11.1cqw; height: 11.1cqw; flex: 0 0 11.1cqw; place-items: center; color: #087f8a; background: transparent; }
+.otto-premium-module-icon svg { width: 9.2cqw; height: 9.2cqw; }
+.otto-premium-module-copy { display: block; min-width: 0; flex: 1; }
+.otto-premium-module-copy strong { display: block; color: #10213e; font-size: clamp(16px, 3.85cqw, 30px); font-weight: 900; line-height: 1; letter-spacing: -.025em; }
+.otto-premium-module-copy small { display: block; margin-top: 1.35cqw; color: #386378; font-size: clamp(12px, 2.8cqw, 22px); font-weight: 470; line-height: 1; }
+.otto-premium-chevron { flex: 0 0 auto; color: #087b87; font-size: clamp(26px, 6.2cqw, 48px); font-weight: 350; line-height: .8; transform: translateY(-.3cqw); }
+
+/* MOCK EXAM */
+.otto-premium-exam-card {
+  display: grid;
+  grid-template-columns: 13.0cqw minmax(0,1fr) 25.7cqw;
+  min-height: 18.9cqw;
+  align-items: center;
+  gap: 2.4cqw;
+  margin: 2.65cqw 2.15cqw 0;
+  border: 1px solid rgba(210,245,243,.98);
+  border-radius: 2.8cqw;
+  background: linear-gradient(90deg,#e2f9f8 0%,#dff7f6 100%);
+  padding: 2.25cqw 2.7cqw;
+  box-shadow: 0 .8cqw 2.3cqw rgba(20,106,108,.045);
+}
+.otto-premium-exam-icon { display: grid; width: 10.1cqw; height: 10.1cqw; place-items: center; color: #09a8ac; }
+.otto-premium-exam-icon svg { width: 9.5cqw; height: 9.5cqw; }
+.otto-premium-exam-copy strong { display: block; color: #101b3b; font-size: clamp(18px, 4.15cqw, 32px); font-weight: 900; line-height: 1; letter-spacing: -.025em; }
+.otto-premium-exam-copy small { display: block; margin-top: 1.45cqw; color: #0b92a0; font-size: clamp(11px, 2.55cqw, 20px); font-weight: 480; line-height: 1.18; }
+.otto-premium-exam-button { display: inline-flex; width: 100%; min-height: 9.1cqw; align-items: center; justify-content: center; gap: 1.7cqw; border: 0; border-radius: 2.3cqw; background: linear-gradient(135deg,#15aaa9,#078b95); padding: 0 2cqw; color: #fff; font-size: clamp(15px, 3.4cqw, 27px); font-weight: 720; box-shadow: 0 .9cqw 2.3cqw rgba(5,125,132,.13); }
+.otto-premium-exam-button span { font-size: 1.5em; font-weight: 350; line-height: 1; }
+
+/* USEFUL MATERIALS */
+.otto-premium-materials { margin-top: 3.8cqw; padding-bottom: 2.0cqw; }
+.otto-premium-materials-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1.5cqw; }
+.otto-premium-material-card {
+  display: flex;
+  min-height: 21.5cqw;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #edf5f5;
+  border-radius: 2.3cqw;
+  background: rgba(255,255,255,.98);
+  padding: 2cqw 1.1cqw;
+  color: #101b3b;
+  text-align: center;
+  box-shadow: 0 .8cqw 2.2cqw rgba(26,69,77,.045);
+}
+.otto-premium-material-icon { display: grid; width: 8.0cqw; height: 8.0cqw; place-items: center; color: #067f88; background: transparent; }
+.otto-premium-material-icon svg { width: 7.2cqw; height: 7.2cqw; }
+.otto-premium-material-card:nth-child(2) .otto-premium-material-icon { color: #07818c; }
+.otto-premium-material-card:nth-child(3) .otto-premium-material-icon { color: #087e88; }
+.otto-premium-material-card strong { display: block; margin-top: .9cqw; font-size: clamp(13px, 3.2cqw, 25px); font-weight: 900; line-height: 1.02; letter-spacing: -.025em; }
+.otto-premium-material-card small { display: block; margin-top: 1.0cqw; color: #52667d; font-size: clamp(9px, 2.15cqw, 17px); font-weight: 440; line-height: 1.18; }
+
+/* BOTTOM NAV — same labels, order, icon geometry and proportions as the mockup. */
+.otto-bottom-nav {
+  left: 50% !important;
+  right: auto !important;
+  width: min(100%, 782px) !important;
+  transform: translateX(-50%);
+  padding: 0 !important;
+  background: transparent !important;
+}
+.otto-bottom-nav-inner {
+  display: grid !important;
+  width: 100% !important;
+  max-width: 782px !important;
+  min-height: 75px !important;
+  grid-template-columns: repeat(5,1fr) !important;
+  border: 1px solid rgba(255,255,255,.98) !important;
+  border-radius: 3.0cqw 3.0cqw 0 0 !important;
+  background: rgba(255,255,255,.98) !important;
+  box-shadow: 0 -1.0cqw 3.0cqw rgba(31,79,88,.08) !important;
+}
+.otto-bottom-nav-item {
+  min-height: 75px !important;
+  gap: 4px !important;
+  color: #526b84 !important;
+  font-size: clamp(10px, 2.35cqw, 18px) !important;
+  font-weight: 470 !important;
+}
+.otto-bottom-nav-item.is-active { color: #078d92 !important; font-weight: 650 !important; }
+.otto-bottom-nav-icon-wrap { display: grid; width: clamp(25px, 6.0cqw, 47px); height: clamp(25px, 6.0cqw, 47px); place-items: center; color: currentColor; }
+.otto-bottom-nav-icon-wrap svg { width: 100%; height: 100%; }
+.otto-bottom-nav-item.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: clamp(42px, 10.7cqw, 84px);
+  height: 4px;
+  border-radius: 99px;
+  background: #0bb4b2;
+}
+
+/* Keep the phone composition intact on desktop instead of stretching cards into a new design. */
+@media (min-width: 783px) {
+  .otto-view-home .otto-app-content { border-right: 1px solid rgba(12,126,130,.08); border-left: 1px solid rgba(12,126,130,.08); box-shadow: 0 0 45px rgba(18,91,96,.08); }
+  .otto-premium-hero-copy { left: 55px; top: 54px; width: 356px; }
+  .otto-premium-hero-art img { top: 24px; right: -38px; height: 590px; }
+  .otto-premium-encouragement { left: 28px; top: 278px; }
+  .otto-premium-progress-card { border-radius: 25px; }
+  .otto-premium-section > h2 { font-size: 35px; }
+  .otto-premium-module-card { border-radius: 19px; }
+  .otto-premium-exam-card { border-radius: 22px; }
+  .otto-premium-material-card { border-radius: 18px; }
+  .otto-bottom-nav-inner { min-height: 96px !important; }
+  .otto-bottom-nav-item { min-height: 96px !important; }
+}
+
+@media (max-width: 430px) {
+  .otto-view-home .otto-app-content { padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important; }
+  .otto-premium-progress-stats { gap: 1.2cqw; font-size: clamp(9px, 2.08cqw, 11px); }
+  .otto-premium-progress-stats > span { gap: .9cqw; }
+  .otto-premium-progress-stats svg { width: 3.25cqw; height: 3.25cqw; flex-basis: 3.25cqw; }
+  .otto-premium-exam-card { grid-template-columns: 12cqw minmax(0,1fr) 25.5cqw; }
+}
+
+@media (max-width: 350px) {
+  .otto-premium-progress-stats { font-size: 8.6px; }
+  .otto-premium-module-copy strong { font-size: 14px; }
+  .otto-premium-module-copy small { font-size: 10.5px; }
+  .otto-premium-material-card strong { font-size: 11.5px; }
+  .otto-premium-material-card small { font-size: 8px; }
+}

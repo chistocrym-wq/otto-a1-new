@@ -1,0 +1,61 @@
+/* Final preview-only corrections requested after visual review.
+   Keep this file imported after ottoHomePremium.css so the rest of the approved mockup stays unchanged. */
+
+/* More visible scenic background behind OTTO, matching the approved warm helper concept. */
+.otto-premium-hero {
+  background: linear-gradient(180deg, #bdeffc 0%, #e8fbfa 57%, #d9f5ec 100%) !important;
+}
+
+.otto-premium-hero::before {
+  opacity: 1 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 782 489'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dff9ff'/%3E%3Cstop offset='1' stop-color='%23bfeee9'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%2385c8be'/%3E%3Cstop offset='1' stop-color='%236eb6b0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='782' height='489' fill='url(%23w)'/%3E%3Cg fill='%23fff' opacity='.88'%3E%3Cellipse cx='118' cy='74' rx='66' ry='23'/%3E%3Cellipse cx='184' cy='77' rx='48' ry='19'/%3E%3Cellipse cx='635' cy='58' rx='58' ry='20'/%3E%3Cellipse cx='690' cy='63' rx='40' ry='17'/%3E%3C/g%3E%3Cg opacity='.9'%3E%3Crect y='326' width='782' height='163' fill='%23c8f0ea'/%3E%3Cpath d='M0 393c90-18 165-17 248 1s170 31 275 13 174-20 259-7v89H0z' fill='%23a8dfd4'/%3E%3Cpath d='M412 296h330v18H412z' fill='url(%23b)'/%3E%3Cpath d='M420 314h18v72h-18zM472 314h18v72h-18zM524 314h18v72h-18zM576 314h18v72h-18zM628 314h18v72h-18zM680 314h18v72h-18z' fill='%2372bbb3'/%3E%3Cpath d='M416 386c8-35 28-53 55-53s47 18 55 53h-13c-7-26-21-39-42-39s-35 13-42 39h-13Zm108 0c8-35 28-53 55-53s47 18 55 53h-13c-7-26-21-39-42-39s-35 13-42 39h-13Zm108 0c8-35 28-53 55-53s47 18 55 53h-13c-7-26-21-39-42-39s-35 13-42 39h-13Z' fill='%2372bbb3'/%3E%3C/g%3E%3Cg fill='%2369aaa4' opacity='.9'%3E%3Cpath d='M516 170h18v122h-18zM507 170h36l-18-54-18 54ZM570 142h16v150h-16zM561 142h34l-17-62-17 62ZM624 184h17v108h-17zM615 184h35l-18-49-17 49Z'/%3E%3C/g%3E%3Cg fill='%2393c5b7' opacity='.95'%3E%3Cpath d='M35 307h113v79H35zM51 266h16v41H51zM111 249h15v58h-15zM46 266h27l-14-37-13 37ZM105 249h28l-14-41-14 41Z'/%3E%3C/g%3E%3Cg opacity='.95'%3E%3Ccircle cx='25' cy='312' r='44' fill='%238ec9a9'/%3E%3Ccircle cx='73' cy='334' r='55' fill='%237fbd9f'/%3E%3Ccircle cx='746' cy='300' r='58' fill='%238ac5a1'/%3E%3Ccircle cx='783' cy='334' r='54' fill='%237fba99'/%3E%3Ccircle cx='8' cy='415' r='70' fill='%237bb997'/%3E%3Ccircle cx='773' cy='424' r='70' fill='%237bb997'/%3E%3C/g%3E%3C/svg%3E") !important;
+  background-position: center bottom !important;
+  background-size: cover !important;
+}
+
+.otto-premium-hero::after {
+  background: linear-gradient(90deg, rgba(255,255,255,.33) 0%, rgba(255,255,255,.17) 37%, rgba(255,255,255,0) 62%) !important;
+}
+
+/* Move handwritten encouragement below the certificate copy so it never collides. */
+.otto-premium-encouragement {
+  left: 4.0cqw !important;
+  top: 40.3cqw !important;
+  font-size: clamp(13px, 3.35cqw, 26px) !important;
+  line-height: 1.0 !important;
+}
+
+/* OTTO is intentionally a large bust in the approved header: head fully visible, legs cropped out. */
+.otto-premium-hero-art img {
+  top: 2.4cqw !important;
+  right: -14.2cqw !important;
+  width: auto !important;
+  height: 116cqw !important;
+  min-height: 435px !important;
+  max-height: 905px !important;
+  object-position: top center !important;
+}
+
+@media (max-width: 430px) {
+  .otto-premium-encouragement {
+    left: 4.2cqw !important;
+    top: 40.8cqw !important;
+  }
+  .otto-premium-hero-art img {
+    top: 2.2cqw !important;
+    right: -15.8cqw !important;
+    height: 118cqw !important;
+    min-height: 440px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .otto-premium-encouragement {
+    top: 41.6cqw !important;
+    font-size: 12px !important;
+  }
+  .otto-premium-hero-art img {
+    right: -17.5cqw !important;
+    height: 121cqw !important;
+  }
+}

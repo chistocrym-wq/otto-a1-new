@@ -11,6 +11,8 @@ import './ottoViewport.css';
 import './ottoSceneAssets.css';
 import './ottoSplash.css';
 import './ottoFinalPolish.css';
+import './ottoHomePremium.css';
+import './ottoHomeApprovedFix.css';
 import '@/data/lesen/registerExtraSets';
 
 // Everything below is only needed once the user navigates away from the
@@ -53,12 +55,11 @@ export default function App() {
   const globalEye = view === 'mock-exam';
   const viewClass = `otto-view-${view ?? 'home'}`;
 
-  const activeTab = useMemo<BottomTab>(() => {
-    if (view === null || view === 'mock-exam' || view === 'news') return 'home';
-    if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen') return 'modules';
+  const activeTab = useMemo<BottomTab | null>(() => {
+    if (view === null) return 'home';
+    if (view === 'settings') return 'settings';
     if (view === 'exam-guide' || view === 'instructions') return 'guides';
-    if (view === 'account') return 'account';
-    return 'settings';
+    return null;
   }, [view]);
 
   const companionScene = useMemo<OttoSceneName | null>(() => {
@@ -73,10 +74,10 @@ export default function App() {
 
   const navigateBottom = useCallback((tab: BottomTab) => {
     if (tab === 'home') setView(null);
-    if (tab === 'modules') setView('modules');
-    if (tab === 'guides') setView('exam-guide');
-    if (tab === 'account') setView('account');
     if (tab === 'settings') setView('settings');
+    if (tab === 'guides') setView('exam-guide');
+    // "Поделиться" и "Поддержка" пока только визуальные кнопки.
+    // Их техническое поведение подключим отдельной задачей после утверждения UI.
   }, []);
 
   return (
