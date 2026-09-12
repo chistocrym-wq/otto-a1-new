@@ -23,6 +23,13 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+      - name: Upload preview build
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: otto-approved-mobile-preview
+          path: dist
+          retention-days: 1
       - name: Upload deploy bundle
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
