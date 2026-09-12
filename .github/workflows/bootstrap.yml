@@ -101,7 +101,7 @@ jobs:
       - name: Verify project
         run: |
           set -euo pipefail
-          npm ci
+          npm install --no-audit --no-fund
           npm run typecheck
           npm run build
 
