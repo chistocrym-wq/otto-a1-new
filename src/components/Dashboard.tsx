@@ -5,6 +5,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { OttoScene } from '@/components/OttoScene';
 import { cn } from '@/lib/utils';
 import { languages, translations, type Language } from '../i18n';
+import { APPROVED_MOBILE_MOCKUP } from '@/approvedMobileMockup';
 
 interface DashboardProps {
   onSelectModule: (module: ModuleId) => void;
@@ -13,10 +14,20 @@ interface DashboardProps {
   onOpenMockExam: () => void;
   onOpenNews: () => void;
   onOpenAccount: () => void;
+  onOpenSettings: () => void;
   progress: Progress;
 }
 
-export function Dashboard({ onSelectModule, onOpenInstructions, onOpenExamGuide, onOpenMockExam, onOpenNews, onOpenAccount, progress }: DashboardProps) {
+export function Dashboard({
+  onSelectModule,
+  onOpenInstructions,
+  onOpenExamGuide,
+  onOpenMockExam,
+  onOpenNews,
+  onOpenAccount,
+  onOpenSettings,
+  progress,
+}: DashboardProps) {
   const [lang, setLang] = useState<Language>('ru');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,87 +61,113 @@ export function Dashboard({ onSelectModule, onOpenInstructions, onOpenExamGuide,
   }, [progress]);
 
   return (
-    <div className="otto-dashboard-screen animate-fade-in">
-      <section className="otto-home-hero">
-        <div className="absolute right-3 top-3 z-30" ref={dropdownRef}>
-          <button type="button" onClick={() => setIsOpen((v) => !v)} className="otto-language-button">
-            <Globe className="h-4 w-4" /><span>{currentLang.flag}</span><ChevronDown className={cn('h-3.5 w-3.5 transition', isOpen && 'rotate-180')} />
-          </button>
-          {isOpen && (
-            <div className="otto-language-menu">
-              {languages.map((item) => (
-                <button key={item.id} type="button" onClick={() => { setLang(item.id); setIsOpen(false); }} className={cn('otto-language-item', lang === item.id && 'is-active')}>
-                  <span>{item.flag}</span><span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+    <>
+      <div className="otto-approved-mobile-home" aria-label="Главная страница OTTO">
+        <img
+          className="otto-approved-mobile-home-image"
+          src={APPROVED_MOBILE_MOCKUP}
+          alt="Тренажёр OTTO — Zertifikat A1"
+          draggable={false}
+        />
 
-        <div className="otto-home-copy">
-          <div className="otto-logo-word">Тренажёр OTTO</div>
-          <h1>Немецкий A1</h1>
-          <p>Ваш помощник · подготовимся к экзамену вместе</p>
-          <div className="otto-handwritten">Новый язык.<br />Новые возможности!</div>
-        </div>
-        <div className="otto-home-character" aria-hidden="true">
-          <OttoScene scene="home" className="otto-home-character-scene" eager />
-        </div>
-        <div className="otto-hero-skyline" aria-hidden="true" />
-      </section>
+        <button type="button" className="otto-approved-hotspot otto-approved-progress" onClick={onOpenAccount} aria-label="Мой прогресс" />
+        <button type="button" className="otto-approved-hotspot otto-approved-schreiben" onClick={() => onSelectModule('schreiben')} aria-label="Schreiben — Письмо" />
+        <button type="button" className="otto-approved-hotspot otto-approved-sprechen" onClick={() => onSelectModule('sprechen')} aria-label="Sprechen — Говорение" />
+        <button type="button" className="otto-approved-hotspot otto-approved-lesen" onClick={() => onSelectModule('lesen')} aria-label="Lesen — Чтение" />
+        <button type="button" className="otto-approved-hotspot otto-approved-horen" onClick={() => onSelectModule('horen')} aria-label="Hören — Аудирование" />
+        <button type="button" className="otto-approved-hotspot otto-approved-exam" onClick={onOpenMockExam} aria-label="Пробный экзамен" />
+        <button type="button" className="otto-approved-hotspot otto-approved-blanks" onClick={onOpenInstructions} aria-label="Бланки" />
+        <button type="button" className="otto-approved-hotspot otto-approved-tips" onClick={onOpenExamGuide} aria-label="Советы OTTO" />
+        <button type="button" className="otto-approved-hotspot otto-approved-news" onClick={onOpenNews} aria-label="Новости" />
+        <button type="button" className="otto-approved-hotspot otto-approved-home" aria-label="Главная" />
+        <button type="button" className="otto-approved-hotspot otto-approved-settings" onClick={onOpenSettings} aria-label="Настройки" />
+        <button type="button" className="otto-approved-hotspot otto-approved-guides" onClick={onOpenExamGuide} aria-label="Гайды" />
+        <button type="button" className="otto-approved-hotspot otto-approved-share" aria-label="Поделиться" />
+        <button type="button" className="otto-approved-hotspot otto-approved-support" aria-label="Поддержка" />
+      </div>
 
-      <section className="otto-progress-card">
-        <div className="otto-progress-ring" style={{ '--progress': `${totalStats.accuracy * 3.6}deg` } as React.CSSProperties}>
-          <span>{totalStats.accuracy}%</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="otto-progress-title">Ваш прогресс</p>
-          <p className="otto-progress-subtitle">Немецкий A1 · {totalStats.answered} заданий</p>
-          <div className="otto-progress-line"><ProgressBar value={totalStats.accuracy} max={100} /></div>
-        </div>
-        <button type="button" onClick={onOpenAccount} className="otto-progress-link" aria-label="Открыть мой прогресс">
-          <span className="otto-progress-bars"><i /><i /><i /></span>
-          <span>Мой<br />прогресс</span>
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </section>
-
-      <section id="otto-modules" className="otto-dashboard-section">
-        <h2 className="otto-section-title">Учиться с OTTO</h2>
-        <div className="otto-module-grid">
-          {modules.map(({ id, title, subtitle, icon: Icon }) => (
-            <button key={id} type="button" onClick={() => onSelectModule(id)} className="otto-home-module-card">
-              <span className="otto-home-module-icon"><Icon /></span>
-              <span className="min-w-0 flex-1 text-left"><strong>{title}</strong><small>{subtitle}</small></span>
-              <ChevronRight className="otto-card-chevron h-5 w-5 shrink-0" />
+      <div className="otto-dashboard-screen otto-dashboard-desktop animate-fade-in">
+        <section className="otto-home-hero">
+          <div className="absolute right-3 top-3 z-30" ref={dropdownRef}>
+            <button type="button" onClick={() => setIsOpen((v) => !v)} className="otto-language-button">
+              <Globe className="h-4 w-4" /><span>{currentLang.flag}</span><ChevronDown className={cn('h-3.5 w-3.5 transition', isOpen && 'rotate-180')} />
             </button>
-          ))}
-        </div>
-      </section>
+            {isOpen && (
+              <div className="otto-language-menu">
+                {languages.map((item) => (
+                  <button key={item.id} type="button" onClick={() => { setLang(item.id); setIsOpen(false); }} className={cn('otto-language-item', lang === item.id && 'is-active')}>
+                    <span>{item.flag}</span><span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-      <section id="otto-materials" className="otto-dashboard-section">
-        <h2 className="otto-section-title">Полезные материалы</h2>
-        <div className="otto-materials-grid">
-          <button type="button" onClick={onOpenInstructions} className="otto-material-card">
-            <span className="otto-material-icon"><FileText /></span><span><strong>Бланки</strong><small>Документы и примеры</small></span><ChevronRight />
-          </button>
-          <button type="button" onClick={onOpenExamGuide} className="otto-material-card">
-            <span className="otto-material-icon"><Lightbulb /></span><span><strong>Советы OTTO</strong><small>Из опыта</small></span><ChevronRight />
-          </button>
-          <button type="button" onClick={onOpenNews} className="otto-material-card">
-            <span className="otto-material-icon"><Newspaper /></span><span><strong>Новости OTTO</strong><small>Полезная информация</small></span><ChevronRight />
-          </button>
-        </div>
-      </section>
+          <div className="otto-home-copy">
+            <div className="otto-logo-word">Тренажёр OTTO</div>
+            <h1>Немецкий A1</h1>
+            <p>Ваш помощник · подготовимся к экзамену вместе</p>
+            <div className="otto-handwritten">Новый язык.<br />Новые возможности!</div>
+          </div>
+          <div className="otto-home-character" aria-hidden="true">
+            <OttoScene scene="home" className="otto-home-character-scene" eager />
+          </div>
+          <div className="otto-hero-skyline" aria-hidden="true" />
+        </section>
 
-      <section className="otto-exam-cta">
-        <div className="otto-exam-otto" aria-hidden="true"><OttoScene scene="exam" className="otto-exam-otto-scene" /></div>
-        <div className="min-w-0 flex-1">
-          <h2>Готовы пройти пробный экзамен?</h2>
-          <p>Пробуйте сдать экзамен по времени как на экзамене и становитесь увереннее в своих силах.</p>
-        </div>
-        <button type="button" onClick={onOpenMockExam} className="otto-exam-button">Начать экзамен <ChevronRight /></button>
-      </section>
-    </div>
+        <section className="otto-progress-card">
+          <div className="otto-progress-ring" style={{ '--progress': `${totalStats.accuracy * 3.6}deg` } as React.CSSProperties}>
+            <span>{totalStats.accuracy}%</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="otto-progress-title">Ваш прогресс</p>
+            <p className="otto-progress-subtitle">Немецкий A1 · {totalStats.answered} заданий</p>
+            <div className="otto-progress-line"><ProgressBar value={totalStats.accuracy} max={100} /></div>
+          </div>
+          <button type="button" onClick={onOpenAccount} className="otto-progress-link" aria-label="Открыть мой прогресс">
+            <span className="otto-progress-bars"><i /><i /><i /></span>
+            <span>Мой<br />прогресс</span>
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </section>
+
+        <section id="otto-modules" className="otto-dashboard-section">
+          <h2 className="otto-section-title">Учиться с OTTO</h2>
+          <div className="otto-module-grid">
+            {modules.map(({ id, title, subtitle, icon: Icon }) => (
+              <button key={id} type="button" onClick={() => onSelectModule(id)} className="otto-home-module-card">
+                <span className="otto-home-module-icon"><Icon /></span>
+                <span className="min-w-0 flex-1 text-left"><strong>{title}</strong><small>{subtitle}</small></span>
+                <ChevronRight className="otto-card-chevron h-5 w-5 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section id="otto-materials" className="otto-dashboard-section">
+          <h2 className="otto-section-title">Полезные материалы</h2>
+          <div className="otto-materials-grid">
+            <button type="button" onClick={onOpenInstructions} className="otto-material-card">
+              <span className="otto-material-icon"><FileText /></span><span><strong>Бланки</strong><small>Документы и примеры</small></span><ChevronRight />
+            </button>
+            <button type="button" onClick={onOpenExamGuide} className="otto-material-card">
+              <span className="otto-material-icon"><Lightbulb /></span><span><strong>Советы OTTO</strong><small>Из опыта</small></span><ChevronRight />
+            </button>
+            <button type="button" onClick={onOpenNews} className="otto-material-card">
+              <span className="otto-material-icon"><Newspaper /></span><span><strong>Новости OTTO</strong><small>Полезная информация</small></span><ChevronRight />
+            </button>
+          </div>
+        </section>
+
+        <section className="otto-exam-cta">
+          <div className="otto-exam-otto" aria-hidden="true"><OttoScene scene="exam" className="otto-exam-otto-scene" /></div>
+          <div className="min-w-0 flex-1">
+            <h2>Готовы пройти пробный экзамен?</h2>
+            <p>Пробуйте сдать экзамен по времени как на экзамене и становитесь увереннее в своих силах.</p>
+          </div>
+          <button type="button" onClick={onOpenMockExam} className="otto-exam-button">Начать экзамен <ChevronRight /></button>
+        </section>
+      </div>
+    </>
   );
 }
