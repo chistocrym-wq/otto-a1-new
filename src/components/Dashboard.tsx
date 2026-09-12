@@ -130,20 +130,11 @@ const modules = [
   { id: 'horen' as ModuleId, title: 'Hören', subtitle: 'Аудирование', Icon: HeadphonesIcon },
 ];
 
-export function Dashboard({
-  onSelectModule,
-  onOpenInstructions,
-  onOpenExamGuide,
-  onOpenMockExam,
-  onOpenNews,
-  onOpenAccount,
-  progress,
-}: DashboardProps) {
+export function Dashboard({ onSelectModule, onOpenInstructions, onOpenExamGuide, onOpenMockExam, onOpenNews, onOpenAccount, progress }: DashboardProps) {
   const totalStats = useMemo(() => {
     let answered = 0;
     let correct = 0;
     let started = 0;
-
     modules.forEach((module) => {
       const item = progress[module.id];
       const moduleAnswered = item?.answered ?? 0;
@@ -151,12 +142,7 @@ export function Dashboard({
       correct += item?.correct ?? 0;
       if (moduleAnswered > 0) started += 1;
     });
-
-    return {
-      answered,
-      started,
-      accuracy: answered ? Math.round((correct / answered) * 100) : 0,
-    };
+    return { answered, started, accuracy: answered ? Math.round((correct / answered) * 100) : 0 };
   }, [progress]);
 
   return (
@@ -173,9 +159,15 @@ export function Dashboard({
           <p className="otto-premium-hero-line">Подготовимся к экзамену вместе</p>
           <p className="otto-premium-encouragement">Du<br />schaffst<br />das! ♡</p>
         </div>
-
         <div className="otto-premium-hero-art" aria-hidden="true">
-          <img src="/otto/otto-home-documents.webp?v=2" alt="" width={720} height={900} fetchPriority="high" />
+          <img
+            src="/otto/otto-home-documents.webp?v=2"
+            alt=""
+            width={720}
+            height={900}
+            fetchPriority="high"
+            style={{ top: '4.4cqw', right: '-4.8cqw', height: '80cqw', minHeight: '300px', maxHeight: '625px' }}
+          />
         </div>
         <div className="otto-premium-landscape" aria-hidden="true" />
       </section>
@@ -183,13 +175,8 @@ export function Dashboard({
       <button type="button" onClick={onOpenAccount} className="otto-premium-progress-card" aria-label="Открыть подробный прогресс">
         <span className="otto-premium-progress-icon"><ProgressBarsIcon /></span>
         <span className="otto-premium-progress-body">
-          <span className="otto-premium-progress-heading">
-            <strong>Мой прогресс</strong>
-            <b>{totalStats.accuracy}%</b>
-          </span>
-          <span className="otto-premium-progress-line" aria-hidden="true">
-            <span className="otto-premium-progress-track"><i style={{ width: `${totalStats.accuracy}%` }} /></span>
-          </span>
+          <span className="otto-premium-progress-heading"><strong>Мой прогресс</strong><b>{totalStats.accuracy}%</b></span>
+          <span className="otto-premium-progress-line" aria-hidden="true"><span className="otto-premium-progress-track"><i style={{ width: `${totalStats.accuracy}%` }} /></span></span>
           <span className="otto-premium-progress-stats">
             <span><CheckRoundIcon />{totalStats.answered} заданий выполнено</span>
             <span><TrophyIcon />{totalStats.started} из 4 модулей начато</span>
@@ -219,15 +206,9 @@ export function Dashboard({
       <section className="otto-premium-section otto-premium-materials" id="otto-materials">
         <h2>Полезные материалы</h2>
         <div className="otto-premium-materials-grid">
-          <button type="button" onClick={onOpenInstructions} className="otto-premium-material-card">
-            <span className="otto-premium-material-icon"><FileIcon /></span><strong>Бланки</strong><small>Шаблоны и образцы</small>
-          </button>
-          <button type="button" onClick={onOpenExamGuide} className="otto-premium-material-card">
-            <span className="otto-premium-material-icon"><CapIcon /></span><strong>Советы OTTO</strong><small>Игры и стратегии</small>
-          </button>
-          <button type="button" onClick={onOpenNews} className="otto-premium-material-card">
-            <span className="otto-premium-material-icon"><NewsIcon /></span><strong>Новости</strong><small>Актуальная<br />информация</small>
-          </button>
+          <button type="button" onClick={onOpenInstructions} className="otto-premium-material-card"><span className="otto-premium-material-icon"><FileIcon /></span><strong>Бланки</strong><small>Шаблоны и образцы</small></button>
+          <button type="button" onClick={onOpenExamGuide} className="otto-premium-material-card"><span className="otto-premium-material-icon"><CapIcon /></span><strong>Советы OTTO</strong><small>Игры и стратегии</small></button>
+          <button type="button" onClick={onOpenNews} className="otto-premium-material-card"><span className="otto-premium-material-icon"><NewsIcon /></span><strong>Новости</strong><small>Актуальная<br />информация</small></button>
         </div>
       </section>
     </div>
