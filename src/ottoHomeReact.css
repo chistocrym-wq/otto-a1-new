@@ -1,0 +1,329 @@
+/* Real React/CSS implementation of the approved OTTO home mockup.
+   Only the home screen is affected. */
+
+.otto-view-home .otto-app-content {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  background: #f3fbfb !important;
+  scrollbar-width: none;
+}
+
+.otto-view-home .otto-app-content::-webkit-scrollbar { display: none; }
+.otto-view-home .otto-home-screen { min-height: 100%; height: auto !important; overflow: visible !important; }
+.otto-view-home > .otto-bottom-nav,
+.otto-view-home .otto-bottom-nav { display: none !important; }
+
+.otto-real-home {
+  --ink: #0c1f43;
+  --teal: #0aa8aa;
+  --teal-dark: #087f8d;
+  min-height: 100dvh;
+  padding: 0 0 calc(92px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #f0fbfb 0%, #f9fdfd 58%, #f2fbfb 100%);
+  color: var(--ink);
+  container-type: inline-size;
+}
+
+.otto-real-home button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.otto-real-hero {
+  position: relative;
+  width: 100%;
+  height: clamp(292px, 68cqw, 500px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 16%, rgba(255,255,255,.94) 0 9%, transparent 10%),
+    radial-gradient(circle at 72% 16%, rgba(255,255,255,.7) 0 12%, transparent 13%),
+    linear-gradient(145deg, #ccf7fb 0%, #dff9f7 42%, #bfeff2 100%);
+  isolation: isolate;
+}
+
+.otto-real-hero::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 31%;
+  background:
+    radial-gradient(circle at 8% 80%, #9ad9bf 0 9%, transparent 10%),
+    radial-gradient(circle at 18% 86%, #80c9b1 0 11%, transparent 12%),
+    radial-gradient(circle at 87% 82%, #8fd0ba 0 12%, transparent 13%),
+    linear-gradient(180deg, transparent 0%, rgba(111,199,181,.18) 55%, rgba(103,190,173,.24) 100%);
+  z-index: 0;
+}
+
+.otto-real-hero-copy {
+  position: absolute;
+  z-index: 4;
+  left: 6.5cqw;
+  top: 7.5cqw;
+  width: 48cqw;
+}
+
+.otto-real-brand {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 950;
+  line-height: .86;
+  letter-spacing: -.055em;
+}
+
+.otto-real-brand-small { font-size: clamp(34px, 8.1cqw, 62px); }
+.otto-real-brand-big { margin-top: 1.2cqw; font-size: clamp(56px, 14cqw, 108px); }
+.otto-real-brand-line {
+  width: 35cqw;
+  height: 2.4cqw;
+  margin-top: 1.3cqw;
+  border-top: clamp(4px, .8cqw, 7px) solid #0aa8aa;
+  border-radius: 50%;
+}
+
+.otto-real-hero h1 {
+  margin: 3.4cqw 0 0;
+  font-size: clamp(21px, 5.1cqw, 39px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.035em;
+}
+
+.otto-real-hero p {
+  margin: 1cqw 0 0;
+  font-size: clamp(12px, 2.55cqw, 20px);
+  font-weight: 580;
+  line-height: 1.18;
+  letter-spacing: -.01em;
+}
+
+.otto-real-note {
+  margin: 4.4cqw 0 0 1cqw;
+  color: #087c88;
+  font-family: 'Segoe Print', 'Comic Sans MS', cursive;
+  font-size: clamp(21px, 5.3cqw, 42px);
+  font-weight: 750;
+  line-height: 1.02;
+  transform: rotate(-5deg);
+}
+
+.otto-real-hero-otto {
+  position: absolute;
+  z-index: 3;
+  right: -8.5cqw;
+  bottom: -15cqw;
+  width: auto;
+  height: clamp(370px, 93cqw, 715px);
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(20,66,70,.12));
+  user-select: none;
+}
+
+.otto-real-progress {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  width: calc(100% - 24px);
+  min-height: 128px;
+  align-items: center;
+  gap: 14px;
+  margin: -6px 12px 0;
+  border: 1px solid rgba(224,244,244,.92);
+  border-radius: 24px;
+  background: rgba(255,255,255,.98);
+  padding: 18px 18px;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(34,103,106,.09);
+}
+
+.otto-real-progress-icon {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ddf8f6;
+  color: #0aa7ad;
+}
+.otto-real-progress-icon svg { width: 40px; height: 40px; }
+.otto-real-progress-main { display: block; min-width: 0; flex: 1; }
+.otto-real-progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.otto-real-progress-top strong { font-size: clamp(22px, 5.5cqw, 34px); font-weight: 900; letter-spacing: -.03em; }
+.otto-real-progress-top b { color: #0aa9ad; font-size: clamp(21px, 5cqw, 32px); font-weight: 900; }
+.otto-real-progress-track { display: block; height: 11px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #deeff0; }
+.otto-real-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#1bbab8,#079fa7); }
+.otto-real-progress-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: #36516a; font-size: clamp(11px, 2.7cqw, 15px); font-weight: 560; }
+.otto-real-progress-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.otto-real-progress-meta svg { width: 18px; height: 18px; color: #0aa7ad; }
+
+.otto-real-section { margin: 24px 12px 0; }
+.otto-real-section h2 {
+  margin: 0 0 13px 3px;
+  color: var(--ink);
+  font-size: clamp(25px, 6.2cqw, 38px);
+  font-weight: 950;
+  letter-spacing: -.045em;
+  line-height: 1;
+}
+
+.otto-real-modules { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.otto-real-module {
+  display: grid;
+  grid-template-columns: 54px minmax(0,1fr) 24px;
+  min-height: 96px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 22px;
+  padding: 15px 15px;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 5px 14px rgba(42,83,93,.05);
+}
+.otto-real-module.is-peach { background: linear-gradient(135deg,#fff7f3,#fde7df); }
+.otto-real-module.is-mint { background: linear-gradient(135deg,#effff9,#dff8ee); }
+.otto-real-module.is-cream { background: linear-gradient(135deg,#fffdf3,#fbefd1); }
+.otto-real-module.is-lavender { background: linear-gradient(135deg,#f8f7ff,#e7e5fb); }
+.otto-real-module-icon { display: grid; width: 54px; height: 54px; place-items: center; color: #087f8d; }
+.otto-real-module-icon svg { width: 46px; height: 46px; }
+.otto-real-module-copy strong { display: block; font-size: clamp(20px, 4.9cqw, 30px); font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+.otto-real-module-copy small { display: block; margin-top: 8px; color: #0a8e9b; font-size: clamp(13px, 3.25cqw, 18px); font-weight: 560; line-height: 1; }
+.otto-real-chevron { width: 24px; height: 24px; color: #0a8996; }
+
+.otto-real-exam {
+  display: grid;
+  grid-template-columns: 62px minmax(0,1fr) minmax(112px, 29vw);
+  align-items: center;
+  gap: 12px;
+  margin: 14px 12px 0;
+  border: 1px solid #d8f2f2;
+  border-radius: 24px;
+  background: linear-gradient(90deg,#e5fbfb,#d9f7f7);
+  padding: 16px 16px;
+  box-shadow: 0 6px 16px rgba(28,105,107,.05);
+}
+.otto-real-exam-icon { display: grid; width: 58px; height: 58px; place-items: center; color: #08a7ae; }
+.otto-real-exam-icon svg { width: 52px; height: 52px; }
+.otto-real-exam-copy strong { display: block; font-size: clamp(21px, 5.1cqw, 31px); font-weight: 930; letter-spacing: -.035em; line-height: 1; }
+.otto-real-exam-copy small { display: block; margin-top: 7px; color: #0b99a4; font-size: clamp(12px, 2.9cqw, 17px); font-weight: 560; line-height: 1.18; }
+.otto-real-exam > button {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 17px;
+  background: linear-gradient(135deg,#13a8aa,#078793);
+  color: #fff;
+  font-size: clamp(18px, 4.4cqw, 27px);
+  font-weight: 820;
+  box-shadow: 0 8px 16px rgba(4,126,133,.16);
+}
+.otto-real-exam > button svg { width: 22px; height: 22px; }
+
+.otto-real-materials-section { margin-top: 22px; }
+.otto-real-materials { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.otto-real-materials > button {
+  display: flex;
+  min-height: 126px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eaf3f4;
+  border-radius: 20px;
+  background: rgba(255,255,255,.98);
+  padding: 13px 9px;
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 5px 14px rgba(39,80,88,.05);
+}
+.otto-real-materials svg { width: 38px; height: 38px; color: #087f8c; }
+.otto-real-materials strong { margin-top: 8px; font-size: clamp(15px, 3.6cqw, 22px); font-weight: 900; line-height: 1.03; letter-spacing: -.025em; }
+.otto-real-materials small { margin-top: 7px; color: #536782; font-size: clamp(10px, 2.45cqw, 14px); font-weight: 520; line-height: 1.15; }
+
+.otto-real-home-nav {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  min-height: 78px;
+  padding: 6px 4px calc(7px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(219,235,237,.95);
+  border-radius: 24px 24px 0 0;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 -8px 22px rgba(24,73,81,.08);
+  backdrop-filter: blur(14px);
+}
+.otto-real-home-nav button {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: #536981;
+  padding: 3px 1px;
+  font-size: clamp(9px, 2.2cqw, 13px);
+  font-weight: 560;
+  line-height: 1;
+}
+.otto-real-home-nav button svg { width: 25px; height: 25px; stroke-width: 2.3; }
+.otto-real-home-nav button.is-active { color: #078f97; font-weight: 760; }
+.otto-real-home-nav button.is-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  width: 43px;
+  height: 4px;
+  border-radius: 99px;
+  background: #0bb4b2;
+}
+
+@media (max-width: 380px) {
+  .otto-real-hero { height: 300px; }
+  .otto-real-hero-copy { left: 20px; top: 24px; }
+  .otto-real-brand-small { font-size: 30px; }
+  .otto-real-brand-big { font-size: 53px; }
+  .otto-real-hero h1 { font-size: 20px; }
+  .otto-real-hero p { font-size: 11px; }
+  .otto-real-note { font-size: 20px; margin-top: 14px; }
+  .otto-real-hero-otto { right: -42px; bottom: -63px; height: 365px; }
+  .otto-real-progress { min-height: 116px; padding: 15px; }
+  .otto-real-progress-icon { width: 60px; height: 60px; flex-basis: 60px; }
+  .otto-real-progress-top strong { font-size: 20px; }
+  .otto-real-progress-meta { font-size: 10px; gap: 6px 10px; }
+  .otto-real-module { grid-template-columns: 44px minmax(0,1fr) 18px; min-height: 86px; gap: 7px; padding: 12px; border-radius: 18px; }
+  .otto-real-module-icon { width: 44px; height: 44px; }
+  .otto-real-module-icon svg { width: 38px; height: 38px; }
+  .otto-real-module-copy strong { font-size: 17px; }
+  .otto-real-module-copy small { font-size: 12px; }
+  .otto-real-exam { grid-template-columns: 48px minmax(0,1fr) 104px; padding: 13px; }
+  .otto-real-exam-icon { width: 46px; height: 46px; }
+  .otto-real-exam-icon svg { width: 42px; height: 42px; }
+  .otto-real-exam-copy strong { font-size: 18px; }
+  .otto-real-exam-copy small { font-size: 10px; }
+  .otto-real-materials > button { min-height: 114px; padding: 10px 6px; }
+  .otto-real-materials strong { font-size: 13px; }
+  .otto-real-materials small { font-size: 9px; }
+}
+
+@media (min-width: 783px) {
+  .otto-view-home .otto-app-content { width: min(100%, 782px) !important; max-width: 782px !important; margin: 0 auto; border-left: 1px solid rgba(12,126,130,.07); border-right: 1px solid rgba(12,126,130,.07); box-shadow: 0 0 44px rgba(18,91,96,.08); }
+  .otto-real-home-nav { left: 50%; width: 782px; right: auto; transform: translateX(-50%); }
+}
