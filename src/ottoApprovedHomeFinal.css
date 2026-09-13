@@ -1,1 +1,56 @@
-PLACEHOLDER
+/* Final approved-home overrides. Keep this file last so legacy shared button/card rules cannot change the mockup geometry. */
+.otto-approved-hero .otto-approved-otto-image {
+  position: absolute !important;
+  top: -6% !important;
+  right: -1% !important;
+  width: auto !important;
+  max-width: none !important;
+  height: 116% !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: right top !important;
+}
+
+.otto-approved-training {
+  box-sizing: border-box !important;
+  height: 252px !important;
+  min-height: 252px !important;
+  max-height: 252px !important;
+  overflow: hidden !important;
+}
+
+.otto-approved-duration button {
+  box-sizing: border-box !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding: 0 6px !important;
+}
+
+.otto-approved-plan-row {
+  box-sizing: border-box !important;
+  height: 39px !important;
+  min-height: 39px !important;
+  max-height: 39px !important;
+  padding: 4px 7px !important;
+}
+
+.otto-approved-primary {
+  box-sizing: border-box !important;
+  height: 31px !important;
+  min-height: 31px !important;
+  max-height: 31px !important;
+  padding: 0 12px !important;
+}
+
+.otto-approved-readiness-button {
+  box-sizing: border-box !important;
+  min-height: 55px !important;
+  max-height: 55px !important;
+}
+
+.otto-approved-complete {
+  box-sizing: border-box !important;
+  min-height: 39px !important;
+  max-height: 39px !important;
+}
