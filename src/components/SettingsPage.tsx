@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, Globe2, Play, Smartphone, Volume2 } from 'lucide-react';
+import { Bell, ChevronDown, Globe2, Play, Smartphone, Volume1, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 
 const items = [
@@ -84,8 +84,8 @@ export function SettingsPage() {
         </div>
         <p className="otto-voice-copy">Выбери естественный темп или чуть более медленную речь. Медленный режим сохраняет нормальный немецкий ритм — звуки не растягиваются искусственно.</p>
         <div className="otto-voice-mode" role="group" aria-label="Скорость немецкой речи">
-          <button type="button" className={voiceMode === 'normal' ? 'is-active' : ''} onClick={() => changeVoiceMode('normal')} aria-pressed={voiceMode === 'normal'}>🔊 Нормально</button>
-          <button type="button" className={voiceMode === 'slow' ? 'is-active' : ''} onClick={() => changeVoiceMode('slow')} aria-pressed={voiceMode === 'slow'}>🐢 Медленнее</button>
+          <button type="button" className={voiceMode === 'normal' ? 'is-active' : ''} onClick={() => changeVoiceMode('normal')} aria-pressed={voiceMode === 'normal'}><Volume2 aria-hidden="true" />Нормально</button>
+          <button type="button" className={voiceMode === 'slow' ? 'is-active' : ''} onClick={() => changeVoiceMode('slow')} aria-pressed={voiceMode === 'slow'}><Volume1 aria-hidden="true" />Медленнее</button>
         </div>
         <button type="button" className="otto-voice-test" onClick={testVoice}><Play aria-hidden="true" />Послушать голос Отто</button>
         <p className="otto-voice-disclosure">Основная озвучка Отто создаётся AI‑голосом. Если нейросинтез временно недоступен, приложение автоматически использует лучший немецкий голос устройства. Записи Hören остаются отдельными экзаменационными аудиоматериалами.</p>
