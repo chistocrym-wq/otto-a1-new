@@ -1,0 +1,1 @@
+Lesen stages 22–26 checkpoint: bilingual explanations, neutral selection before checking, persistent per-part progress, no double counting, user-facing naming only.
