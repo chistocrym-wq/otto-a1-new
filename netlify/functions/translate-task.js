@@ -39,6 +39,28 @@ export default async (req) => {
       return json({ german: parsed.german, russian: parsed.russian, tip: parsed.tip });
     }
 
+    if (body.mode === 'explain-pair') {
+      const text = String(body.text || '').trim().slice(0, 1800);
+      if (!text) return json({ error: 'Нет текста для объяснения.' }, 400);
+      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+        method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini', temperature: 0,
+          messages: [
+            { role: 'system', content: 'Дан короткий комментарий к заданию Goethe A1. Верни его в двух версиях: простое естественное немецкое объяснение уровня A1/A2 и точный понятный русский перевод. Не добавляй новых фактов и не меняй правильный ответ.' },
+            { role: 'user', content: text },
+          ],
+          response_format: { type:'json_schema', json_schema:{ name:'bilingual_explanation', strict:true, schema:{ type:'object', additionalProperties:false, required:['de','ru'], properties:{de:{type:'string'},ru:{type:'string'}} } } },
+        }),
+      });
+      if (!response.ok) throw new Error(`explain pair failed: ${response.status}`);
+      const payload = await response.json();
+      const content = payload.choices?.[0]?.message?.content;
+      if (!content) throw new Error('empty explanation');
+      const parsed = JSON.parse(content);
+      return json({de:String(parsed.de||''),ru:String(parsed.ru||'')});
+    }
+
     const parts = Array.isArray(body.parts)
       ? body.parts.map((value) => String(value || '').trim()).filter(Boolean).slice(0, MAX_PARTS)
       : [];
