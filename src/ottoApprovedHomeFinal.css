@@ -74,6 +74,18 @@
   filter: saturate(1.02) contrast(1.02) drop-shadow(0 9px 12px rgba(35,50,48,.08)) !important;
 }
 
+/* Recommendation copy can take the extra line it needs without crossing the card boundary. */
+.otto-approved-recommendation {
+  height: auto !important;
+  min-height: 59px !important;
+  max-height: none !important;
+}
+
+.otto-approved-training-head {
+  height: auto !important;
+  min-height: 29px !important;
+}
+
 /* Training card must follow the actual number of rows (5 / 15 / 30 minutes).
    No fixed empty reserved space after a shorter plan. */
 .otto-approved-training {
