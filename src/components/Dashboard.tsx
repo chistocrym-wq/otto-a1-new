@@ -6,22 +6,16 @@ import {
   ChevronRight,
   Clock3,
   Headphones,
-  HelpCircle,
   Lightbulb,
   MessageCircleMore,
-  Newspaper,
   PenLine,
-  Share2,
   Sparkles,
   Target,
   Trophy,
-  UserRound,
 } from 'lucide-react';
-import { OttoScene } from '@/components/OttoScene';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import {
   buildDailyPlan,
-  getGreeting,
   getReadiness,
   getTodayActivity,
   MODULE_META,
@@ -63,12 +57,8 @@ export function Dashboard({
   onOpenInstructions,
   onOpenExamGuide,
   onOpenMockExam,
-  onOpenNews,
-  onOpenAccount,
   onOpenSettings,
   onOpenReadiness,
-  onShare,
-  onOpenSupport,
   progress,
   activity,
 }: DashboardProps) {
@@ -95,16 +85,21 @@ export function Dashboard({
     <div className="otto-premium-dashboard animate-fade-in">
       <section className="otto-premium-hero" aria-labelledby="otto-home-title">
         <div className="otto-premium-hero-copy">
-          <p className="otto-premium-greeting">{getGreeting()}</p>
-          <div className="otto-premium-brand" aria-label="Тренажёр Отто">
+          <h1 id="otto-home-title" className="otto-premium-brand">
             <span>Тренажёр Отто</span>
             <i aria-hidden="true" />
-          </div>
-          <h1 id="otto-home-title">Мой путь к сертификату A1</h1>
+          </h1>
           <p className="otto-premium-lead">Отто ведёт вас по шагам и сам подсказывает, что лучше потренировать сегодня.</p>
         </div>
         <div className="otto-premium-bust" aria-hidden="true">
-          <OttoScene scene="home" className="otto-premium-bust-image" eager />
+          <img
+            src="/otto/otto-home-documents.webp?v=2"
+            alt=""
+            className="otto-premium-bust-image"
+            draggable={false}
+            loading="eager"
+            decoding="async"
+          />
         </div>
         <div className="otto-premium-hero-halo" aria-hidden="true" />
       </section>
@@ -269,13 +264,6 @@ export function Dashboard({
           <button type="button" onClick={onOpenExamGuide}><BookOpen /><span>Справочник по экзамену</span></button>
         </div>
       </details>
-
-      <section className="otto-premium-quick-links" aria-label="Дополнительные действия">
-        <button type="button" onClick={onOpenAccount}><UserRound /><span>Кабинет</span></button>
-        <button type="button" onClick={onOpenSupport}><HelpCircle /><span>Поддержка</span></button>
-        <button type="button" onClick={onShare}><Share2 /><span>Поделиться</span></button>
-        <button type="button" onClick={onOpenNews}><Newspaper /><span>Новости</span></button>
-      </section>
 
       <button type="button" onClick={onOpenSettings} className="sr-only">Настройки</button>
     </div>
