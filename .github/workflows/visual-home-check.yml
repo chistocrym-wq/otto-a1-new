@@ -6,7 +6,7 @@ on:
       - preview/home-screen-react-v2
 
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
@@ -17,23 +17,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect OTTO assets
-        run: |
-          file public/otto/otto-home-documents.webp || true
-          identify public/otto/otto-home-documents.webp || true
-          file public/otto/otto-home-documents-hq.webp || true
-          identify public/otto/otto-home-documents-hq.webp || true
-      - name: Upload OTTO source assets
-        uses: actions/upload-artifact@v4
         with:
-          name: otto-hero-assets
-          path: |
-            public/otto/otto-home-documents.webp
-            public/otto/otto-home-documents-hq.webp
-          if-no-files-found: warn
-          retention-days: 1
+          ref: preview/home-screen-react-v2
+      - name: Apply validated OTTO asset once
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          dashboard = Path('src/components/Dashboard.tsx')
+          text = dashboard.read_text(encoding='utf-8')
+          text = text.replace('/otto/otto-home-documents-hq.webp?v=1', '/otto/otto-home-documents.webp?v=2')
+          text = text.replace('width={1122} height={1402}', 'width={400} height={500}')
+          dashboard.write_text(text, encoding='utf-8')
+
+          css = Path('src/ottoHomeReact.css')
+          text = css.read_text(encoding='utf-8')
+          marker = '  image-rendering: auto;\n'
+          if 'mix-blend-mode: multiply;' not in text:
+              text = text.replace(marker, marker + '  mix-blend-mode: multiply;\n')
+          css.write_text(text, encoding='utf-8')
+          PY
+          rm -f public/otto/otto-home-documents-hq.webp
+          if ! git diff --quiet; then
+            git config user.name "otto-preview-check"
+            git config user.email "actions@github.com"
+            git add src/components/Dashboard.tsx src/ottoHomeReact.css public/otto/otto-home-documents-hq.webp
+            git commit -m "Use validated OTTO hero asset"
+            git push origin HEAD:preview/home-screen-react-v2
+          fi
       - name: Wait for Netlify preview
-        run: sleep 35
+        run: sleep 40
       - name: Capture approved viewport
         run: |
           google-chrome --headless=new --no-sandbox --disable-dev-shm-usage \
