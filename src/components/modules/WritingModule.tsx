@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -30,7 +30,7 @@ type WritingMode = 'guided' | 'coach' | 'solo';
 
 interface AiPoint {
   point: string;
-  earned: number;
+  earned: 0 | 1.5 | 3;
   status: 'erfuellt' | 'teilweise' | 'fehlt';
   commentRu: string;
 }
@@ -41,7 +41,7 @@ interface AiFeedback {
   max: number;
   wordCount: number;
   contentPoints: AiPoint[];
-  communication: { earned: number; commentRu: string };
+  communication: { earned: 0 | 0.5 | 1; commentRu: string };
   feedbackRu: string;
   feedbackDe: string;
   corrections: Array<{ original: string; corrected: string; explanation: string }>;
@@ -54,7 +54,9 @@ interface ExamplePayload {
 }
 
 function norm(value: string) {
-  return value.toLocaleLowerCase('de-DE').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9@]+/g, ' ').trim();
+  return value.toLocaleLowerCase('de-DE')
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9@]+/g, ' ').trim();
 }
 
 function matches(a: string, b: string) {
@@ -64,7 +66,7 @@ function matches(a: string, b: string) {
 }
 
 function countWords(value: string) {
-  return value.trim().split(/\s+/).filter(Boolean).length;
+  return value.trim().split(/\s+/u).filter(Boolean).length;
 }
 
 function getPathStage() {
@@ -84,17 +86,17 @@ const MODE_META: Record<WritingMode, { step: string; title: string; description:
   guided: {
     step: 'Этап 1',
     title: 'Учусь на примере',
-    description: 'Разберите задание, посмотрите короткий пример, закройте его и попробуйте воспроизвести письмо самостоятельно.',
+    description: 'Сначала разберите пример именно к этому заданию, затем закройте его и напишите письмо самостоятельно.',
   },
   coach: {
     step: 'Этап 2',
     title: 'Пишу вместе с Отто',
-    description: 'Пишите сами, но используйте точечные подсказки, если застряли. После отправки Отто разберёт ошибки.',
+    description: 'Пишите сами и открывайте только короткие подсказки, если застряли. После отправки Отто разберёт результат.',
   },
   solo: {
     step: 'Этап 3',
     title: 'Пишу сам',
-    description: 'Без готового примера и без подсказок. Только задание, ваш текст и разбор после завершения.',
+    description: 'Без готового примера и подсказок: только задание, ваш текст и проверка после завершения.',
   },
 };
 
@@ -102,7 +104,6 @@ export function WritingModule({ onBack, onComplete }: Props) {
   const [screen, setScreen] = useState<Screen>('home');
   const [pathStage, setStage] = useState(getPathStage);
 
-  const openMode = (mode: WritingMode) => setScreen(mode);
   const finishStage = (mode: WritingMode) => {
     const nextStage: 1 | 2 | 3 = mode === 'guided' ? 2 : 3;
     if (nextStage > pathStage) {
@@ -112,23 +113,28 @@ export function WritingModule({ onBack, onComplete }: Props) {
   };
 
   if (screen === 'home') {
-    return <Home onBack={onBack} onOpen={setScreen} onOpenMode={openMode} pathStage={pathStage} />;
+    return <Home onBack={onBack} onOpen={setScreen} pathStage={pathStage} />;
   }
   if (screen === 'teil1') {
     return <Teil1 onBack={() => setScreen('home')} onComplete={onComplete} />;
   }
-  return <Teil2 mode={screen} onBack={() => setScreen('home')} onComplete={onComplete} onStageDone={() => finishStage(screen)} />;
+  return (
+    <Teil2
+      mode={screen}
+      onBack={() => setScreen('home')}
+      onComplete={onComplete}
+      onStageDone={() => finishStage(screen)}
+    />
+  );
 }
 
 function Home({
   onBack,
   onOpen,
-  onOpenMode,
   pathStage,
 }: {
   onBack: () => void;
   onOpen: (screen: Screen) => void;
-  onOpenMode: (mode: WritingMode) => void;
   pathStage: number;
 }) {
   const recommended: WritingMode = pathStage === 1 ? 'guided' : pathStage === 2 ? 'coach' : 'solo';
@@ -147,18 +153,12 @@ function Home({
             <p className="mt-1 text-sm leading-6 text-slate-600">{meta.description}</p>
           </div>
         </div>
-        <button type="button" onClick={() => onOpenMode(recommended)} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-black text-white">Продолжить Schreiben <ArrowRight className="h-4 w-4" /></button>
+        <button type="button" onClick={() => onOpen(recommended)} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-black text-white">
+          Продолжить Schreiben <ArrowRight className="h-4 w-4" />
+        </button>
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 p-4">
-        <p className="text-xs font-black uppercase tracking-[.14em] text-amber-800">Перед первым письмом · 2 минуты</p>
-        <h2 className="mt-1 font-black text-slate-950">Как устроено короткое письмо A1</h2>
-        <div className="mt-3 grid gap-2 text-sm text-slate-700">
-          <p className="rounded-xl bg-white/80 px-3 py-2"><b>1.</b> Anrede — обращение.</p>
-          <p className="rounded-xl bg-white/80 px-3 py-2"><b>2.</b> Ответьте на все три пункта задания простыми фразами.</p>
-          <p className="rounded-xl bg-white/80 px-3 py-2"><b>3.</b> Gruß — уместное прощание.</p>
-        </div>
-      </section>
+      <LetterFormula />
 
       <section className="mt-6">
         <h2 className="text-xl font-black text-slate-950">Путь Schreiben</h2>
@@ -167,28 +167,61 @@ function Home({
             const item = MODE_META[mode];
             const unlocked = index + 1 <= pathStage;
             return (
-              <button key={mode} type="button" onClick={() => onOpenMode(mode)} className={cn('w-full rounded-2xl border bg-white p-4 text-left shadow-sm', mode === recommended ? 'border-teal-300 ring-2 ring-teal-100' : 'border-slate-200')}>
+              <button
+                key={mode}
+                type="button"
+                onClick={() => onOpen(mode)}
+                className={cn('w-full rounded-2xl border bg-white p-4 text-left shadow-sm', mode === recommended ? 'border-teal-300 ring-2 ring-teal-100' : 'border-slate-200')}
+              >
                 <div className="flex items-start gap-3">
                   <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black', unlocked ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-500')}>{index + 1}</span>
-                  <span className="min-w-0 flex-1"><span className="text-xs font-black uppercase tracking-wider text-slate-400">{item.step}</span><strong className="mt-0.5 block text-base text-slate-950">{item.title}</strong><small className="mt-1 block text-sm leading-5 text-slate-500">{item.description}</small></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-400">{item.step}</span>
+                    <strong className="mt-0.5 block text-base text-slate-950">{item.title}</strong>
+                    <small className="mt-1 block text-sm leading-5 text-slate-500">{item.description}</small>
+                  </span>
                   <ArrowRight className="mt-2 h-4 w-4 shrink-0 text-slate-300" />
                 </div>
               </button>
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-slate-500">Этапы не блокируются: если хотите, можно сразу попробовать самостоятельный режим.</p>
+        <p className="mt-2 text-xs text-slate-500">Этапы не блокируются: при желании можно сразу перейти к самостоятельному режиму.</p>
       </section>
 
       <section className="mt-6">
         <h2 className="text-xl font-black text-slate-950">Экзаменационная часть</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <PartCard icon={FileText} title="Teil 1 · Formular" text="Прочитайте ситуацию и заполните 5 недостающих данных." onClick={() => onOpen('teil1')} />
-          <PartCard icon={PenLine} title="Teil 2 · Brief" text="Тренируйте письма по трём обязательным пунктам в любом из трёх режимов выше." onClick={() => onOpenMode(recommended)} />
+          <PartCard icon={PenLine} title="Teil 2 · Brief" text="Письмо по трём обязательным пунктам. Отто оценивает его по шкале Goethe 10 баллов." onClick={() => onOpen(recommended)} />
         </div>
       </section>
     </div>
   );
+}
+
+function LetterFormula() {
+  return (
+    <section className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 p-4 sm:p-5">
+      <p className="text-xs font-black uppercase tracking-[.14em] text-amber-800">Перед письмом · простая формула</p>
+      <h2 className="mt-1 text-lg font-black text-slate-950">Как устроено письмо A1</h2>
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-2xl bg-white/85 p-3">
+          <div className="flex gap-3"><StepNumber>1</StepNumber><div className="min-w-0"><strong className="block text-slate-950">Обращение</strong><p className="mt-1 text-sm leading-5 text-slate-600">Кому пишем? <b>Официально:</b> Sehr geehrte Damen und Herren / Sehr geehrte Frau … · <b>неофициально:</b> Liebe … / Lieber …</p></div></div>
+        </div>
+        <div className="rounded-2xl bg-white/85 p-3">
+          <div className="flex gap-3"><StepNumber>2</StepNumber><div className="min-w-0"><strong className="block text-slate-950">Три пункта задания</strong><p className="mt-1 text-sm leading-5 text-slate-600">Ответьте на <b>каждый</b> из трёх вопросов/пунктов. Простых понятных фраз A1 достаточно.</p></div></div>
+        </div>
+        <div className="rounded-2xl bg-white/85 p-3">
+          <div className="flex gap-3"><StepNumber>3</StepNumber><div className="min-w-0"><strong className="block text-slate-950">Прощание</strong><p className="mt-1 text-sm leading-5 text-slate-600"><b>Официально:</b> Mit freundlichen Grüßen · <b>неофициально:</b> Viele Grüße / Liebe Grüße.</p></div></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StepNumber({ children }: { children: ReactNode }) {
+  return <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 font-black text-amber-900">{children}</span>;
 }
 
 function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score: number, total: number) => void }) {
@@ -197,6 +230,8 @@ function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score:
   const [result, setResult] = useState<Record<number, boolean> | null>(null);
   const task = schreibenTeil1Tasks[index];
   const editable = task.rows.map((row, rowIndex) => ({ row, rowIndex })).filter(({ row }) => Boolean(row.answer));
+  const resultScore = result ? Object.values(result).filter(Boolean).length : null;
+  const total = editable.length || 5;
 
   const check = () => {
     const next: Record<number, boolean> = {};
@@ -205,14 +240,10 @@ function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score:
   };
 
   const next = () => {
-    const score = result ? Object.values(result).filter(Boolean).length : 0;
-    onComplete(score, editable.length || 5);
+    const score = resultScore ?? 0;
+    onComplete(score, total);
     if (index === schreibenTeil1Tasks.length - 1) {
-      setIndex(0);
-      setDraft({});
-      setResult(null);
-      onBack();
-      return;
+      setIndex(0); setDraft({}); setResult(null); onBack(); return;
     }
     setIndex((value) => value + 1);
     setDraft({});
@@ -223,32 +254,61 @@ function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score:
   return (
     <div className="animate-fade-in pb-8">
       <Header onBack={onBack} title="Schreiben · Teil 1" subtitle={`Задание ${index + 1} из ${schreibenTeil1Tasks.length}`} />
+
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="mb-3 flex items-start justify-between gap-3">
-          <div><h2 className="text-xl font-black text-slate-950">{task.title}</h2><p className="mt-2 text-sm leading-6 text-slate-700"><HoverTranslateText text={task.scenario} /></p></div>
+          <div className="min-w-0"><h2 className="text-xl font-black text-slate-950">{task.title}</h2><p className="mt-2 text-sm leading-6 text-slate-700"><HoverTranslateText text={task.scenario} /></p></div>
           <CompactTranslationEye parts={[task.scenario, task.instruction]} />
         </div>
         <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm font-semibold text-slate-700"><HoverTranslateText text={task.instruction} /></p>
       </section>
+
       <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="divide-y divide-slate-100">
           {task.rows.map((row, rowIndex) => (
-            <div key={`${row.label}-${rowIndex}`} className="grid grid-cols-[minmax(100px,.8fr)_minmax(0,1.2fr)] items-center gap-3 px-4 py-3 sm:grid-cols-[220px_1fr]">
-              <label className="text-sm font-semibold text-slate-700">{row.label}</label>
+            <div key={`${row.label}-${rowIndex}`} className="grid grid-cols-[minmax(92px,.8fr)_minmax(0,1.2fr)] items-center gap-3 px-4 py-3 sm:grid-cols-[220px_1fr]">
+              <label className="min-w-0 break-words text-sm font-semibold text-slate-700">{row.label}</label>
               {row.answer ? (
-                <div>
-                  <input value={draft[rowIndex] || ''} onChange={(event) => { setDraft((value) => ({ ...value, [rowIndex]: event.target.value })); setResult(null); }} disabled={Boolean(result)} className={cn('min-h-11 w-full rounded-xl border px-3 py-2 outline-none', result?.[rowIndex] === true && 'border-emerald-400 bg-emerald-50', result?.[rowIndex] === false && 'border-rose-400 bg-rose-50')} />
-                  {result?.[rowIndex] === false && <p className="mt-1 text-xs text-rose-700">Правильно: {row.answer}</p>}
+                <div className="min-w-0">
+                  <input
+                    value={draft[rowIndex] || ''}
+                    onChange={(event) => { setDraft((value) => ({ ...value, [rowIndex]: event.target.value })); setResult(null); }}
+                    disabled={Boolean(result)}
+                    className={cn('min-h-11 w-full min-w-0 rounded-xl border px-3 py-2 outline-none', result?.[rowIndex] === true && 'border-emerald-400 bg-emerald-50', result?.[rowIndex] === false && 'border-rose-400 bg-rose-50')}
+                  />
+                  {result?.[rowIndex] === false && <p className="mt-1 break-words text-xs text-rose-700">Правильно: {row.answer}</p>}
                 </div>
-              ) : <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{row.value}</div>}
+              ) : <div className="min-w-0 break-words rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{row.value}</div>}
             </div>
           ))}
         </div>
       </section>
+
+      {result && resultScore !== null && <FormResult score={resultScore} total={total} />}
+
       <div className="mt-5 flex justify-end">
-        {!result ? <button onClick={check} disabled={editable.some(({ rowIndex }) => !(draft[rowIndex] || '').trim())} className="min-h-12 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">Проверить</button> : <button onClick={next} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white">{index === schreibenTeil1Tasks.length - 1 ? 'Завершить' : 'Следующее'}<ArrowRight className="h-4 w-4" /></button>}
+        {!result ? (
+          <button onClick={check} disabled={editable.some(({ rowIndex }) => !(draft[rowIndex] || '').trim())} className="min-h-12 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">Проверить</button>
+        ) : (
+          <button onClick={next} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white">{index === schreibenTeil1Tasks.length - 1 ? 'Завершить' : 'Следующее'}<ArrowRight className="h-4 w-4" /></button>
+        )}
       </div>
     </div>
+  );
+}
+
+function FormResult({ score, total }: { score: number; total: number }) {
+  let reaction = 'Есть правильные поля. Проверьте остальные ещё раз по исходному тексту.';
+  if (score === total) reaction = 'Отлично. Всё заполнено правильно.';
+  else if (score === 3 && total === 5) reaction = 'Хорошо. Но два поля стоит проверить внимательнее.';
+  else if (score === 4 && total === 5) reaction = 'Очень хорошо. Проверьте ещё одно поле.';
+  else if (score === 0) reaction = 'Попробуйте ещё раз. Сначала внимательно прочитайте исходный текст.';
+
+  return (
+    <section className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+      <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-teal-700">Результат Formular</p><strong className="mt-1 block text-3xl font-black text-slate-950">{score}/{total}</strong></div><CheckCircle2 className="h-8 w-8 text-teal-700" /></div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{reaction}</p>
+    </section>
   );
 }
 
@@ -271,13 +331,14 @@ function Teil2({
   const [feedback, setFeedback] = useState<AiFeedback | null>(null);
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
-  const [example, setExample] = useState<ExamplePayload | null>(null);
+  const [examples, setExamples] = useState<Record<string, ExamplePayload>>({});
   const [exampleLoading, setExampleLoading] = useState(false);
   const [exampleClosed, setExampleClosed] = useState(mode !== 'guided');
   const fileRef = useRef<HTMLInputElement>(null);
   const task = schreibenTeil2Tasks[index];
   const text = drafts[task.id] || '';
   const meta = MODE_META[mode];
+  const example = examples[task.id] || null;
 
   const setText = (value: string) => {
     setDrafts((draft) => ({ ...draft, [task.id]: value }));
@@ -297,7 +358,9 @@ function Teil2({
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Не удалось подготовить пример.');
-      setExample(payload as ExamplePayload);
+      const prepared = payload as ExamplePayload;
+      if (!prepared.example?.trim()) throw new Error('Пример не получен. Попробуйте ещё раз.');
+      setExamples((value) => ({ ...value, [task.id]: prepared }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Не удалось подготовить пример.');
     } finally {
@@ -341,19 +404,15 @@ function Teil2({
 
   const next = () => {
     if (!feedback) return;
-    onComplete(feedback.score, 100);
+    onComplete(feedback.earned, feedback.max);
     onStageDone();
-    if (index === schreibenTeil2Tasks.length - 1) {
-      onBack();
-      return;
-    }
+    if (index === schreibenTeil2Tasks.length - 1) { onBack(); return; }
     setIndex((value) => value + 1);
     setHint(false);
     setFeedback(null);
     setError('');
     setImage('');
     setImageName('');
-    setExample(null);
     setExampleClosed(mode !== 'guided');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -363,7 +422,6 @@ function Teil2({
   return (
     <div className="animate-fade-in pb-8">
       <Header onBack={onBack} title={`Schreiben · ${meta.title}`} subtitle={`Письмо ${index + 1} из ${schreibenTeil2Tasks.length}`} />
-
       <div className="mb-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-3 text-sm leading-6 text-slate-700"><b className="text-teal-800">{meta.step}.</b> {meta.description}</div>
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -371,12 +429,15 @@ function Teil2({
           <div className="min-w-0"><p className="text-xs font-black uppercase tracking-wider text-amber-800">Aufgabe {task.number}</p><p className="mt-2 text-[15px] leading-7 text-slate-900"><HoverTranslateText text={task.situation} /></p></div>
           {mode !== 'solo' && <CompactTranslationEye parts={[task.situation, ...task.points]} />}
         </div>
-        <ul className="mt-4 space-y-2">{task.points.map((point, pointIndex) => <li key={point} className="rounded-xl bg-white/80 px-3 py-2 text-sm font-semibold text-slate-800"><HoverTranslateText text={`${pointIndex + 1}. ${point}`} /></li>)}</ul>
+        <div className="mt-4 rounded-xl border border-amber-200/70 bg-white/60 p-3">
+          <p className="text-xs font-black uppercase tracking-wider text-amber-800">Обязательно ответить на все 3 пункта</p>
+          <ul className="mt-2 space-y-2">{task.points.map((point, pointIndex) => <li key={point} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-800"><HoverTranslateText text={`${pointIndex + 1}. ${point}`} /></li>)}</ul>
+        </div>
       </section>
 
       {mode === 'guided' && !exampleClosed && (
         <section className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
-          <div className="flex items-start gap-3"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" /><div><p className="text-xs font-black uppercase tracking-wider text-sky-800">Посмотрел → закрыл → попробовал сам</p><h2 className="mt-1 text-lg font-black text-slate-950">Сначала разберите хороший пример</h2><p className="mt-1 text-sm leading-6 text-slate-600">На слова в примере можно нажимать: увидите перевод и сможете услышать произношение.</p></div></div>
+          <div className="flex items-start gap-3"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" /><div><p className="text-xs font-black uppercase tracking-wider text-sky-800">Пример именно к этому заданию</p><h2 className="mt-1 text-lg font-black text-slate-950">Сначала разберите хороший пример</h2><p className="mt-1 text-sm leading-6 text-slate-600">После просмотра закройте его и напишите свой вариант.</p></div></div>
           {!example ? (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               <button type="button" onClick={loadExample} disabled={exampleLoading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-800 px-4 font-bold text-white disabled:opacity-50">{exampleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{exampleLoading ? 'Отто готовит пример…' : 'Показать пример'}</button>
@@ -385,7 +446,7 @@ function Teil2({
           ) : (
             <div className="mt-4">
               <div className="whitespace-pre-wrap rounded-2xl bg-white p-4 text-[15px] leading-7 text-slate-900 shadow-sm"><HoverTranslateText text={example.example} /></div>
-              <p className="mt-2 text-xs leading-5 text-sky-900">💡 {example.noteRu}</p>
+              {example.noteRu && <p className="mt-2 text-xs leading-5 text-sky-900">💡 {example.noteRu}</p>}
               <button type="button" onClick={() => setExampleClosed(true)} className="mt-3 min-h-11 w-full rounded-xl bg-slate-950 px-4 font-black text-white">Закрыть пример и написать самой</button>
             </div>
           )}
@@ -408,12 +469,11 @@ function Teil2({
           </div>
           {imageName && <div className="mb-3 flex items-center justify-between rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800"><span className="truncate">Фото: {imageName}</span><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Удалить фото"><X className="h-4 w-4" /></button></div>}
           <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={mode === 'solo' ? 'Напишите письмо без подсказок…' : 'Теперь попробуйте написать письмо сами…'} className="min-h-[210px] w-full resize-y rounded-xl border border-slate-300 p-4 text-base leading-7 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
-          <p className="mt-2 text-xs text-slate-500">Отто проверит выполнение всех трёх пунктов, структуру, понятность и реальные ошибки уровня A1.</p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">Отто проверит каждый из трёх пунктов по шкале 3 / 1,5 / 0 и оформление письма по шкале 1 / 0,5 / 0.</p>
         </section>
       )}
 
       {error && <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
-
       {canWrite && !feedback && <div className="mt-5 flex justify-end"><button type="button" onClick={check} disabled={loading || (!text.trim() && !image)} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{loading ? 'Отто проверяет…' : 'Проверить с Отто'}</button></div>}
 
       {feedback && <Feedback data={feedback} />}
@@ -431,25 +491,27 @@ function Feedback({ data }: { data: AiFeedback }) {
 
   return (
     <section className="mt-5 space-y-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
-      <div className="flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-teal-800">Проверка Отто</p><h3 className="text-2xl font-black text-slate-950">{data.score}%</h3></div><CheckCircle2 className="h-8 w-8 text-teal-700" /></div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><p className="text-xs font-black uppercase tracking-wider text-teal-800">Результат по шкале Goethe</p><h3 className="mt-1 text-3xl font-black text-slate-950">{formatPoints(data.earned)}/{data.max}</h3><p className="mt-1 text-xs text-slate-500">{data.score}% — только пересчёт этих же баллов для внутренней статистики.</p></div>
+        <CheckCircle2 className="h-8 w-8 text-teal-700" />
+      </div>
 
       {data.recognizedText && <div className="rounded-xl bg-white p-3 text-sm"><b>Распознано с фото:</b><p className="mt-1 whitespace-pre-wrap text-slate-700">{data.recognizedText}</p></div>}
 
-      <div className="rounded-2xl bg-white p-4">
-        <h4 className="font-black text-emerald-800">Хорошо</h4>
-        <div className="mt-2 space-y-2 text-sm text-slate-700">
-          {goodPoints.map((point, index) => <p key={`${point.point}-${index}`}>✓ {point.point}: {point.commentRu}</p>)}
-          {data.communication?.earned >= 0.5 && <p>✓ Структура письма: {data.communication.commentRu}</p>}
-          {!goodPoints.length && data.communication?.earned < 0.5 && <p>Сначала закрепим базовую структуру — это нормально для тренировки.</p>}
-        </div>
+      <div className="grid gap-2">
+        {data.contentPoints.map((point, index) => <div key={`${point.point}-${index}`} className="rounded-xl bg-white p-3"><div className="flex items-start justify-between gap-3"><strong className="min-w-0 text-sm text-slate-900">Пункт {index + 1}: {point.point}</strong><span className={cn('shrink-0 rounded-full px-2 py-1 text-xs font-black', point.earned === 3 ? 'bg-emerald-100 text-emerald-800' : point.earned === 1.5 ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-800')}>{formatPoints(point.earned)}/3</span></div><p className="mt-1 text-sm leading-5 text-slate-600">{point.commentRu}</p></div>)}
+        <div className="rounded-xl bg-white p-3"><div className="flex items-start justify-between gap-3"><strong className="text-sm text-slate-900">Оформление письма</strong><span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-700">{formatPoints(data.communication.earned)}/1</span></div><p className="mt-1 text-sm leading-5 text-slate-600">{data.communication.commentRu}</p></div>
       </div>
 
-      {(problemPoints.length > 0 || data.corrections?.length > 0 || data.communication?.earned < 1) && (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl bg-white p-4"><h4 className="font-black text-emerald-800">Сильные стороны</h4>{goodPoints.length ? <div className="mt-2 space-y-2 text-sm leading-5 text-slate-700">{goodPoints.map((point, index) => <p key={index}>✓ {point.commentRu}</p>)}</div> : <p className="mt-2 text-sm text-slate-500">Сначала закрепим выполнение пунктов задания.</p>}</div>
+        <div className="rounded-2xl bg-white p-4"><h4 className="font-black text-amber-800">Что нужно исправить</h4>{problemPoints.length ? <div className="mt-2 space-y-2 text-sm leading-5 text-slate-700">{problemPoints.map((point, index) => <p key={index}>• {point.commentRu}</p>)}</div> : <p className="mt-2 text-sm text-slate-500">Все три содержательных пункта выполнены.</p>}</div>
+      </div>
+
+      {data.corrections?.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <h4 className="flex items-center gap-2 font-black text-amber-900"><CircleAlert className="h-4 w-4" />Исправим</h4>
-          {problemPoints.map((point, index) => <p key={`${point.point}-${index}`} className="mt-2 text-sm leading-6 text-slate-700">• {point.point}: {point.commentRu}</p>)}
-          {data.communication?.earned < 1 && <p className="mt-2 text-sm leading-6 text-slate-700">• Структура: {data.communication.commentRu}</p>}
-          {data.corrections?.map((correction, index) => (
+          <h4 className="flex items-center gap-2 font-black text-amber-900"><CircleAlert className="h-4 w-4" />Реальные языковые ошибки</h4>
+          {data.corrections.map((correction, index) => (
             <div key={`${correction.original}-${index}`} className="mt-3 rounded-xl bg-white p-3">
               <p className="text-sm"><span className="text-rose-700 line-through">{correction.original}</span></p>
               <p className="mt-1 text-xs leading-5 text-slate-500">{correction.explanation}</p>
@@ -457,14 +519,19 @@ function Feedback({ data }: { data: AiFeedback }) {
               {fixChecked && <div className="mt-2"><p className={cn('text-xs font-bold', matches(fixes[index] || '', correction.corrected) ? 'text-emerald-700' : 'text-amber-800')}>{matches(fixes[index] || '', correction.corrected) ? '✓ Получилось' : 'Вариант Отто:'}</p><p className="mt-1 text-sm font-semibold text-emerald-700">{correction.corrected}</p></div>}
             </div>
           ))}
-          {data.corrections?.length > 0 && !fixing && <button type="button" onClick={() => setFixing(true)} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white">Попробовать исправить самой</button>}
-          {data.corrections?.length > 0 && fixing && !fixChecked && <button type="button" onClick={() => setFixChecked(true)} disabled={data.corrections.some((_, index) => !(fixes[index] || '').trim())} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white disabled:opacity-40">Проверить мои исправления</button>}
+          {!fixing && <button type="button" onClick={() => setFixing(true)} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white">Попробовать исправить самой</button>}
+          {fixing && !fixChecked && <button type="button" onClick={() => setFixChecked(true)} disabled={data.corrections.some((_, index) => !(fixes[index] || '').trim())} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white disabled:opacity-40">Проверить мои исправления</button>}
         </div>
       )}
 
-      <div className="rounded-xl bg-white p-3 text-sm leading-6 text-slate-700"><b>Подсказка Отто:</b> {data.feedbackRu}</div>
+      <div className="rounded-xl bg-white p-3 text-sm leading-6 text-slate-700"><b>Коротко от Отто:</b> {data.feedbackRu}</div>
+      {data.feedbackDe && <p className="text-sm leading-6 text-teal-900"><b>Полезная фраза:</b> <HoverTranslateText text={data.feedbackDe} /></p>}
     </section>
   );
+}
+
+function formatPoints(value: number) {
+  return Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
 }
 
 function hintFor(point: string) {
