@@ -1,185 +1,30 @@
 import type { ActivityEntry, ModuleId, ModuleProgress, Progress } from '@/types';
 
-export const MODULE_ORDER: ModuleId[] = ['schreiben', 'sprechen', 'horen', 'lesen'];
-
-export const MODULE_META: Record<ModuleId, { title: string; label: string; icon: string }> = {
-  schreiben: { title: 'Schreiben', label: 'Письмо', icon: '✍️' },
-  sprechen: { title: 'Sprechen', label: 'Говорение', icon: '🗣️' },
-  lesen: { title: 'Lesen', label: 'Чтение', icon: '📖' },
-  horen: { title: 'Hören', label: 'Аудирование', icon: '👂' },
-};
-
-export interface ModuleReadiness {
-  id: ModuleId;
-  score: number;
-  accuracy: number;
-  recent: number;
-  stability: number;
-  attempts: number;
-  answered: number;
-  status: 'ready' | 'almost' | 'train';
-  note: string;
+export const MODULE_ORDER:ModuleId[]=['schreiben','sprechen','horen','lesen'];
+export const MODULE_META:Record<ModuleId,{title:string;label:string;icon:string}>={schreiben:{title:'Schreiben',label:'Письмо',icon:'✍️'},sprechen:{title:'Sprechen',label:'Говорение',icon:'🗣️'},lesen:{title:'Lesen',label:'Чтение',icon:'📖'},horen:{title:'Hören',label:'Аудирование',icon:'👂'}};
+export interface ModuleReadiness{id:ModuleId;score:number;accuracy:number;recent:number;stability:number;recency:number;attempts:number;answered:number;dataSufficient:boolean;evidence:string;status:'ready'|'almost'|'train';note:string}
+export interface ReadinessSummary{overall:number|null;dataSufficient:boolean;evidenceLabel:string;modules:Record<ModuleId,ModuleReadiness>;weakest:ModuleId;mockStatus:'early'|'try'|'recommended';mockLabel:string;recommendation:string}
+export interface PlanItem{module:ModuleId;title:string;detail:string;minutes:number;reason:string}
+const MIN_ATTEMPTS=3,MIN_ANSWERED=8,RECENT_WINDOW=5;
+function clamp(v:number,min=0,max=100){return Math.max(min,Math.min(max,v))}function avg(v:number[]){return v.length?v.reduce((s,x)=>s+x,0)/v.length:0}function sd(v:number[]){if(v.length<2)return 100;const a=avg(v);return Math.sqrt(avg(v.map(x=>(x-a)**2)))}
+function recentScores(item?:ModuleProgress){const stored=item?.recentScores?.filter(Number.isFinite)??[];if(stored.length)return stored.slice(-RECENT_WINDOW);if(item?.attempts&&Number.isFinite(item.lastScore))return[item.lastScore];return[]}
+function recencyFor(id:ModuleId,activity:ActivityEntry[]){const last=activity.filter(x=>x.module===id).map(x=>new Date(x.at).getTime()).filter(Number.isFinite).sort((a,b)=>b-a)[0];if(!last)return 0;const days=(Date.now()-last)/(24*60*60*1000);return days<=7?100:days<=21?80:days<=45?60:days<=90?40:20}
+export function getModuleReadiness(id:ModuleId,item?:ModuleProgress,activity:ActivityEntry[]=[]):ModuleReadiness{
+ const attempts=item?.attempts??0,answered=item?.answered??item?.completed??0,correct=item?.correct??0,accuracy=answered>0?clamp(Math.round(correct/answered*100)):0,scores=recentScores(item),recent=scores.length?Math.round(avg(scores)):accuracy,recency=recencyFor(id,activity),stability=scores.length>=3?clamp(Math.round(100-sd(scores)*2.1)):Math.min(55,scores.length*18),dataSufficient=attempts>=MIN_ATTEMPTS&&answered>=MIN_ANSWERED&&scores.length>=3;
+ const raw=recent*.38+accuracy*.30+stability*.17+recency*.15,confidence=Math.min(1,Math.min(attempts/MIN_ATTEMPTS,answered/MIN_ANSWERED,scores.length/3)),score=clamp(Math.round(raw*(.65+.35*confidence)));
+ const status:ModuleReadiness['status']=dataSufficient?(score>=80?'ready':score>=65?'almost':'train'):'train';
+ const evidence=!attempts?'Нет измеренных попыток':!dataSufficient?`Нужно ещё данных: ${Math.min(attempts,MIN_ATTEMPTS)}/${MIN_ATTEMPTS} попыток, ${Math.min(answered,MIN_ANSWERED)}/${MIN_ANSWERED} ответов, ${Math.min(scores.length,3)}/3 последних результатов`:`Данных достаточно: ${attempts} попыток, ${answered} ответов`;
+ const note=!dataSufficient?'Пока не называем этот навык готовым: данных ещё недостаточно.':status==='ready'?'Результат повторяется, достаточно свежий и устойчивый.':status==='almost'?'Основа есть, но нужна ещё устойчивость.':'Навык измерен и сейчас заметно слабее целевого уровня.';
+ return{id,score,accuracy,recent,stability,recency,attempts,answered,dataSufficient,evidence,status,note};
 }
-
-export interface ReadinessSummary {
-  overall: number;
-  modules: Record<ModuleId, ModuleReadiness>;
-  weakest: ModuleId;
-  mockStatus: 'early' | 'try' | 'recommended';
-  mockLabel: string;
-  recommendation: string;
+export function getReadiness(progress:Progress,activity:ActivityEntry[]=[]):ReadinessSummary{
+ const list=MODULE_ORDER.map(id=>getModuleReadiness(id,progress[id],activity)),modules=Object.fromEntries(list.map(x=>[x.id,x])) as Record<ModuleId,ModuleReadiness>,weakest=list.reduce((a,b)=>b.score<a.score?b:a).id,dataSufficient=list.every(x=>x.dataSufficient);
+ let overall:number|null=null;if(dataSufficient){const base=Math.round(avg(list.map(x=>x.score))),weak=Math.min(...list.map(x=>x.score));overall=weak<45?Math.min(base,59):weak<60?Math.min(base,69):base}
+ let mockStatus:ReadinessSummary['mockStatus']='early',mockLabel='Пока недостаточно данных';if(dataSufficient&&overall!==null){if(overall>=62) {mockStatus='try';mockLabel='Можно попробовать для диагностики'}if(overall>=78&&list.every(x=>x.score>=65)&&list.every(x=>x.recency>=60)&&list.every(x=>x.stability>=55)){mockStatus='recommended';mockLabel='Рекомендуем пройти пробник'}}
+ const w=MODULE_META[weakest],evidenceLabel=dataSufficient?'Данных достаточно для тренировочной оценки':`Недостаточно данных: измерено уверенно ${list.filter(x=>x.dataSufficient).length} из 4 навыков`,recommendation=list.every(x=>x.attempts===0)?'Начните со Schreiben, затем обязательно дайте Отто измерить остальные три навыка.':!dataSufficient?`Продолжайте реальные задания. Сейчас меньше всего доказательств по ${MODULE_META[list.filter(x=>!x.dataSufficient).sort((a,b)=>a.answered-b.answered)[0]?.id??weakest].title}.`:`Сегодня больше внимания ${w.title}: сейчас это самый слабый измеренный навык.`;
+ return{overall,dataSufficient,evidenceLabel,modules,weakest,mockStatus,mockLabel,recommendation};
 }
-
-export interface PlanItem {
-  module: ModuleId;
-  title: string;
-  detail: string;
-  minutes: number;
-  reason: string;
-}
-
-function clamp(value: number, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function average(values: number[]) {
-  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-}
-
-function standardDeviation(values: number[]) {
-  if (values.length < 2) return 0;
-  const avg = average(values);
-  return Math.sqrt(average(values.map((value) => (value - avg) ** 2)));
-}
-
-function getRecentScores(item?: ModuleProgress) {
-  const stored = item?.recentScores?.filter(Number.isFinite) ?? [];
-  if (stored.length) return stored.slice(-5);
-  if (item?.attempts && Number.isFinite(item.lastScore)) return [item.lastScore];
-  return [];
-}
-
-export function getModuleReadiness(id: ModuleId, item?: ModuleProgress): ModuleReadiness {
-  const attempts = item?.attempts ?? 0;
-  const answered = item?.answered ?? item?.completed ?? 0;
-  const correct = item?.correct ?? 0;
-  const accuracy = answered > 0 ? clamp(Math.round((correct / answered) * 100)) : 0;
-  const recentScores = getRecentScores(item);
-  const recent = recentScores.length ? Math.round(average(recentScores)) : accuracy;
-
-  if (!attempts) {
-    return {
-      id,
-      score: 0,
-      accuracy: 0,
-      recent: 0,
-      stability: 0,
-      attempts: 0,
-      answered,
-      status: 'train',
-      note: id === 'schreiben' ? 'Начнём отсюда: после Otto Start первым идёт Schreiben.' : 'Пока недостаточно данных.',
-    };
-  }
-
-  const stability = recentScores.length >= 3
-    ? clamp(Math.round(100 - standardDeviation(recentScores) * 2.2))
-    : Math.min(60, attempts * 20);
-  const confidence = Math.min(1, attempts / 4);
-  const raw = recent * 0.5 + accuracy * 0.3 + stability * 0.2;
-  const score = clamp(Math.round(raw * (0.7 + confidence * 0.3)));
-  const status = score >= 80 ? 'ready' : score >= 65 ? 'almost' : 'train';
-  const note = status === 'ready'
-    ? 'Результат уже достаточно уверенный и повторяется.'
-    : status === 'almost'
-      ? 'Почти готово — нужно ещё несколько устойчивых попыток.'
-      : 'Сейчас этому навыку полезно уделить больше внимания.';
-
-  return { id, score, accuracy, recent, stability, attempts, answered, status, note };
-}
-
-export function getReadiness(progress: Progress): ReadinessSummary {
-  const moduleList = MODULE_ORDER.map((id) => getModuleReadiness(id, progress[id]));
-  const modules = Object.fromEntries(moduleList.map((item) => [item.id, item])) as Record<ModuleId, ModuleReadiness>;
-  const overall = Math.round(average(moduleList.map((item) => item.score)));
-  const weakest = moduleList.reduce((a, b) => (b.score < a.score ? b : a)).id;
-  const allStarted = moduleList.every((item) => item.attempts > 0);
-  const noCriticalWeakness = moduleList.every((item) => item.score >= 65);
-  const stableEnough = moduleList.every((item) => item.attempts >= 3);
-
-  let mockStatus: ReadinessSummary['mockStatus'] = 'early';
-  let mockLabel = 'Пока рано';
-  if (allStarted && overall >= 60) {
-    mockStatus = 'try';
-    mockLabel = 'Можно попробовать';
-  }
-  if (overall >= 78 && noCriticalWeakness && stableEnough) {
-    mockStatus = 'recommended';
-    mockLabel = 'Рекомендуем пройти';
-  }
-
-  const weakMeta = MODULE_META[weakest];
-  const recommendation = overall === 0
-    ? 'Начните со Schreiben: письмо поможет сразу включить слова, фразы и структуру немецкого.'
-    : `Сегодня больше внимания ${weakMeta.title}: сейчас это самый слабый из измеренных навыков.`;
-
-  return { overall, modules, weakest, mockStatus, mockLabel, recommendation };
-}
-
-function taskCopy(module: ModuleId, firstRun: boolean) {
-  if (module === 'schreiben') return firstRun
-    ? { title: 'Первое письмо вместе с Отто', detail: 'Разобрать задание и написать одно короткое письмо.' }
-    : { title: 'Schreiben', detail: 'Написать одно письмо и разобрать обратную связь Отто.' };
-  if (module === 'sprechen') return { title: 'Sprechen', detail: 'Повторить несколько карточек и ответить голосом.' };
-  if (module === 'horen') return { title: 'Hören', detail: 'Сделать короткую серию заданий на слух.' };
-  return { title: 'Lesen', detail: 'Сделать короткую серию заданий на понимание текста.' };
-}
-
-export function buildDailyPlan(progress: Progress, minutes: 5 | 15 | 30): PlanItem[] {
-  const readiness = getReadiness(progress);
-  const ranked = MODULE_ORDER
-    .map((id, index) => ({ id, score: readiness.modules[id].score, index }))
-    .sort((a, b) => a.score - b.score || a.index - b.index);
-  const firstRun = MODULE_ORDER.every((id) => (progress[id]?.attempts ?? 0) === 0);
-  const sequence: ModuleId[] = firstRun
-    ? ['schreiben', 'sprechen', 'horen', 'lesen']
-    : ranked.map((item) => item.id);
-
-  const slots = minutes === 5 ? [5] : minutes === 15 ? [7, 4, 4] : [10, 7, 7, 6];
-  return slots.map((slot, index) => {
-    const module = sequence[index % sequence.length];
-    const copy = taskCopy(module, firstRun && module === 'schreiben');
-    const metric = readiness.modules[module];
-    const reason = metric.attempts === 0
-      ? 'Этот навык ещё не измерен.'
-      : metric.status === 'ready'
-        ? 'Короткое повторение, чтобы результат оставался устойчивым.'
-        : `Текущая тренировочная готовность: ${metric.score}%.`;
-    return { module, minutes: slot, reason, ...copy };
-  });
-}
-
-export function getTodayActivity(activity: ActivityEntry[]) {
-  const now = new Date();
-  const items = activity.filter((entry) => {
-    const date = new Date(entry.at);
-    return date.getFullYear() === now.getFullYear()
-      && date.getMonth() === now.getMonth()
-      && date.getDate() === now.getDate();
-  });
-  const attempts = items.length;
-  const seconds = items.reduce((sum, entry) => sum + Math.max(0, entry.durationSeconds ?? 0), 0);
-  const minutes = seconds ? Math.max(1, Math.round(seconds / 60)) : 0;
-  const byModule = MODULE_ORDER.reduce((result, id) => {
-    result[id] = items.filter((entry) => entry.module === id).length;
-    return result;
-  }, {} as Record<ModuleId, number>);
-  return { attempts, minutes, byModule };
-}
-
-export function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 6) return 'Доброй ночи';
-  if (hour < 12) return 'Доброе утро';
-  if (hour < 18) return 'Добрый день';
-  return 'Добрый вечер';
-}
+function taskCopy(module:ModuleId,first:boolean){if(module==='schreiben')return first?{title:'Первое письмо вместе с Отто',detail:'Разобрать задание и написать одно короткое письмо.'}:{title:'Schreiben',detail:'Написать одно письмо и разобрать обратную связь Отто.'};if(module==='sprechen')return{title:'Sprechen',detail:'Повторить несколько карточек и ответить голосом.'};if(module==='horen')return{title:'Hören',detail:'Сделать короткую серию заданий на слух.'};return{title:'Lesen',detail:'Сделать короткую серию заданий на понимание текста.'}}
+export function buildDailyPlan(progress:Progress,minutes:5|15|30,activity:ActivityEntry[]=[]):PlanItem[]{const r=getReadiness(progress,activity),ranked=MODULE_ORDER.map((id,index)=>({id,score:r.modules[id].dataSufficient?r.modules[id].score:-100+r.modules[id].answered,index})).sort((a,b)=>a.score-b.score||a.index-b.index),first=MODULE_ORDER.every(id=>(progress[id]?.attempts??0)===0),sequence:ModuleId[]=first?['schreiben','sprechen','horen','lesen']:ranked.map(x=>x.id),slots=minutes===5?[5]:minutes===15?[7,4,4]:[10,7,7,6];return slots.map((slot,index)=>{const module=sequence[index%sequence.length],copy=taskCopy(module,first&&module==='schreiben'),m=r.modules[module],reason=!m.dataSufficient?m.evidence:m.status==='ready'?'Короткое повторение для устойчивости.':`Текущий измеренный уровень навыка: ${m.score}%.`;return{module,minutes:slot,reason,...copy}})}
+export function getTodayActivity(activity:ActivityEntry[]){const now=new Date(),items=activity.filter(e=>{const d=new Date(e.at);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()}),attempts=items.length,seconds=items.reduce((s,e)=>s+Math.max(0,e.durationSeconds??0),0),minutes=seconds?Math.max(1,Math.round(seconds/60)):0,byModule=MODULE_ORDER.reduce((r,id)=>{r[id]=items.filter(e=>e.module===id).length;return r},{} as Record<ModuleId,number>);return{attempts,minutes,byModule}}
+export function getGreeting(){const h=new Date().getHours();if(h<6)return'Доброй ночи';if(h<12)return'Доброе утро';if(h<18)return'Добрый день';return'Добрый вечер'}
