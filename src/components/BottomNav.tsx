@@ -1,14 +1,16 @@
 import { BookOpen, Home, Settings, Target, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { OttoProductMode } from '@/lib/productMode';
 
 export type BottomTab = 'home' | 'modules' | 'readiness' | 'account' | 'settings';
 
 interface Props {
   active: BottomTab;
   onNavigate: (tab: BottomTab) => void;
+  mode?: OttoProductMode;
 }
 
-const items = [
+const fullItems = [
   { id: 'home' as const, label: 'Сегодня', icon: Home },
   { id: 'modules' as const, label: 'Разделы', icon: BookOpen },
   { id: 'readiness' as const, label: 'Готовность', icon: Target },
@@ -16,7 +18,15 @@ const items = [
   { id: 'settings' as const, label: 'Настройки', icon: Settings },
 ];
 
-export function BottomNav({ active, onNavigate }: Props) {
+const basicItems = [
+  { id: 'home' as const, label: 'Главная', icon: Home },
+  { id: 'modules' as const, label: 'Разделы', icon: BookOpen },
+  { id: 'account' as const, label: 'Кабинет', icon: UserRound },
+  { id: 'settings' as const, label: 'Настройки', icon: Settings },
+];
+
+export function BottomNav({ active, onNavigate, mode = 'full' }: Props) {
+  const items = mode === 'basic' ? basicItems : fullItems;
   return (
     <nav className="otto-bottom-nav" aria-label="Основная навигация">
       <div className="otto-bottom-nav-inner">
