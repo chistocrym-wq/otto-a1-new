@@ -1,5 +1,6 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Clock3, Target, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, CheckCircle2, CircleAlert, Clock3, Quote, Target, Trophy } from 'lucide-react';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
+import { loadLearningProfile } from '@/lib/learningProfile';
 import { getReadiness, getTodayActivity, MODULE_META, MODULE_ORDER } from '@/lib/preparation';
 
 interface Props {
@@ -25,9 +26,11 @@ const statusText = {
 export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOpenMockExam }: Props) {
   const readiness = getReadiness(progress);
   const today = getTodayActivity(activity);
+  const learning = loadLearningProfile();
   const week = activity.filter((entry) => Date.now() - new Date(entry.at).getTime() <= 7 * 24 * 60 * 60 * 1000);
   const weekMinutes = Math.round(week.reduce((sum, entry) => sum + (entry.durationSeconds ?? 0), 0) / 60);
   const weak = readiness.modules[readiness.weakest];
+  const topError = learning.errors[0];
 
   return (
     <div className="animate-fade-in pb-8">
@@ -64,8 +67,31 @@ export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOp
       </section>
 
       <section className="mt-6 rounded-[24px] border border-amber-200 bg-amber-50 p-4 sm:p-5">
-        <div className="flex items-start gap-3"><CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-xs font-black uppercase tracking-[.13em] text-amber-800">Что сейчас мешает выйти на пробник</p><h2 className="mt-1 text-lg font-black text-slate-950">{MODULE_META[readiness.weakest].title} — {weak.score}%</h2><p className="mt-1 text-sm leading-6 text-slate-700">Это самый слабый из навыков, которые приложение может измерить по вашим реальным результатам. Конкретные типы ошибок будут появляться здесь только после того, как тренажёр их действительно зафиксирует.</p></div></div>
+        <div className="flex items-start gap-3"><CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-xs font-black uppercase tracking-[.13em] text-amber-800">Что сейчас мешает выйти на пробник</p><h2 className="mt-1 text-lg font-black text-slate-950">{MODULE_META[readiness.weakest].title} — {weak.score}%</h2><p className="mt-1 text-sm leading-6 text-slate-700">Это самый слабый из навыков, которые приложение может измерить по вашим реальным результатам.{topError ? ` В письмах чаще всего повторяется: ${topError.tag} (${topError.count}).` : ' Конкретные типы ошибок появятся здесь после того, как Отто действительно их зафиксирует.'}</p></div></div>
         <button type="button" onClick={() => onSelectModule(readiness.weakest)} className="mt-4 min-h-11 w-full rounded-xl bg-amber-900 px-4 font-black text-white">Потренировать слабое место</button>
+      </section>
+
+      <section className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2"><Brain className="h-5 w-5 text-amber-700" /><h2 className="text-lg font-black text-slate-950">Мои ошибки</h2></div>
+        {learning.errors.length ? (
+          <div className="mt-3 space-y-2">
+            {learning.errors.slice(0, 5).map((error) => (
+              <div key={error.tag} className="rounded-xl bg-amber-50 px-3 py-3">
+                <div className="flex items-center justify-between gap-3"><strong className="text-sm text-slate-900">{error.tag}</strong><span className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-black text-amber-800">{error.count}</span></div>
+                {error.examples[0] && <p className="mt-1 text-xs leading-5 text-slate-600"><span className="line-through">{error.examples[0].original}</span> → <span className="font-semibold text-emerald-700">{error.examples[0].corrected}</span></p>}
+              </div>
+            ))}
+          </div>
+        ) : <p className="mt-2 text-sm leading-6 text-slate-500">Пока здесь пусто. После проверки писем Отто начнёт объединять повторяющиеся проблемы, а не показывать страшный список красных ошибок.</p>}
+      </section>
+
+      <section className="mt-6 rounded-[24px] border border-teal-100 bg-teal-50/60 p-4 sm:p-5">
+        <div className="flex items-center gap-2"><Quote className="h-5 w-5 text-teal-700" /><h2 className="text-lg font-black text-slate-950">Мои фразы</h2></div>
+        {learning.phrases.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {learning.phrases.slice(0, 8).map((phrase) => <span key={phrase.text} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">{phrase.text}</span>)}
+          </div>
+        ) : <p className="mt-2 text-sm leading-6 text-slate-500">Полезные конструкции будут появляться из ваших реальных писем и исправлений. Отдельно зубрить список из 100 фраз не нужно.</p>}
       </section>
 
       <section className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4 sm:p-5">
