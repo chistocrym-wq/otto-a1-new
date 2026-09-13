@@ -1,0 +1,35 @@
+name: Visual home check
+
+on:
+  push:
+    branches:
+      - preview/home-screen-react-v2
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Netlify preview
+        run: sleep 35
+      - name: Capture approved viewport
+        run: |
+          google-chrome --headless=new --no-sandbox --disable-dev-shm-usage \
+            --hide-scrollbars --window-size=941,1672 --force-device-scale-factor=1 \
+            --virtual-time-budget=8000 \
+            --screenshot="$RUNNER_TEMP/otto-home-941x1672.png" \
+            "https://deploy-preview-4--otto-a1-new.netlify.app/?visual=${GITHUB_SHA}"
+          file "$RUNNER_TEMP/otto-home-941x1672.png"
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: otto-home-visual-check
+          path: ${{ runner.temp }}/otto-home-941x1672.png
+          if-no-files-found: error
+          retention-days: 1
