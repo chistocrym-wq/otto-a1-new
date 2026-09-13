@@ -146,6 +146,7 @@
   user-select: none;
   -webkit-user-drag: none;
   image-rendering: auto;
+  mix-blend-mode: multiply;
   filter: drop-shadow(0 1.2cqw 1.8cqw rgba(25,66,70,.07));
 }
 

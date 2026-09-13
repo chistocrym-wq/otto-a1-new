@@ -127,7 +127,7 @@ export function Dashboard({
           <p>Подготовимся к экзамену вместе</p>
           <div className="otto-real-note">Du<br />schaffst<br />das! ♡</div>
         </div>
-        <img className="otto-real-hero-otto" src="/otto/otto-home-documents-hq.webp?v=1" alt="OTTO" width={1122} height={1402} fetchPriority="high" draggable={false} />
+        <img className="otto-real-hero-otto" src="/otto/otto-home-documents.webp?v=2" alt="OTTO" width={400} height={500} fetchPriority="high" draggable={false} />
       </section>
 
       <button type="button" className="otto-real-progress" onClick={onOpenAccount} aria-label="Открыть мой прогресс">
