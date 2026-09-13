@@ -110,4 +110,12 @@ export default async (req) => {
   }
 };
 
-export const config = { path: '/api/otto-tts' };
+export const config = {
+  path: '/api/otto-tts',
+  method: 'POST',
+  rateLimit: {
+    windowLimit: 40,
+    windowSize: 60,
+    aggregateBy: ['ip', 'domain'],
+  },
+};
