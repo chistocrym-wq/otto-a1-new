@@ -57,6 +57,113 @@
   line-height: 1.48;
 }
 
+/* The older crop rules in index.css were still cutting almost all of the
+   small companion character away. Keep Otto present, but render the full
+   figure in a compact, non-interactive footprint above the bottom nav. */
+.telegram-app:not(.otto-view-home) .otto-companion {
+  right: 8px !important;
+  bottom: calc(var(--otto-nav-height) + env(safe-area-inset-bottom) + 7px) !important;
+  width: 58px !important;
+  max-width: 58px !important;
+  height: 72px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  opacity: .92 !important;
+  pointer-events: none !important;
+  filter: drop-shadow(0 6px 9px rgba(20,65,70,.12)) !important;
+}
+
+.telegram-app:not(.otto-view-home) .otto-companion img,
+.telegram-app:not(.otto-view-home) .otto-companion .otto-companion-scene {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  transform: none !important;
+  background: transparent !important;
+}
+
+/* On the tall 941×1672 mobile QA viewport, distribute sparse hub/task
+   content over the available height instead of leaving an accidental empty
+   lower half. Content and handlers are unchanged. */
+@media (min-height: 900px) and (max-width: 1000px) {
+  .otto-view-schreiben .otto-inner-screen > .animate-fade-in:has(> .grid) {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    padding-bottom: 4px !important;
+  }
+
+  .otto-view-schreiben .otto-inner-screen > .animate-fade-in:has(> .grid) > .grid {
+    display: grid !important;
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 12px !important;
+  }
+
+  .otto-view-schreiben .otto-inner-screen > .animate-fade-in:has(> .grid) > .grid > button {
+    display: flex;
+    min-height: 0 !important;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .otto-view-lesen .otto-inner-screen > .animate-fade-in:has(> .grid > div:nth-child(3)) {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    padding-bottom: 4px !important;
+  }
+
+  .otto-view-lesen .otto-inner-screen > .animate-fade-in:has(> .grid > div:nth-child(3)) > .grid {
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 12px !important;
+  }
+
+  .otto-view-lesen .otto-inner-screen > .animate-fade-in:has(> .grid > div:nth-child(3)) > .grid > div {
+    min-height: 0 !important;
+    height: 100%;
+    padding: 16px !important;
+  }
+
+  .otto-view-horen .otto-inner-screen > .animate-fade-in {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    padding-bottom: 4px !important;
+  }
+
+  .otto-view-horen .otto-inner-screen > .animate-fade-in > section {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .otto-view-horen .otto-inner-screen > .animate-fade-in > section > div:last-child {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: space-evenly;
+  }
+
+  .otto-view-horen .otto-inner-screen > .animate-fade-in > .mt-5.flex {
+    margin-top: 12px !important;
+    padding-bottom: 2px;
+  }
+}
+
 @media (max-width: 700px) {
   .telegram-app:not(.otto-view-home) .otto-settings-list {
     grid-template-columns: 1fr;
@@ -72,4 +179,11 @@
   .telegram-app:not(.otto-view-home) .otto-setting-copy strong { font-size: 15px !important; }
   .telegram-app:not(.otto-view-home) .otto-setting-copy small { margin-top: 3px !important; font-size: 11px !important; }
   .telegram-app:not(.otto-view-home) .otto-setting-details { margin-top: 7px; font-size: 11px; line-height: 1.35; }
+
+  .telegram-app:not(.otto-view-home) .otto-companion {
+    width: 50px !important;
+    max-width: 50px !important;
+    height: 62px !important;
+    right: 6px !important;
+  }
 }
