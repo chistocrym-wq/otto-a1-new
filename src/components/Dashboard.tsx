@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowRight,
+  BarChart3,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -10,9 +11,9 @@ import {
   MessageCircleMore,
   PenLine,
   Sparkles,
-  Target,
   Trophy,
 } from 'lucide-react';
+import { OttoScene } from '@/components/OttoScene';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import {
   buildDailyPlan,
@@ -82,63 +83,55 @@ export function Dashboard({
   };
 
   return (
-    <div className="otto-premium-dashboard animate-fade-in">
-      <section className="otto-premium-hero" aria-labelledby="otto-home-title">
-        <div className="otto-premium-hero-copy">
-          <h1 id="otto-home-title" className="otto-premium-brand">
-            <span>Тренажёр Отто</span>
-            <i aria-hidden="true" />
-          </h1>
-          <p className="otto-premium-lead">Отто ведёт вас по шагам и сам подсказывает, что лучше потренировать сегодня.</p>
+    <div className="otto-approved-dashboard animate-fade-in">
+      <section className="otto-approved-hero" aria-labelledby="otto-home-title">
+        <div className="otto-approved-hero-copy">
+          <h1 id="otto-home-title" className="otto-approved-brand">Тренажёр Отто</h1>
+          <span className="otto-approved-brand-line" aria-hidden="true" />
+          <h2>Мой путь<br />к сертификату <em>A1</em></h2>
+          <p>Отто ведёт вас по шагам и сам<br />подсказывает, что лучше<br />потренировать сегодня.</p>
+          <span className="otto-approved-handwrite">Du schaffst das! ♡</span>
         </div>
-        <div className="otto-premium-bust" aria-hidden="true">
-          <img
-            src="/otto/otto-home-documents.webp?v=2"
-            alt=""
-            className="otto-premium-bust-image"
-            draggable={false}
-            loading="eager"
-            decoding="async"
-          />
+        <span className="otto-approved-skyline" aria-hidden="true" />
+        <div className="otto-approved-otto" aria-hidden="true">
+          <OttoScene scene="home" className="otto-approved-otto-image" eager />
         </div>
-        <div className="otto-premium-hero-halo" aria-hidden="true" />
+        <span className="otto-approved-side-note" aria-hidden="true">Deutsch<br />bringt dich<br />weiter<br />♡</span>
       </section>
 
-      <section className="otto-premium-readiness" aria-label="Готовность к экзамену">
-        <button type="button" onClick={onOpenReadiness} className="otto-premium-readiness-main">
-          <span className="otto-premium-round-icon"><Target /></span>
-          <span className="otto-premium-readiness-copy">
-            <span className="otto-premium-kicker">Готовность к A1</span>
-            <span className="otto-premium-readiness-line">
-              <strong>{readiness.overall}%</strong>
-              <small>тренировочная готовность</small>
+      <section className="otto-approved-readiness" aria-label="Готовность к экзамену">
+        <button type="button" onClick={onOpenReadiness} className="otto-approved-readiness-button">
+          <span className="otto-approved-readiness-icon"><BarChart3 /></span>
+          <span className="otto-approved-readiness-copy">
+            <span className="otto-approved-readiness-top">
+              <strong>ГОТОВНОСТЬ К A1</strong>
+              <b>{readiness.overall}%</b>
             </span>
-            <span className="otto-premium-progress" aria-hidden="true">
-              <i style={{ width: `${readiness.overall}%` }} />
-            </span>
+            <span className="otto-approved-progress" aria-hidden="true"><i style={{ width: `${readiness.overall}%` }} /></span>
+            <small>тренировочная готовность</small>
           </span>
-          <ChevronRight className="otto-premium-chevron" />
+          <ChevronRight className="otto-approved-chevron" />
         </button>
       </section>
 
-      <section className="otto-premium-otto-note">
-        <span className="otto-premium-note-icon"><Sparkles /></span>
+      <section className="otto-approved-recommendation">
+        <span className="otto-approved-recommendation-icon"><Sparkles /></span>
         <div>
-          <p className="otto-premium-kicker">Отто рекомендует</p>
+          <strong>ОТТО РЕКОМЕНДУЕТ</strong>
           <p>{readiness.recommendation}</p>
         </div>
       </section>
 
-      <section className="otto-premium-panel otto-premium-training">
-        <div className="otto-premium-section-heading">
+      <section className="otto-approved-training">
+        <div className="otto-approved-training-head">
           <div>
-            <p className="otto-premium-kicker">Сегодня</p>
+            <strong>СЕГОДНЯ</strong>
             <h2>Ваша тренировка</h2>
           </div>
-          <span className="otto-premium-time"><Clock3 /> ≈ {minutes} мин</span>
+          <span className="otto-approved-time"><Clock3 /> ≈ {minutes} мин</span>
         </div>
 
-        <div className="otto-premium-duration" aria-label="Выберите длительность тренировки">
+        <div className="otto-approved-duration" aria-label="Выберите длительность тренировки">
           {([5, 15, 30] as Minutes[]).map((value) => (
             <button
               key={value}
@@ -152,7 +145,7 @@ export function Dashboard({
           ))}
         </div>
 
-        <div className="otto-premium-plan">
+        <div className="otto-approved-plan">
           {plan.map((item, index) => {
             const Icon = moduleIcons[item.module];
             return (
@@ -160,15 +153,15 @@ export function Dashboard({
                 key={`${item.module}-${index}`}
                 type="button"
                 onClick={() => onSelectModule(item.module)}
-                className="otto-premium-plan-row"
+                className="otto-approved-plan-row"
               >
-                <span className="otto-premium-plan-number">{index + 1}</span>
-                <span className="otto-premium-plan-icon"><Icon /></span>
-                <span className="otto-premium-plan-copy">
+                <span className="otto-approved-plan-number">{index + 1}</span>
+                <span className="otto-approved-plan-icon"><Icon /></span>
+                <span className="otto-approved-plan-copy">
                   <strong>{item.title}</strong>
                   <small>{item.detail}</small>
                 </span>
-                <span className="otto-premium-plan-time">{item.minutes} мин</span>
+                <ChevronRight className="otto-approved-plan-chevron" />
               </button>
             );
           })}
@@ -178,16 +171,16 @@ export function Dashboard({
           type="button"
           onClick={() => firstTask && onSelectModule(firstTask.module)}
           disabled={!firstTask}
-          className="otto-premium-primary"
+          className="otto-approved-primary"
         >
-          <span>Начать сегодняшнюю тренировку</span>
+          <span>НАЧАТЬ СЕГОДНЯШНЮЮ ТРЕНИРОВКУ</span>
           <ArrowRight />
         </button>
       </section>
 
       {(today.attempts > 0 || today.minutes > 0) && (
-        <section className="otto-premium-complete">
-          <CheckCircle2 />
+        <section className="otto-approved-complete">
+          <span><CheckCircle2 /></span>
           <div>
             <strong>Сегодня уже сделано</strong>
             <p>{today.attempts} завершённых попыток{today.minutes ? ` · около ${today.minutes} мин активной практики` : ''}</p>
@@ -195,7 +188,7 @@ export function Dashboard({
         </section>
       )}
 
-      <section className="otto-premium-skills">
+      <section className="otto-approved-below-fold otto-premium-skills">
         <div className="otto-premium-section-heading">
           <div>
             <p className="otto-premium-kicker">Ваш маршрут</p>
