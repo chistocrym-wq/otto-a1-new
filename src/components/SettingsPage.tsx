@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, Globe2, Smartphone, Volume2 } from 'lucide-react';
+import { Bell, ChevronDown, Globe2, Play, Smartphone, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 
 const items = [
@@ -14,7 +14,7 @@ const items = [
     id: 'audio',
     title: 'Звук и микрофон',
     subtitle: 'Используются в Hören и Sprechen',
-    details: 'Аудио Hören воспроизводится внутри задания. Доступ к микрофону запрашивается только там, где он действительно нужен. Разрешение можно изменить в настройках Telegram или браузера.',
+    details: 'Аудио Hören воспроизводится внутри задания и может использовать разные голоса, как на реальном экзамене. Фирменные подсказки Отто используют один выбранный немецкий голос. Доступ к микрофону запрашивается только там, где он действительно нужен.',
     icon: Volume2,
   },
   {
@@ -34,9 +34,34 @@ const items = [
 ] as const;
 
 type ItemId = (typeof items)[number]['id'];
+type SpeechMode = 'normal' | 'slow';
+type OttoSpeechApi = {
+  play?: (text: string, options?: { mode?: SpeechMode }) => Promise<boolean>;
+  setMode?: (mode: SpeechMode) => void;
+  getMode?: () => SpeechMode;
+};
+
+function speechApi() {
+  return (window as Window & { OttoSpeech?: OttoSpeechApi }).OttoSpeech;
+}
 
 export function SettingsPage() {
   const [open, setOpen] = useState<ItemId | null>('language');
+  const [voiceMode, setVoiceMode] = useState<SpeechMode>(() => {
+    try { return localStorage.getItem('ottoSpeechModeV1') === 'slow' ? 'slow' : 'normal'; }
+    catch { return 'normal'; }
+  });
+
+  const changeVoiceMode = (mode: SpeechMode) => {
+    setVoiceMode(mode);
+    speechApi()?.setMode?.(mode);
+    try { localStorage.setItem('ottoSpeechModeV1', mode); } catch {}
+  };
+
+  const testVoice = () => {
+    const text = 'Hallo. Ich heiße Otto. Schön, dass du da bist.';
+    void speechApi()?.play?.(text, { mode: voiceMode });
+  };
 
   return (
     <div className="otto-hub-screen otto-settings-screen animate-fade-in">
@@ -44,9 +69,26 @@ export function SettingsPage() {
         <div>
           <p className="otto-kicker">Настройки</p>
           <h1>Тренажёр OTTO</h1>
-          <p className="mt-1 max-w-lg text-sm text-slate-600">Все пункты ниже открываются и объясняют, как соответствующая функция работает в приложении.</p>
+          <p className="mt-1 max-w-lg text-sm text-slate-600">Комфортная скорость речи, понятные настройки и только те разрешения, которые действительно нужны для обучения.</p>
         </div>
         <div className="otto-page-hero-character" aria-hidden="true"><OttoScene scene="guide" className="otto-page-hero-scene" /></div>
+      </section>
+
+      <section className="otto-voice-settings" aria-labelledby="otto-voice-heading">
+        <div className="otto-voice-heading-row">
+          <span className="otto-setting-icon"><Volume2 /></span>
+          <div>
+            <p className="otto-kicker">Фирменный голос</p>
+            <h2 id="otto-voice-heading">Как говорит Отто</h2>
+          </div>
+        </div>
+        <p className="otto-voice-copy">Выбери естественный темп или чуть более медленную речь. Медленный режим сохраняет нормальный немецкий ритм — звуки не растягиваются искусственно.</p>
+        <div className="otto-voice-mode" role="group" aria-label="Скорость немецкой речи">
+          <button type="button" className={voiceMode === 'normal' ? 'is-active' : ''} onClick={() => changeVoiceMode('normal')} aria-pressed={voiceMode === 'normal'}>🔊 Нормально</button>
+          <button type="button" className={voiceMode === 'slow' ? 'is-active' : ''} onClick={() => changeVoiceMode('slow')} aria-pressed={voiceMode === 'slow'}>🐢 Медленнее</button>
+        </div>
+        <button type="button" className="otto-voice-test" onClick={testVoice}><Play aria-hidden="true" />Послушать голос Отто</button>
+        <p className="otto-voice-disclosure">Основная озвучка Отто создаётся AI‑голосом. Если нейросинтез временно недоступен, приложение автоматически использует лучший немецкий голос устройства. Записи Hören остаются отдельными экзаменационными аудиоматериалами.</p>
       </section>
 
       <section className="otto-settings-list" aria-label="Настройки приложения">
