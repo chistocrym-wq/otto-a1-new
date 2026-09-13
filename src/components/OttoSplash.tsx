@@ -1,50 +1,54 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { OttoScene } from '@/components/OttoScene';
 
-const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
-  left: 14 + ((i * 37) % 72),
-  top: 14 + ((i * 53) % 70),
-  dx: ((i % 11) - 5) * 18,
-  dy: -52 - ((i * 13) % 124),
-  delay: (i % 12) * 20,
-}));
+type SplashPhase = 'ghost' | 'color' | 'leaving';
+
+const SPLASH_KEY = 'otto-a1-premium-splash-seen-v1';
 
 export function OttoSplash() {
   const [active, setActive] = useState(true);
-  const [visible, setVisible] = useState(false);
-  const [dissolving, setDissolving] = useState(false);
+  const [phase, setPhase] = useState<SplashPhase>('ghost');
+  const [compact, setCompact] = useState(false);
 
   useEffect(() => {
-    const reveal = window.setTimeout(() => setVisible(true), 150);
-    const dissolve = window.setTimeout(() => setDissolving(true), 1100);
-    const finish = window.setTimeout(() => setActive(false), 1500);
+    let seen = false;
+    try {
+      seen = localStorage.getItem(SPLASH_KEY) === '1';
+      localStorage.setItem(SPLASH_KEY, '1');
+    } catch {
+      // Storage can be blocked in a private or restricted webview.
+    }
+
+    setCompact(seen);
+    const colorAt = seen ? 90 : 280;
+    const leaveAt = seen ? 650 : 1320;
+    const finishAt = seen ? 980 : 1820;
+
+    const colorTimer = window.setTimeout(() => setPhase('color'), colorAt);
+    const leaveTimer = window.setTimeout(() => setPhase('leaving'), leaveAt);
+    const finishTimer = window.setTimeout(() => setActive(false), finishAt);
+
     return () => {
-      window.clearTimeout(reveal);
-      window.clearTimeout(dissolve);
-      window.clearTimeout(finish);
+      window.clearTimeout(colorTimer);
+      window.clearTimeout(leaveTimer);
+      window.clearTimeout(finishTimer);
     };
   }, []);
 
   if (!active) return null;
 
   return (
-    <div className={`otto-splash-screen ${dissolving ? 'is-dissolving' : ''}`} aria-hidden="true">
-      <div className={`otto-splash-figure ${visible ? 'is-visible' : ''}`}>
-        <OttoScene scene="home" className="otto-splash-otto" eager />
-      </div>
-      <div className="otto-splash-particles">
-        {PARTICLES.map((p, i) => (
-          <i
-            key={i}
-            style={{
-              left: `${p.left}%`,
-              top: `${p.top}%`,
-              '--dx': `${p.dx}px`,
-              '--dy': `${p.dy}px`,
-              '--delay': `${p.delay}ms`,
-            } as CSSProperties}
-          />
-        ))}
+    <div className={`otto-splash-screen is-${phase} ${compact ? 'is-compact' : 'is-full'}`} aria-hidden="true">
+      <div className="otto-splash-glow" />
+      <div className="otto-splash-figure">
+        <div className="otto-splash-bust">
+          <OttoScene scene="home" className="otto-splash-otto" eager />
+        </div>
+        <div className="otto-splash-brand">
+          <strong>Тренажёр Отто</strong>
+          <i />
+          <span>Спокойный путь к сертификату A1</span>
+        </div>
       </div>
     </div>
   );
