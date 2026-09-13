@@ -61,11 +61,11 @@ export function SettingsPage() {
               aria-expanded={expanded}
             >
               <span className="otto-setting-icon"><Icon /></span>
-              <span className="otto-setting-copy">
+              <div className="otto-setting-copy">
                 <strong>{title}</strong>
                 <small>{subtitle}</small>
                 {expanded && <span className="otto-setting-details">{details}</span>}
-              </span>
+              </div>
               <ChevronDown className="otto-setting-chevron" aria-hidden="true" />
             </button>
           );
