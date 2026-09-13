@@ -1,4 +1,5 @@
 const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
+const MAX_WAV_BYTES = 6 * 1024 * 1024;
 
 export default async function handler(req, res) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { audioBase64, mimeType = 'audio/webm', mode } = body;
+    const { audioBase64, audioWavBase64, mimeType = 'audio/webm', mode } = body;
 
     if (!audioBase64 || typeof audioBase64 !== 'string') {
       return res.status(400).json({ error: 'Аудиозапись не получена.', code: 'missing_audio' });
@@ -36,9 +37,7 @@ export default async function handler(req, res) {
     }
 
     const audioBuffer = Buffer.from(audioBase64, 'base64');
-    if (!audioBuffer.length) {
-      return res.status(400).json({ error: 'Аудиозапись пустая.', code: 'empty_audio' });
-    }
+    if (!audioBuffer.length) return res.status(200).json(zeroResult('Запись пустая. Ответ на задание отсутствует.'));
     if (audioBuffer.length > MAX_AUDIO_BYTES) {
       return res.status(413).json({
         error: 'Запись слишком длинная для отправки. Сделайте ответ короче и запишите ещё раз.',
@@ -47,41 +46,40 @@ export default async function handler(req, res) {
     }
 
     const transcript = await transcribeAudio({ apiKey, audioBuffer, mimeType });
-    if (!transcript.trim()) {
-      return res.status(422).json({
-        error: 'Не удалось распознать немецкую речь. Говорите чуть громче и попробуйте записать ещё раз.',
-        code: 'empty_transcript',
+    if (!hasMeaningfulSpeech(transcript, mode)) {
+      return res.status(200).json({
+        ...zeroResult('Содержательного ответа не распознано. По критерию Goethe за отсутствующий или непонятный ответ — 0 выполнения задания.'),
+        transcript,
       });
     }
 
-    const evaluation = await evaluateAnswer({ apiKey, transcript, body });
+    let pronunciation = null;
+    if (typeof audioWavBase64 === 'string' && audioWavBase64.length > 0) {
+      const wavBytes = Buffer.from(audioWavBase64, 'base64');
+      if (wavBytes.length && wavBytes.length <= MAX_WAV_BYTES) {
+        pronunciation = await analyzePronunciation({ apiKey, audioWavBase64 }).catch((error) => {
+          console.warn('pronunciation analysis unavailable', error);
+          return null;
+        });
+      }
+    }
+
+    const evaluation = await evaluateAnswer({ apiKey, transcript, body, pronunciation });
     return res.status(200).json({ ...evaluation, transcript });
   } catch (error) {
     console.error('check-sprechen error', error);
 
     if (error instanceof OpenAIRequestError) {
       if (error.status === 401 || error.status === 403) {
-        return res.status(502).json({
-          error: 'AI-проверка не авторизована. Нужно проверить OPENAI_API_KEY на сервере.',
-          code: 'openai_auth',
-        });
+        return res.status(502).json({ error: 'AI-проверка не авторизована. Нужно проверить OPENAI_API_KEY на сервере.', code: 'openai_auth' });
       }
       if (error.status === 429) {
-        return res.status(429).json({
-          error: 'Лимит OpenAI API временно исчерпан. Попробуйте ещё раз немного позже.',
-          code: 'openai_limit',
-        });
+        return res.status(429).json({ error: 'Лимит OpenAI API временно исчерпан. Попробуйте ещё раз немного позже.', code: 'openai_limit' });
       }
-      return res.status(502).json({
-        error: 'OpenAI сейчас не смог обработать запись. Попробуйте ещё раз через несколько секунд.',
-        code: 'openai_error',
-      });
+      return res.status(502).json({ error: 'OpenAI сейчас не смог обработать запись. Попробуйте ещё раз через несколько секунд.', code: 'openai_error' });
     }
 
-    return res.status(500).json({
-      error: 'Не удалось проверить ответ. Запись можно прослушать и попробовать отправить ещё раз.',
-      code: 'server_error',
-    });
+    return res.status(500).json({ error: 'Не удалось проверить ответ. Запись можно прослушать и попробовать отправить ещё раз.', code: 'server_error' });
   }
 }
 
@@ -144,33 +142,81 @@ async function transcribeAudio({ apiKey, audioBuffer, mimeType }) {
   return String(payload.text || '').trim();
 }
 
-async function evaluateAnswer({ apiKey, transcript, body }) {
-  const task = buildTaskDescription(body);
-  const systemPrompt = `Ты проверяешь только устную речь немецкого уровня A1 в учебном тренажёре Otto.
-Проверяй смысл сказанного, а не письменную орфографию транскрипта.
-Транскрипция может содержать ошибки распознавания, поэтому не придирайся к отдельным буквам и окончаниям, если смысл понятен.
-Не требуй грамматику B1/B2. Небольшие грамматические ошибки допустимы, если коммуникация понятна.
-Не выставляй фонетический балл и не утверждай, что измерил точное произношение: по транскрипту это невозможно.
-
-Teil 1: проверь, прозвучали ли требуемые пункты о себе. Каждый пункт оценивай по смыслу. Отсутствующие пункты перечисли в missing.
-Teil 2: полный результат, если ученик задал понятный вопрос, связанный и с темой, и с ключевым словом карточки. Допускай разные естественные формулировки A1, не требуй совпадения с примером.
-Teil 3: полный результат, если ученик сформулировал понятную бытовую просьбу или вопрос, соответствующий изображённому предмету/действию. Допускай формы с bitte, Können Sie..., Kann ich..., а также короткие естественные просьбы.
-Freies Sprechen: проверь, раскрыл ли ученик три опорных вопроса темы и получился ли понятный связный рассказ уровня A1. Не требуй длинного ответа и не штрафуй за естественные паузы. В missing перечисляй только действительно нераскрытые смысловые пункты.
-Phrase: ученик переносит уже знакомую письменную конструкцию в устную речь. Полный результат, если он произнёс ожидаемую фразу или естественную A1-формулировку с тем же смыслом. Не требуй буквального совпадения и не штрафуй за мелкие ошибки распознавания.
-
-Верни краткую поддержку на русском и одну очень простую подсказку на немецком. Не исправляй то, что уже корректно.`;
-
-  const userPrompt = `Задание:\n${task}\n\nРаспознанная речь ученика:\n${transcript}`;
+async function analyzePronunciation({ apiKey, audioWavBase64 }) {
+  const prompt = `Слушай именно немецкую речь ученика уровня A1. Нужна только оценка разборчивости произношения, не грамматики и не содержания.
+Верни ТОЛЬКО JSON без markdown:
+{"level":"clear|partly_clear|unclear","noteRu":"..."}
+clear = речь в целом легко понять;
+partly_clear = отдельные звуки/слова заметно мешают, но общий смысл понятен;
+unclear = значительная часть речи неразборчива.
+Не требуй акцента носителя и не штрафуй за иностранный акцент сам по себе.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gpt-audio-mini',
+      modalities: ['text'],
+      temperature: 0,
+      messages: [
+        { role: 'system', content: prompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Оцени разборчивость этой записи.' },
+            { type: 'input_audio', input_audio: { data: audioWavBase64, format: 'wav' } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new OpenAIRequestError(response.status, detail.slice(0, 500));
+  }
+
+  const payload = await response.json();
+  const raw = String(payload.choices?.[0]?.message?.content || '').trim();
+  const parsed = parseJsonObject(raw);
+  const level = ['clear', 'partly_clear', 'unclear'].includes(parsed?.level) ? parsed.level : 'partly_clear';
+  return { level, noteRu: String(parsed?.noteRu || '') };
+}
+
+async function evaluateAnswer({ apiKey, transcript, body, pronunciation }) {
+  const task = buildTaskDescription(body);
+  const pronunciationText = pronunciation
+    ? `Оценка разборчивости реальной аудиозаписи: ${pronunciation.level}. Комментарий: ${pronunciation.noteRu || '—'}`
+    : 'Отдельная аудио-оценка произношения технически не получена. Не выдумывай фонетические ошибки; оцени только то, что можно подтвердить по транскрипту.';
+
+  const systemPrompt = `Ты оцениваешь устную часть Goethe-Zertifikat A1: Start Deutsch 1 в учебном тренажёре Otto.
+Ориентир — актуально публикуемый Goethe Modellsatz. Официальная логика Bewertung Sprechen:
+- volle Punktzahl: Aufgabe voll erfüllt und verständlich;
+- halbe Punktzahl: Aufgabe wegen sprachlicher oder inhaltlicher Mängel nur teilweise erfüllt;
+- 0 Punkte: Aufgabe nicht erfüllt und/oder unverständlich;
+критерий: Erfüllung der Aufgabenstellung und sprachliche Realisierung.
+
+НЕ создавай собственную систему мелких штрафов. НЕ требуй грамматику выше A1. Ошибки допустимы, если задача выполнена и речь понятна.
+Произношение учитывай только как часть понятности языковой реализации: иностранный акцент сам по себе не ошибка.
+Если ответа по сути нет, задача не выполнена или речь непонятна — officialLevel=zero и score=0.
+Если задача выполнена лишь частично из-за существенных содержательных/языковых проблем — officialLevel=partial и score=50.
+Если задача выполнена и понятна — officialLevel=full и score=100.
+
+Teil 1: проверь важные сведения о себе по опорным пунктам. Не придумывай личные данные. Отсутствующие смысловые пункты перечисли в missing.
+Teil 2: задача — задать понятный вопрос по теме и слову карточки. Не требуй совпадения с примером.
+Teil 3: задача — сформулировать понятную бытовую просьбу/вопрос по карточке и, когда это требуется тренировкой, дать адекватную короткую реакцию.
+Freies Sprechen и Phrase — учебные упражнения вне отдельной обязательной части экзамена; оценивай их по понятности и выполнению поставленной учебной задачи, но той же шкалой full/partial/zero.
+
+Верни конкретные списки на русском: strengths — что получилось; practice — что именно потренировать. Ничего не хвали, если содержательного ответа нет.`;
+
+  const userPrompt = `Задание:\n${task}\n\nРаспознанная речь ученика:\n${transcript}\n\n${pronunciationText}`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
-      temperature: 0.1,
+      temperature: 0,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -178,17 +224,19 @@ Phrase: ученик переносит уже знакомую письменн
       response_format: {
         type: 'json_schema',
         json_schema: {
-          name: 'sprechen_feedback',
+          name: 'sprechen_goethe_feedback',
           strict: true,
           schema: {
             type: 'object',
             additionalProperties: false,
-            required: ['score', 'feedbackRu', 'feedbackDe', 'missing'],
+            required: ['officialLevel', 'score', 'strengths', 'practice', 'pronunciationRu', 'missing'],
             properties: {
-              score: { type: 'integer', minimum: 0, maximum: 100 },
-              feedbackRu: { type: 'string' },
-              feedbackDe: { type: 'string' },
-              missing: { type: 'array', items: { type: 'string' } },
+              officialLevel: { type: 'string', enum: ['full', 'partial', 'zero'] },
+              score: { type: 'integer', enum: [0, 50, 100] },
+              strengths: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+              practice: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+              pronunciationRu: { type: 'string' },
+              missing: { type: 'array', items: { type: 'string' }, maxItems: 10 },
             },
           },
         },
@@ -204,34 +252,63 @@ Phrase: ученик переносит уже знакомую письменн
   const payload = await response.json();
   const content = payload.choices?.[0]?.message?.content;
   if (!content) throw new Error('Empty evaluation response');
-
   const parsed = JSON.parse(content);
+  const level = ['full', 'partial', 'zero'].includes(parsed.officialLevel) ? parsed.officialLevel : 'zero';
+  const score = level === 'full' ? 100 : level === 'partial' ? 50 : 0;
+
   return {
-    score: Number.isFinite(parsed.score) ? Math.max(0, Math.min(100, parsed.score)) : 0,
-    feedbackRu: String(parsed.feedbackRu || ''),
-    feedbackDe: String(parsed.feedbackDe || ''),
-    missing: Array.isArray(parsed.missing) ? parsed.missing.map(String).slice(0, 10) : [],
+    officialLevel: level,
+    score,
+    strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String).filter(Boolean).slice(0, 4) : [],
+    practice: Array.isArray(parsed.practice) ? parsed.practice.map(String).filter(Boolean).slice(0, 4) : [],
+    pronunciationRu: String(parsed.pronunciationRu || pronunciation?.noteRu || ''),
+    missing: Array.isArray(parsed.missing) ? parsed.missing.map(String).filter(Boolean).slice(0, 10) : [],
   };
 }
 
 function buildTaskDescription(body) {
   if (body.mode === 'teil1') {
     const expected = Array.isArray(body.expectedPoints) ? body.expectedPoints.join(', ') : '';
-    return `Teil 1. Ученик представляет себя. Нужно по смыслу покрыть пункты: ${expected}.`;
+    return `Teil 1 — Sich vorstellen. В простейшей форме сообщить важные сведения о себе. Опорные пункты тренировки: ${expected}.`;
   }
-
   if (body.mode === 'teil2') {
-    return `Teil 2. Тема: ${String(body.theme || '')}. Слово на карточке: ${String(body.keyword || '')}. Нужно задать один понятный вопрос партнёру. Пример допустимого вопроса дан только как ориентир и не является единственным ответом: ${String(body.sampleQuestion || '')}`;
+    return `Teil 2 — Um Informationen bitten und Informationen geben. Тема: ${String(body.theme || '')}. Слово на карточке: ${String(body.keyword || '')}. Нужно задать один понятный вопрос партнёру. Пример — только ориентир, не единственный правильный ответ: ${String(body.sampleQuestion || '')}`;
   }
-
   if (body.mode === 'teil3') {
-    return `Teil 3. На карточке изображено: ${String(body.object || '')}. Нужно сформулировать понятную бытовую просьбу или вопрос по карточке. Пример дан только как ориентир: ${String(body.sampleRequest || '')}`;
+    return `Teil 3 — Bitten formulieren und darauf reagieren. На карточке: ${String(body.object || '')}. Нужно сформулировать понятную бытовую просьбу/вопрос. Пример — только ориентир: ${String(body.sampleRequest || '')}`;
   }
-
   if (body.mode === 'phrase') {
-    return `Перенос знакомой фразы из Schreiben в Sprechen. Ожидаемый смысл/ориентир: ${String(body.expectedText || '')}. Можно принять другую простую A1-формулировку с тем же смыслом.`;
+    return `Учебный перенос знакомой фразы из Schreiben в Sprechen. Ожидаемый смысл: ${String(body.expectedText || '')}. Допустима другая простая A1-формулировка с тем же смыслом.`;
   }
-
   const expected = Array.isArray(body.expectedPoints) ? body.expectedPoints.join(' | ') : '';
-  return `Freies Sprechen. Тема: ${String(body.title || '')}. Ученик должен коротко и связно раскрыть опорные вопросы: ${expected}. Естественные A1 формулировки принимаются.`;
+  return `Дополнительная тренировка свободной речи A1. Тема: ${String(body.title || '')}. Нужно коротко и понятно раскрыть опорные вопросы: ${expected}.`;
+}
+
+function hasMeaningfulSpeech(transcript, mode) {
+  const words = String(transcript || '').match(/[\p{L}\p{N}]+/gu) || [];
+  if (!words.length) return false;
+  if (mode === 'teil1') return words.join('').length >= 4 && words.length >= 2;
+  return words.join('').length >= 2;
+}
+
+function zeroResult(reason) {
+  return {
+    officialLevel: 'zero',
+    score: 0,
+    transcript: '',
+    strengths: [],
+    practice: [reason],
+    pronunciationRu: 'Произношение не оценивается без содержательной речи.',
+    missing: [],
+  };
+}
+
+function parseJsonObject(raw) {
+  try { return JSON.parse(raw); } catch {}
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try { return JSON.parse(raw.slice(start, end + 1)); } catch {}
+  }
+  return null;
 }
