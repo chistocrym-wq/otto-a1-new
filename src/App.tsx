@@ -22,6 +22,7 @@ const MockExam = lazy(() => import('@/components/MockExam').then((m) => ({ defau
 const ModulesHub = lazy(() => import('@/components/ModulesHub').then((m) => ({ default: m.ModulesHub })));
 const AccountPage = lazy(() => import('@/components/AccountPage').then((m) => ({ default: m.AccountPage })));
 const ReadinessPage = lazy(() => import('@/components/ReadinessPage').then((m) => ({ default: m.ReadinessPage })));
+const PhraseSpeakingPractice = lazy(() => import('@/components/PhraseSpeakingPractice').then((m) => ({ default: m.PhraseSpeakingPractice })));
 const SettingsPage = lazy(() => import('@/components/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const NewsPage = lazy(() => import('@/components/NewsPage').then((m) => ({ default: m.NewsPage })));
 const SupportPage = lazy(() => import('@/components/SupportPage').then((m) => ({ default: m.SupportPage })));
@@ -30,7 +31,7 @@ const ListeningModule = lazy(() => import('@/components/modules/ListeningModule'
 const WritingModule = lazy(() => import('@/components/modules/WritingModule').then((m) => ({ default: m.WritingModule })));
 const SpeakingModule = lazy(() => import('@/components/modules/SpeakingModule').then((m) => ({ default: m.SpeakingModule })));
 
-type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'account' | 'settings' | 'news' | 'support' | null;
+type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'phrases-speaking' | 'account' | 'settings' | 'news' | 'support' | null;
 
 const moduleIds: ModuleId[] = ['lesen', 'horen', 'schreiben', 'sprechen'];
 
@@ -53,7 +54,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (view && moduleIds.includes(view as ModuleId)) moduleStartedAt.current = Date.now();
+    if (view && (moduleIds.includes(view as ModuleId) || view === 'phrases-speaking')) moduleStartedAt.current = Date.now();
   }, [view]);
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export default function App() {
 
   const activeTab = useMemo<BottomTab>(() => {
     if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide') return 'home';
-    if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen') return 'modules';
+    if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen' || view === 'phrases-speaking') return 'modules';
     if (view === 'readiness') return 'readiness';
     if (view === 'account') return 'account';
     return 'settings';
@@ -110,7 +111,7 @@ export default function App() {
     if (view === 'lesen') return 'lesen';
     if (view === 'horen') return 'horen';
     if (view === 'schreiben') return 'schreiben';
-    if (view === 'sprechen' || view === 'instructions' || view === 'exam-guide') return 'guide';
+    if (view === 'sprechen' || view === 'phrases-speaking' || view === 'instructions' || view === 'exam-guide') return 'guide';
     if (view === 'mock-exam') return 'exam';
     if (view === 'readiness' || view === 'news') return 'home';
     return null;
@@ -155,7 +156,8 @@ export default function App() {
             <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
               {view === null && productMode === 'basic' && <ModulesHub progress={progress} onSelectModule={openModule} />}
               {view === 'modules' && <ModulesHub progress={progress} onSelectModule={openModule} />}
-              {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} />}
+              {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} onOpenPhrases={() => setView('phrases-speaking')} />}
+              {view === 'phrases-speaking' && productMode === 'full' && <PhraseSpeakingPractice onBack={() => setView('readiness')} onOpenWriting={() => openModule('schreiben')} onComplete={complete('sprechen')} />}
               {view === 'account' && <AccountPage progress={progress} />}
               {view === 'settings' && <SettingsPage />}
               {view === 'news' && <NewsPage onBack={back} />}
