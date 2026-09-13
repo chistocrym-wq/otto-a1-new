@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  ArrowRight,
   BarChart3,
   BookOpen,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
 } from 'lucide-react';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import {
-  buildDailyPlan,
   getReadiness,
   getTodayActivity,
   MODULE_META,
@@ -33,11 +31,13 @@ interface DashboardProps {
   onOpenReadiness: () => void;
   onShare: () => void;
   onOpenSupport: () => void;
+  onOpenDailyTraining: (minutes: Minutes) => void;
+  onOpenHowTo: () => void;
   progress: Progress;
   activity: ActivityEntry[];
 }
 
-type Minutes = 5 | 15 | 30;
+export type Minutes = 5 | 15 | 30;
 
 const moduleIcons: Record<ModuleId, typeof PenLine> = {
   schreiben: PenLine,
@@ -59,6 +59,8 @@ export function Dashboard({
   onOpenMockExam,
   onOpenSettings,
   onOpenReadiness,
+  onOpenDailyTraining,
+  onOpenHowTo,
   progress,
   activity,
 }: DashboardProps) {
@@ -68,9 +70,7 @@ export function Dashboard({
   });
 
   const readiness = useMemo(() => getReadiness(progress), [progress]);
-  const plan = useMemo(() => buildDailyPlan(progress, minutes), [progress, minutes]);
   const today = useMemo(() => getTodayActivity(activity), [activity]);
-  const firstTask = plan[0];
 
   const chooseMinutes = (value: Minutes) => {
     setMinutes(value);
@@ -79,10 +79,11 @@ export function Dashboard({
     } catch {
       // localStorage can be unavailable in restricted webviews.
     }
+    onOpenDailyTraining(value);
   };
 
   return (
-    <div className="otto-approved-dashboard animate-fade-in">
+    <div className="otto-approved-dashboard otto-roadmap-dashboard animate-fade-in">
       <section className="otto-approved-hero" aria-labelledby="otto-home-title">
         <div className="otto-approved-hero-copy">
           <h1 id="otto-home-title" className="otto-approved-brand">Тренажёр Отто</h1>
@@ -93,7 +94,14 @@ export function Dashboard({
         </div>
         <span className="otto-approved-skyline" aria-hidden="true" />
         <div className="otto-approved-otto" aria-hidden="true">
-          <img src="/otto/otto-home-documents.webp?v=2" className="otto-approved-otto-image" alt="" />
+          <img
+            src="/otto/otto-home-documents.webp?v=2"
+            className="otto-approved-otto-image"
+            alt=""
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
         </div>
         <span className="otto-approved-side-note" aria-hidden="true">Deutsch<br />bringt dich<br />weiter<br />♡</span>
       </section>
@@ -121,16 +129,16 @@ export function Dashboard({
         </div>
       </section>
 
-      <section className="otto-approved-training">
-        <div className="otto-approved-training-head">
+      <section className="otto-roadmap-training-picker" aria-labelledby="otto-training-picker-title">
+        <div className="otto-roadmap-training-picker-head">
           <div>
-            <strong>СЕГОДНЯ</strong>
-            <h2>Ваша тренировка</h2>
+            <span>СЕГОДНЯ</span>
+            <h2 id="otto-training-picker-title">Ваша тренировка</h2>
           </div>
-          <span className="otto-approved-time"><Clock3 /> ≈ {minutes} мин</span>
+          <Clock3 aria-hidden="true" />
         </div>
-
-        <div className="otto-approved-duration" aria-label="Выберите длительность тренировки">
+        <p className="otto-roadmap-training-picker-copy">Сколько времени хотите позаниматься сегодня?</p>
+        <div className="otto-roadmap-duration" aria-label="Выберите длительность тренировки">
           {([5, 15, 30] as Minutes[]).map((value) => (
             <button
               key={value}
@@ -139,43 +147,21 @@ export function Dashboard({
               className={minutes === value ? 'is-active' : ''}
               aria-pressed={minutes === value}
             >
-              {value} минут
+              <strong>{value}</strong>
+              <span>минут</span>
             </button>
           ))}
         </div>
-
-        <div className="otto-approved-plan">
-          {plan.map((item, index) => {
-            const Icon = moduleIcons[item.module];
-            return (
-              <button
-                key={`${item.module}-${index}`}
-                type="button"
-                onClick={() => onSelectModule(item.module)}
-                className="otto-approved-plan-row"
-              >
-                <span className="otto-approved-plan-number">{index + 1}</span>
-                <span className="otto-approved-plan-icon"><Icon /></span>
-                <span className="otto-approved-plan-copy">
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
-                </span>
-                <ChevronRight className="otto-approved-plan-chevron" />
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => firstTask && onSelectModule(firstTask.module)}
-          disabled={!firstTask}
-          className="otto-approved-primary"
-        >
-          <span>НАЧАТЬ СЕГОДНЯШНЮЮ ТРЕНИРОВКУ</span>
-          <ArrowRight />
-        </button>
       </section>
+
+      <button type="button" onClick={onOpenHowTo} className="otto-roadmap-howto-link">
+        <span className="otto-roadmap-howto-icon"><Lightbulb /></span>
+        <span>
+          <strong>Как заниматься в тренажёре?</strong>
+          <small>Коротко о программе Отто и самостоятельных занятиях</small>
+        </span>
+        <ChevronRight />
+      </button>
 
       {(today.attempts > 0 || today.minutes > 0) && (
         <section className="otto-approved-complete">
@@ -230,7 +216,7 @@ export function Dashboard({
           </p>
         </div>
         <button type="button" onClick={onOpenMockExam} className="otto-premium-secondary">
-          Попробовать как на экзамене <ArrowRight />
+          Попробовать как на экзамене <ChevronRight />
         </button>
       </section>
 
