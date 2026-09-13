@@ -1,0 +1,24 @@
+/* Sprechen card illustration hardening.
+   The Teil 3 drawings are inline SVGs. Some Android/Telegram WebViews can fail
+   to paint the whole drawing when an SVG turbulence/displacement filter is used.
+   Keep the original artwork, but force a stable, filter-free render. */
+svg[role="img"][viewBox="0 0 300 200"] {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 12rem;
+  max-height: 14rem;
+  color: #1e293b;
+  overflow: visible;
+}
+
+svg[role="img"][viewBox="0 0 300 200"] g[filter] {
+  filter: none !important;
+}
+
+@media (max-width: 640px) {
+  svg[role="img"][viewBox="0 0 300 200"] {
+    min-height: 10.5rem;
+    max-height: 12rem;
+  }
+}
