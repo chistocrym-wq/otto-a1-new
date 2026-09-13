@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -35,12 +35,7 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
     }
   });
 
-  const toggle = async () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
+  const load = async () => {
     if (translations || loading || !clean.length) return;
     setLoading(true);
     setError('');
@@ -63,34 +58,37 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
     }
   };
 
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    void load();
+  };
+
   return (
-    <div className={cn('relative shrink-0', className)}>
+    <div className={cn('shrink-0 text-right', className)}>
       <button
         type="button"
         onClick={toggle}
         aria-label={open ? 'Скрыть перевод' : 'Показать перевод'}
         title={open ? 'Скрыть перевод' : 'Показать перевод'}
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-xl border transition',
-          open ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+          'inline-flex h-10 w-10 items-center justify-center rounded-xl border transition',
+          open ? 'border-slate-300 bg-white text-teal-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
         )}
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : open ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {open ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
 
-      {open && (
-        <div className="fixed left-4 right-4 top-[76px] z-[100] mx-auto max-h-[55vh] max-w-lg overflow-y-auto rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-800 shadow-2xl sm:left-auto sm:right-6 sm:w-[420px]">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wider text-amber-800">{title}</p>
-            <button type="button" onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-600" aria-label="Закрыть перевод">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          {loading && <p>Перевожу…</p>}
+      {open && (translations?.length || error) ? (
+        <div className="mt-2 max-w-[300px] text-left text-sm leading-6 text-slate-600">
+          <span className="sr-only">{title}</span>
           {error && <p className="text-rose-700">{error}</p>}
-          {translations?.map((t, i) => <p key={i} className={i ? 'mt-2 border-t border-amber-200 pt-2' : ''}>{t}</p>)}
+          {translations?.map((t, i) => <p key={i} className={i ? 'mt-1' : ''}>{t}</p>)}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
