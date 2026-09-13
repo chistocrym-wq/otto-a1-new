@@ -24,6 +24,19 @@ const statusText = {
   train: 'ещё тренируем',
 } as const;
 
+const pathSteps = [
+  'Пишу с подсказкой',
+  'Пишу самостоятельно',
+  'Отвечаю с подсказкой',
+  'Говорю самостоятельно',
+  'Понимаю задания',
+  'Понимаю речь',
+  'Смешанная тренировка',
+  'Первый пробный экзамен',
+  'Работа над ошибками',
+  'Готов к A1',
+];
+
 export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOpenMockExam, onOpenPhrases }: Props) {
   const readiness = getReadiness(progress);
   const today = getTodayActivity(activity);
@@ -34,13 +47,13 @@ export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOp
   const topError = learning.errors[0];
 
   return (
-    <div className="animate-fade-in pb-8">
+    <div className="otto-readiness-screen animate-fade-in pb-8">
       <div className="mb-4 flex items-center gap-3">
         <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white" aria-label="Назад"><ArrowLeft className="h-5 w-5" /></button>
         <div><p className="text-xs font-black uppercase tracking-[.14em] text-teal-700">Мой путь к A1</p><h1 className="text-2xl font-black text-slate-950">Готовность к экзамену</h1></div>
       </div>
 
-      <section className="rounded-[28px] bg-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,.15)] sm:p-6">
+      <section className="otto-readiness-hero rounded-[28px] bg-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,.15)] sm:p-6">
         <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-bold text-white/65">Текущая тренировочная готовность</p><strong className="mt-1 block text-5xl font-black">{readiness.overall}%</strong></div><Target className="h-9 w-9 text-teal-300" /></div>
         <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-teal-400" style={{ width: `${readiness.overall}%` }} /></div>
         <p className="mt-3 text-sm leading-6 text-white/70">Процент учитывает точность, последние попытки, повторяемость результата и количество реальных тренировок. Одна удачная попытка не даёт 100% готовности.</p>
@@ -126,10 +139,10 @@ export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOp
         <button type="button" onClick={onOpenMockExam} className="mt-4 min-h-11 w-full rounded-xl bg-slate-950 px-4 font-black text-white">Открыть пробный экзамен</button>
       </section>
 
-      <section className="mt-6">
+      <section className="otto-readiness-path mt-6">
         <h2 className="text-xl font-black text-slate-950">Ваш путь</h2>
         <div className="mt-3 space-y-2">
-          {['✍️ Пишу с подсказкой', '✍️ Пишу самостоятельно', '🗣 Отвечаю с подсказкой', '🗣 Говорю самостоятельно', '📖 Понимаю задания', '👂 Понимаю речь', '🔄 Смешанная тренировка', '📝 Первый пробный экзамен', '🎯 Работа над ошибками', '🏆 Готов к A1'].map((step, index) => (
+          {pathSteps.map((step, index) => (
             <div key={step} className="flex items-center gap-3 rounded-xl bg-white px-3 py-3 text-sm font-semibold text-slate-700"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-500">{index + 1}</span>{step}</div>
           ))}
         </div>
