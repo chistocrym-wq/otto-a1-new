@@ -3,8 +3,8 @@ import { Dashboard } from '@/components/Dashboard';
 import { BottomNav, type BottomTab } from '@/components/BottomNav';
 import { OttoScene, type OttoSceneName } from '@/components/OttoScene';
 import { OttoSplash } from '@/components/OttoSplash';
-import { PageTranslationEye } from '@/components/common/PageTranslationEye';
 import { useProgress } from '@/hooks/useProgress';
+import { getOttoProductMode } from '@/lib/productMode';
 import type { ModuleId } from '@/types';
 import './ottoDesignV2.css';
 import './ottoViewport.css';
@@ -35,6 +35,7 @@ type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' |
 const moduleIds: ModuleId[] = ['lesen', 'horen', 'schreiben', 'sprechen'];
 
 export default function App() {
+  const productMode = getOttoProductMode();
   const [view, setView] = useState<View>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const moduleStartedAt = useRef(Date.now());
@@ -95,7 +96,6 @@ export default function App() {
     recordScore(module, score, total, elapsed);
     moduleStartedAt.current = Date.now();
   };
-  const globalEye = view === 'mock-exam';
   const viewClass = `otto-view-${view ?? 'home'}`;
 
   const activeTab = useMemo<BottomTab>(() => {
@@ -119,10 +119,10 @@ export default function App() {
   const navigateBottom = useCallback((tab: BottomTab) => {
     if (tab === 'home') setView(null);
     if (tab === 'modules') setView('modules');
-    if (tab === 'readiness') setView('readiness');
+    if (tab === 'readiness' && productMode === 'full') setView('readiness');
     if (tab === 'account') setView('account');
     if (tab === 'settings') setView('settings');
-  }, []);
+  }, [productMode]);
 
   return (
     <>
@@ -135,9 +135,8 @@ export default function App() {
         </div>
 
         <main className="otto-app-content relative z-10 mx-auto max-w-4xl">
-          {globalEye && <PageTranslationEye scopeId="otto-current-task" />}
-          <div id={globalEye ? 'otto-current-task' : undefined} className={view === null ? 'otto-home-screen' : 'otto-inner-screen'}>
-            {view === null && (
+          <div className={view === null ? 'otto-home-screen' : 'otto-inner-screen'}>
+            {view === null && productMode === 'full' && (
               <Dashboard
                 onSelectModule={openModule}
                 onOpenInstructions={() => setView('instructions')}
@@ -154,8 +153,9 @@ export default function App() {
               />
             )}
             <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
+              {view === null && productMode === 'basic' && <ModulesHub progress={progress} onSelectModule={openModule} />}
               {view === 'modules' && <ModulesHub progress={progress} onSelectModule={openModule} />}
-              {view === 'readiness' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} />}
+              {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} />}
               {view === 'account' && <AccountPage progress={progress} />}
               {view === 'settings' && <SettingsPage />}
               {view === 'news' && <NewsPage onBack={back} />}
@@ -178,7 +178,7 @@ export default function App() {
         )}
 
         {actionNotice && <div className="otto-action-toast" role="status">{actionNotice}</div>}
-        <BottomNav active={activeTab} onNavigate={navigateBottom} />
+        <BottomNav active={activeTab} onNavigate={navigateBottom} mode={productMode} />
       </div>
     </>
   );
