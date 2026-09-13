@@ -1,0 +1,75 @@
+/* Final conflict fixes for the unified inner-page layer. */
+.telegram-app:not(.otto-view-home) .otto-settings-list {
+  display: grid !important;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 10px !important;
+  overflow: hidden;
+  padding: 1px;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-row {
+  height: 100% !important;
+  min-height: 0 !important;
+  grid-template-columns: 54px minmax(0, 1fr) 24px !important;
+  align-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 18px !important;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-row.is-open {
+  align-content: center;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-row > .otto-setting-copy {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  place-items: initial !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  text-align: left;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-copy strong {
+  font-size: 18px !important;
+  line-height: 1.1;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-copy small {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.telegram-app:not(.otto-view-home) .otto-setting-details {
+  display: block;
+  max-width: 100%;
+  margin-top: 13px;
+  color: #38516d;
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+@media (max-width: 700px) {
+  .telegram-app:not(.otto-view-home) .otto-settings-list {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+
+  .telegram-app:not(.otto-view-home) .otto-setting-row {
+    grid-template-columns: 46px minmax(0, 1fr) 22px !important;
+    padding: 11px 12px !important;
+  }
+
+  .telegram-app:not(.otto-view-home) .otto-setting-copy strong { font-size: 15px !important; }
+  .telegram-app:not(.otto-view-home) .otto-setting-copy small { margin-top: 3px !important; font-size: 11px !important; }
+  .telegram-app:not(.otto-view-home) .otto-setting-details { margin-top: 7px; font-size: 11px; line-height: 1.35; }
+}
