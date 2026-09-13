@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dashboard } from '@/components/Dashboard';
+import { Dashboard, type Minutes } from '@/components/Dashboard';
 import { BottomNav, type BottomTab } from '@/components/BottomNav';
 import { OttoScene, type OttoSceneName } from '@/components/OttoScene';
 import { OttoSplash } from '@/components/OttoSplash';
@@ -20,6 +20,7 @@ import './ottoUserFixes.css';
 import './ottoApprovedHome.css';
 import './ottoApprovedHomeFinal.css';
 import './ottoTextSafety.css';
+import './ottoRoadmapStages.css';
 import '@/data/lesen/registerExtraSets';
 
 const Instructions = lazy(() => import('@/components/Instructions').then((m) => ({ default: m.Instructions })));
@@ -32,18 +33,24 @@ const PhraseSpeakingPractice = lazy(() => import('@/components/PhraseSpeakingPra
 const SettingsPage = lazy(() => import('@/components/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const NewsPage = lazy(() => import('@/components/NewsPage').then((m) => ({ default: m.NewsPage })));
 const SupportPage = lazy(() => import('@/components/SupportPage').then((m) => ({ default: m.SupportPage })));
+const DailyTrainingPage = lazy(() => import('@/components/DailyTrainingPage').then((m) => ({ default: m.DailyTrainingPage })));
+const HowToTrainPage = lazy(() => import('@/components/HowToTrainPage').then((m) => ({ default: m.HowToTrainPage })));
 const ReadingModule = lazy(() => import('@/components/modules/ReadingModule').then((m) => ({ default: m.ReadingModule })));
 const ListeningModule = lazy(() => import('@/components/modules/ListeningModule').then((m) => ({ default: m.ListeningModule })));
 const WritingModule = lazy(() => import('@/components/modules/WritingModule').then((m) => ({ default: m.WritingModule })));
 const SpeakingModule = lazy(() => import('@/components/modules/SpeakingModule').then((m) => ({ default: m.SpeakingModule })));
 
-type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'phrases-speaking' | 'account' | 'settings' | 'news' | 'support' | null;
+type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'phrases-speaking' | 'account' | 'settings' | 'news' | 'support' | 'daily-training' | 'how-to-train' | null;
 
 const moduleIds: ModuleId[] = ['lesen', 'horen', 'schreiben', 'sprechen'];
 
 export default function App() {
   const productMode = getOttoProductMode();
   const [view, setView] = useState<View>(null);
+  const [dailyMinutes, setDailyMinutes] = useState<Minutes>(() => {
+    const stored = Number(localStorage.getItem('otto-a1-session-minutes'));
+    return stored === 5 || stored === 15 || stored === 30 ? stored : 15;
+  });
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const moduleStartedAt = useRef(Date.now());
   const { progress, activity, recordScore } = useProgress();
@@ -52,6 +59,11 @@ export default function App() {
   const openModule = useCallback((module: ModuleId) => {
     moduleStartedAt.current = Date.now();
     setView(module);
+  }, []);
+
+  const openDailyTraining = useCallback((minutes: Minutes) => {
+    setDailyMinutes(minutes);
+    setView('daily-training');
   }, []);
 
   useEffect(() => {
@@ -106,7 +118,7 @@ export default function App() {
   const viewClass = `otto-view-${view ?? 'home'}`;
 
   const activeTab = useMemo<BottomTab>(() => {
-    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide') return 'home';
+    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide' || view === 'daily-training' || view === 'how-to-train') return 'home';
     if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen' || view === 'phrases-speaking') return 'modules';
     if (view === 'readiness') return 'readiness';
     if (view === 'account') return 'account';
@@ -117,9 +129,9 @@ export default function App() {
     if (view === 'lesen') return 'lesen';
     if (view === 'horen') return 'horen';
     if (view === 'schreiben') return 'schreiben';
-    if (view === 'sprechen' || view === 'phrases-speaking' || view === 'instructions' || view === 'exam-guide') return 'guide';
+    if (view === 'sprechen' || view === 'phrases-speaking' || view === 'instructions' || view === 'exam-guide' || view === 'how-to-train') return 'guide';
     if (view === 'mock-exam') return 'exam';
-    if (view === 'readiness' || view === 'news') return 'home';
+    if (view === 'readiness' || view === 'news' || view === 'daily-training') return 'home';
     return null;
   }, [view]);
 
@@ -155,6 +167,8 @@ export default function App() {
                 onOpenReadiness={() => setView('readiness')}
                 onShare={shareApp}
                 onOpenSupport={() => setView('support')}
+                onOpenDailyTraining={openDailyTraining}
+                onOpenHowTo={() => setView('how-to-train')}
                 progress={progress}
                 activity={activity}
               />
@@ -162,6 +176,8 @@ export default function App() {
             <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
               {view === null && productMode === 'basic' && <ModulesHub progress={progress} onSelectModule={openModule} />}
               {view === 'modules' && <ModulesHub progress={progress} onSelectModule={openModule} />}
+              {view === 'daily-training' && productMode === 'full' && <DailyTrainingPage minutes={dailyMinutes} progress={progress} onBack={back} onSelectModule={openModule} />}
+              {view === 'how-to-train' && productMode === 'full' && <HowToTrainPage onBack={back} />}
               {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} onOpenPhrases={() => setView('phrases-speaking')} />}
               {view === 'phrases-speaking' && productMode === 'full' && <PhraseSpeakingPractice onBack={() => setView('readiness')} onOpenWriting={() => openModule('schreiben')} onComplete={complete('sprechen')} />}
               {view === 'account' && <AccountPage progress={progress} />}
