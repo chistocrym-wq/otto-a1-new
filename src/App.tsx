@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dashboard } from '@/components/Dashboard';
 import { BottomNav, type BottomTab } from '@/components/BottomNav';
 import { OttoScene, type OttoSceneName } from '@/components/OttoScene';
@@ -21,6 +21,7 @@ const ExamGuide = lazy(() => import('@/components/ExamGuide').then((m) => ({ def
 const MockExam = lazy(() => import('@/components/MockExam').then((m) => ({ default: m.MockExam })));
 const ModulesHub = lazy(() => import('@/components/ModulesHub').then((m) => ({ default: m.ModulesHub })));
 const AccountPage = lazy(() => import('@/components/AccountPage').then((m) => ({ default: m.AccountPage })));
+const ReadinessPage = lazy(() => import('@/components/ReadinessPage').then((m) => ({ default: m.ReadinessPage })));
 const SettingsPage = lazy(() => import('@/components/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const NewsPage = lazy(() => import('@/components/NewsPage').then((m) => ({ default: m.NewsPage })));
 const SupportPage = lazy(() => import('@/components/SupportPage').then((m) => ({ default: m.SupportPage })));
@@ -29,18 +30,30 @@ const ListeningModule = lazy(() => import('@/components/modules/ListeningModule'
 const WritingModule = lazy(() => import('@/components/modules/WritingModule').then((m) => ({ default: m.WritingModule })));
 const SpeakingModule = lazy(() => import('@/components/modules/SpeakingModule').then((m) => ({ default: m.SpeakingModule })));
 
-type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'account' | 'settings' | 'news' | 'support' | null;
+type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'account' | 'settings' | 'news' | 'support' | null;
+
+const moduleIds: ModuleId[] = ['lesen', 'horen', 'schreiben', 'sprechen'];
 
 export default function App() {
   const [view, setView] = useState<View>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const { progress, recordScore } = useProgress();
+  const moduleStartedAt = useRef(Date.now());
+  const { progress, activity, recordScore } = useProgress();
   const back = useCallback(() => setView(null), []);
+
+  const openModule = useCallback((module: ModuleId) => {
+    moduleStartedAt.current = Date.now();
+    setView(module);
+  }, []);
 
   useEffect(() => {
     const t = window.Telegram?.WebApp;
     if (t) { t.ready(); t.expand(); }
   }, []);
+
+  useEffect(() => {
+    if (view && moduleIds.includes(view as ModuleId)) moduleStartedAt.current = Date.now();
+  }, [view]);
 
   useEffect(() => {
     const b = window.Telegram?.WebApp.BackButton;
@@ -77,14 +90,18 @@ export default function App() {
     }
   }, []);
 
-  const complete = (m: ModuleId) => (score: number, total: number) => recordScore(m, score, total);
+  const complete = (module: ModuleId) => (score: number, total: number) => {
+    const elapsed = Math.max(0, (Date.now() - moduleStartedAt.current) / 1000);
+    recordScore(module, score, total, elapsed);
+    moduleStartedAt.current = Date.now();
+  };
   const globalEye = view === 'mock-exam';
   const viewClass = `otto-view-${view ?? 'home'}`;
 
   const activeTab = useMemo<BottomTab>(() => {
-    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support') return 'home';
+    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide') return 'home';
     if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen') return 'modules';
-    if (view === 'exam-guide' || view === 'instructions') return 'guides';
+    if (view === 'readiness') return 'readiness';
     if (view === 'account') return 'account';
     return 'settings';
   }, [view]);
@@ -95,14 +112,14 @@ export default function App() {
     if (view === 'schreiben') return 'schreiben';
     if (view === 'sprechen' || view === 'instructions' || view === 'exam-guide') return 'guide';
     if (view === 'mock-exam') return 'exam';
-    if (view === 'news') return 'home';
+    if (view === 'readiness' || view === 'news') return 'home';
     return null;
   }, [view]);
 
   const navigateBottom = useCallback((tab: BottomTab) => {
     if (tab === 'home') setView(null);
     if (tab === 'modules') setView('modules');
-    if (tab === 'guides') setView('exam-guide');
+    if (tab === 'readiness') setView('readiness');
     if (tab === 'account') setView('account');
     if (tab === 'settings') setView('settings');
   }, []);
@@ -122,20 +139,23 @@ export default function App() {
           <div id={globalEye ? 'otto-current-task' : undefined} className={view === null ? 'otto-home-screen' : 'otto-inner-screen'}>
             {view === null && (
               <Dashboard
-                onSelectModule={setView}
+                onSelectModule={openModule}
                 onOpenInstructions={() => setView('instructions')}
                 onOpenExamGuide={() => setView('exam-guide')}
                 onOpenMockExam={() => setView('mock-exam')}
                 onOpenNews={() => setView('news')}
                 onOpenAccount={() => setView('account')}
                 onOpenSettings={() => setView('settings')}
+                onOpenReadiness={() => setView('readiness')}
                 onShare={shareApp}
                 onOpenSupport={() => setView('support')}
                 progress={progress}
+                activity={activity}
               />
             )}
             <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
-              {view === 'modules' && <ModulesHub progress={progress} onSelectModule={setView} />}
+              {view === 'modules' && <ModulesHub progress={progress} onSelectModule={openModule} />}
+              {view === 'readiness' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} />}
               {view === 'account' && <AccountPage progress={progress} />}
               {view === 'settings' && <SettingsPage />}
               {view === 'news' && <NewsPage onBack={back} />}
