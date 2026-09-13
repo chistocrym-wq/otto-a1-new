@@ -1,3 +1,11 @@
+/* Full-width approved mobile canvas. */
+.telegram-app.otto-view-home {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 /* Approved mobile home — native React/CSS implementation.
    The 941x1672 approved mockup is the sole visual reference.
    No screenshot-image UI: text, cards, buttons and icons remain native. */
