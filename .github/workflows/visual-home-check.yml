@@ -19,20 +19,20 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: preview/home-screen-react-v2
-      - name: Remove 760px preview clamp once
+      - name: Match approved bottom navigation height once
         run: |
           python - <<'PY'
           from pathlib import Path
           css = Path('src/ottoHomeReact.css')
           text = css.read_text(encoding='utf-8')
-          text = text.replace('@media (min-width: 760px) {', '@media (min-width: 1000px) {')
+          text = text.replace('  max-height: 92px;\n', '')
           css.write_text(text, encoding='utf-8')
           PY
           if ! git diff --quiet; then
             git config user.name "otto-preview-check"
             git config user.email "actions@github.com"
             git add src/ottoHomeReact.css
-            git commit -m "Let approved home fill reference width"
+            git commit -m "Match approved bottom navigation height"
             git push origin HEAD:preview/home-screen-react-v2
           fi
       - name: Wait for Netlify preview
