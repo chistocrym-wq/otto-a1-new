@@ -32,10 +32,14 @@ jobs:
           cat /tmp/otto-preview.log
           exit 1
       - name: Capture approved viewport
-        run: npx --yes playwright@1.55.0 screenshot --viewport-size="390,693" --wait-for-timeout=8000 http://127.0.0.1:4173 visual-home.png
+        run: |
+          npx --yes playwright@1.55.0 screenshot --viewport-size="390,693" --wait-for-timeout=8000 http://127.0.0.1:4173 visual-home.png
+          npx --yes playwright@1.55.0 screenshot --full-page --wait-for-timeout=1000 http://127.0.0.1:4173/asset-check.html asset-check.png
       - name: Upload screenshot
         uses: actions/upload-artifact@v4
         with:
           name: otto-approved-home-visual
-          path: visual-home.png
+          path: |
+            visual-home.png
+            asset-check.png
           retention-days: 1
