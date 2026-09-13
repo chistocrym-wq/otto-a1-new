@@ -6,7 +6,8 @@ export type SpeakingEvaluation =
   | { mode:'teil1'; expectedPoints:string[] }
   | { mode:'teil2'; theme:string; keyword:string; sampleQuestion:string }
   | { mode:'teil3'; object:string; sampleRequest:string }
-  | { mode:'free'; title:string; expectedPoints:string[] };
+  | { mode:'free'; title:string; expectedPoints:string[] }
+  | { mode:'phrase'; expectedText:string };
 
 interface EvaluationResult { score:number; transcript:string; feedbackRu:string; feedbackDe?:string; missing?:string[] }
 interface VoiceRecorderProps { evaluation:SpeakingEvaluation; onPracticed:()=>void; onEvaluated?:(score:number)=>void; hint?:string }
