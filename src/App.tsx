@@ -39,156 +39,155 @@ const SpeakingModule = lazy(() => import('@/components/modules/SpeakingModule').
 
 type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'readiness' | 'phrases-speaking' | 'account' | 'settings' | 'news' | 'support' | null;
 
-type ShareData = { title?: string; text?: string; url?: string };
-
-type NavigatorWithShare = Navigator & {
-  share?: (data?: ShareData) => Promise<void>;
-};
+const moduleIds: ModuleId[] = ['lesen', 'horen', 'schreiben', 'sprechen'];
 
 export default function App() {
   const productMode = getOttoProductMode();
-  const isFull = productMode === 'full';
   const [view, setView] = useState<View>(null);
-  const [activeTab, setActiveTab] = useState<BottomTab>('home');
-  const [showSplash, setShowSplash] = useState(true);
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [ottoScene, setOttoScene] = useState<OttoSceneName>('home');
-  const { progress, activity, recordModuleResult, recordActivity, resetProgress } = useProgress();
-  const activityStartedAt = useRef<number | null>(null);
-
-  const moduleForView = useMemo<ModuleId | null>(() => {
-    if (view === 'schreiben' || view === 'sprechen' || view === 'horen' || view === 'lesen') return view;
-    return null;
-  }, [view]);
-
-  useEffect(() => {
-    if (moduleForView) activityStartedAt.current = Date.now();
-    else activityStartedAt.current = null;
-  }, [moduleForView]);
-
-  useEffect(() => {
-    if (!view) {
-      setOttoScene('home');
-      return;
-    }
-    if (view === 'horen') setOttoScene('horen');
-    else if (view === 'lesen') setOttoScene('lesen');
-    else if (view === 'schreiben') setOttoScene('schreiben');
-    else if (view === 'sprechen' || view === 'phrases-speaking') setOttoScene('sprechen');
-    else setOttoScene('guide');
-  }, [view]);
-
-  const closeView = useCallback(() => {
-    setView(null);
-    setActiveTab('home');
-  }, []);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const moduleStartedAt = useRef(Date.now());
+  const { progress, activity, recordScore } = useProgress();
+  const back = useCallback(() => setView(null), []);
 
   const openModule = useCallback((module: ModuleId) => {
+    moduleStartedAt.current = Date.now();
     setView(module);
-    setActiveTab('modules');
   }, []);
 
-  const finishModule = useCallback((module: ModuleId, score: number, answered?: number, correct?: number) => {
-    const startedAt = activityStartedAt.current;
-    const durationSeconds = startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 1000)) : 0;
-    recordModuleResult(module, score, answered, correct);
-    recordActivity({ module, score, durationSeconds });
-    setView(null);
-    setActiveTab('home');
-  }, [recordActivity, recordModuleResult]);
-
-  const navigateTab = useCallback((tab: BottomTab) => {
-    setActiveTab(tab);
-    if (tab === 'home') setView(null);
-    else if (tab === 'modules') setView('modules');
-    else if (tab === 'readiness') setView('readiness');
-    else if (tab === 'account') setView('account');
-    else if (tab === 'settings') setView('settings');
+  useEffect(() => {
+    const t = window.Telegram?.WebApp;
+    if (t) { t.ready(); t.expand(); }
   }, []);
 
-  const openSupport = useCallback(() => setView('support'), []);
-  const openNews = useCallback(() => setView('news'), []);
+  useEffect(() => {
+    if (view && (moduleIds.includes(view as ModuleId) || view === 'phrases-speaking')) moduleStartedAt.current = Date.now();
+  }, [view]);
+
+  useEffect(() => {
+    const b = window.Telegram?.WebApp.BackButton;
+    if (!b) return;
+    if (view === null) { b.hide(); return; }
+    b.show();
+    b.onClick(back);
+    return () => { b.offClick(back); };
+  }, [back, view]);
+
+  useEffect(() => {
+    if (!actionNotice) return;
+    const id = window.setTimeout(() => setActionNotice(null), 2600);
+    return () => window.clearTimeout(id);
+  }, [actionNotice]);
 
   const shareApp = useCallback(async () => {
-    const nav = navigator as NavigatorWithShare;
-    if (nav.share) {
-      try {
-        await nav.share({ title: 'Тренажёр Отто A1', text: 'Тренажёр подготовки к Goethe A1', url: window.location.href });
-        return;
-      } catch {
-        // User cancelled or native share is unavailable.
-      }
-    }
+    const url = window.location.href.split('?')[0];
+    const data = { title: 'OTTO — Zertifikat A1', text: 'Тренажёр OTTO для подготовки к Zertifikat A1', url };
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      window.alert('Ссылка скопирована');
-    } catch {
-      window.prompt('Скопируйте ссылку:', window.location.href);
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setActionNotice('Ссылка на OTTO скопирована');
+        return;
+      }
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(data.text)}`, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setActionNotice('Не удалось открыть меню «Поделиться»');
     }
   }, []);
 
-  const onModuleScore = useCallback((module: ModuleId, score: number, answered?: number, correct?: number) => {
-    finishModule(module, score, answered, correct);
-  }, [finishModule]);
+  const complete = (module: ModuleId) => (score: number, total: number) => {
+    const elapsed = Math.max(0, (Date.now() - moduleStartedAt.current) / 1000);
+    recordScore(module, score, total, elapsed);
+    moduleStartedAt.current = Date.now();
+  };
+  const viewClass = `otto-view-${view ?? 'home'}`;
 
-  const page = useMemo(() => {
-    if (!view) {
-      if (!isFull) {
-        return <ModulesHub onBack={() => {}} onSelectModule={openModule} progress={progress} />;
-      }
-      return (
-        <Dashboard
-          onSelectModule={openModule}
-          onOpenInstructions={() => setView('instructions')}
-          onOpenExamGuide={() => setView('exam-guide')}
-          onOpenMockExam={() => setView('mock-exam')}
-          onOpenNews={openNews}
-          onOpenAccount={() => setView('account')}
-          onOpenSettings={() => setView('settings')}
-          onOpenReadiness={() => setView('readiness')}
-          onShare={shareApp}
-          onOpenSupport={openSupport}
-          progress={progress}
-          activity={activity}
-        />
-      );
-    }
-    if (view === 'instructions') return <Instructions onBack={closeView} />;
-    if (view === 'exam-guide') return <ExamGuide onBack={closeView} />;
-    if (view === 'mock-exam') return <MockExam onBack={closeView} />;
-    if (view === 'modules') return <ModulesHub onBack={closeView} onSelectModule={openModule} progress={progress} />;
-    if (view === 'readiness') return <ReadinessPage onBack={closeView} progress={progress} activity={activity} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} onOpenPhrases={() => setView('phrases-speaking')} />;
-    if (view === 'phrases-speaking') return <PhraseSpeakingPractice onBack={() => setView('readiness')} onScore={(score) => finishModule('sprechen', score)} />;
-    if (view === 'account') return <AccountPage onBack={closeView} onReset={resetProgress} />;
-    if (view === 'settings') return <SettingsPage onBack={closeView} />;
-    if (view === 'news') return <NewsPage onBack={closeView} />;
-    if (view === 'support') return <SupportPage onBack={closeView} />;
-    if (view === 'lesen') return <ReadingModule onBack={closeView} onScore={(score, answered, correct) => onModuleScore('lesen', score, answered, correct)} />;
-    if (view === 'horen') return <ListeningModule onBack={closeView} onScore={(score, answered, correct) => onModuleScore('horen', score, answered, correct)} />;
-    if (view === 'schreiben') return <WritingModule onBack={closeView} onScore={(score, answered, correct) => onModuleScore('schreiben', score, answered, correct)} />;
-    if (view === 'sprechen') return <SpeakingModule onBack={closeView} onScore={(score, answered, correct) => onModuleScore('sprechen', score, answered, correct)} />;
+  const activeTab = useMemo<BottomTab>(() => {
+    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide') return 'home';
+    if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen' || view === 'phrases-speaking') return 'modules';
+    if (view === 'readiness') return 'readiness';
+    if (view === 'account') return 'account';
+    return 'settings';
+  }, [view]);
+
+  const companionScene = useMemo<OttoSceneName | null>(() => {
+    if (view === 'lesen') return 'lesen';
+    if (view === 'horen') return 'horen';
+    if (view === 'schreiben') return 'schreiben';
+    if (view === 'sprechen' || view === 'phrases-speaking' || view === 'instructions' || view === 'exam-guide') return 'guide';
+    if (view === 'mock-exam') return 'exam';
+    if (view === 'readiness' || view === 'news') return 'home';
     return null;
-  }, [activity, closeView, finishModule, isFull, onModuleScore, openModule, openNews, openSupport, progress, resetProgress, shareApp, view]);
+  }, [view]);
+
+  const navigateBottom = useCallback((tab: BottomTab) => {
+    if (tab === 'home') setView(null);
+    if (tab === 'modules') setView('modules');
+    if (tab === 'readiness' && productMode === 'full') setView('readiness');
+    if (tab === 'account') setView('account');
+    if (tab === 'settings') setView('settings');
+  }, [productMode]);
 
   return (
-    <div className={`telegram-app otto-skin ${view ? `otto-view-${view}` : 'otto-view-home'}`}>
-      <div className="otto-glow otto-glow-a" />
-      <div className="otto-glow otto-glow-b" />
-      <div className="otto-line-art" aria-hidden="true" />
-      {showSplash && <OttoSplash onDone={() => setShowSplash(false)} />}
-      <main className="otto-app-content">
-        <Suspense fallback={<div className="otto-loading">Загрузка…</div>}>
-          <div className="otto-home-screen">{page}</div>
-        </Suspense>
-      </main>
-      {!moduleForView && !['instructions', 'exam-guide', 'mock-exam', 'phrases-speaking', 'news', 'support'].includes(view ?? '') && (
-        <BottomNav active={activeTab} onNavigate={navigateTab} mode={productMode} />
-      )}
-      {moduleForView && (
-        <OttoScene scene={ottoScene} className="otto-companion" />
-      )}
-      {showTranslation && <div className="otto-translation-layer" />}
-      <button type="button" className="sr-only" onClick={() => setShowTranslation((value) => !value)}>Перевод</button>
-    </div>
+    <>
+      <OttoSplash />
+      <div className={`telegram-app otto-skin otto-app-shell ${viewClass}`}>
+        <div className="otto-backdrop" aria-hidden="true">
+          <div className="otto-glow otto-glow-a" />
+          <div className="otto-glow otto-glow-b" />
+          <div className="otto-line-art" />
+        </div>
+
+        <main className="otto-app-content relative z-10 mx-auto max-w-4xl">
+          <div className={view === null ? 'otto-home-screen' : 'otto-inner-screen'}>
+            {view === null && productMode === 'full' && (
+              <Dashboard
+                onSelectModule={openModule}
+                onOpenInstructions={() => setView('instructions')}
+                onOpenExamGuide={() => setView('exam-guide')}
+                onOpenMockExam={() => setView('mock-exam')}
+                onOpenNews={() => setView('news')}
+                onOpenAccount={() => setView('account')}
+                onOpenSettings={() => setView('settings')}
+                onOpenReadiness={() => setView('readiness')}
+                onShare={shareApp}
+                onOpenSupport={() => setView('support')}
+                progress={progress}
+                activity={activity}
+              />
+            )}
+            <Suspense fallback={<div className="otto-route-loading" aria-hidden="true" />}>
+              {view === null && productMode === 'basic' && <ModulesHub progress={progress} onSelectModule={openModule} />}
+              {view === 'modules' && <ModulesHub progress={progress} onSelectModule={openModule} />}
+              {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} onOpenPhrases={() => setView('phrases-speaking')} />}
+              {view === 'phrases-speaking' && productMode === 'full' && <PhraseSpeakingPractice onBack={() => setView('readiness')} onOpenWriting={() => openModule('schreiben')} onComplete={complete('sprechen')} />}
+              {view === 'account' && <AccountPage progress={progress} />}
+              {view === 'settings' && <SettingsPage />}
+              {view === 'news' && <NewsPage onBack={back} />}
+              {view === 'support' && <SupportPage onBack={back} />}
+              {view === 'instructions' && <Instructions onBack={back} />}
+              {view === 'exam-guide' && <ExamGuide onBack={back} />}
+              {view === 'mock-exam' && <MockExam onBack={back} />}
+              {view === 'lesen' && <ReadingModule onBack={back} onComplete={complete('lesen')} />}
+              {view === 'horen' && <ListeningModule onBack={back} onComplete={complete('horen')} />}
+              {view === 'schreiben' && <WritingModule onBack={back} onComplete={complete('schreiben')} />}
+              {view === 'sprechen' && <SpeakingModule onBack={back} onComplete={complete('sprechen')} />}
+            </Suspense>
+          </div>
+        </main>
+
+        {companionScene && (
+          <div className={`otto-companion otto-companion-${companionScene}`} aria-hidden="true">
+            <OttoScene scene={companionScene} className="otto-companion-scene" />
+          </div>
+        )}
+
+        {actionNotice && <div className="otto-action-toast" role="status">{actionNotice}</div>}
+        <BottomNav active={activeTab} onNavigate={navigateBottom} mode={productMode} />
+      </div>
+    </>
   );
 }
