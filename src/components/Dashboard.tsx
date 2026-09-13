@@ -13,7 +13,6 @@ import {
   Sparkles,
   Trophy,
 } from 'lucide-react';
-import { OttoScene } from '@/components/OttoScene';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import {
   buildDailyPlan,
@@ -94,7 +93,7 @@ export function Dashboard({
         </div>
         <span className="otto-approved-skyline" aria-hidden="true" />
         <div className="otto-approved-otto" aria-hidden="true">
-          <OttoScene scene="home" className="otto-approved-otto-image" eager />
+          <img src="/otto/otto-home-documents.webp?v=2" className="otto-approved-otto-image" alt="" />
         </div>
         <span className="otto-approved-side-note" aria-hidden="true">Deutsch<br />bringt dich<br />weiter<br />♡</span>
       </section>
