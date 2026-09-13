@@ -9,6 +9,7 @@ interface Props {
   onBack: () => void;
   onSelectModule: (module: ModuleId) => void;
   onOpenMockExam: () => void;
+  onOpenPhrases: () => void;
 }
 
 const dot = {
@@ -23,7 +24,7 @@ const statusText = {
   train: 'ещё тренируем',
 } as const;
 
-export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOpenMockExam }: Props) {
+export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOpenMockExam, onOpenPhrases }: Props) {
   const readiness = getReadiness(progress);
   const today = getTodayActivity(activity);
   const learning = loadLearningProfile();
@@ -88,9 +89,12 @@ export function ReadinessPage({ progress, activity, onBack, onSelectModule, onOp
       <section className="mt-6 rounded-[24px] border border-teal-100 bg-teal-50/60 p-4 sm:p-5">
         <div className="flex items-center gap-2"><Quote className="h-5 w-5 text-teal-700" /><h2 className="text-lg font-black text-slate-950">Мои фразы</h2></div>
         {learning.phrases.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {learning.phrases.slice(0, 8).map((phrase) => <span key={phrase.text} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">{phrase.text}</span>)}
-          </div>
+          <>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {learning.phrases.slice(0, 8).map((phrase) => <span key={phrase.text} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">{phrase.text}</span>)}
+            </div>
+            <button type="button" onClick={onOpenPhrases} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-800 px-4 font-black text-white">Сказать мои фразы вслух <ArrowRight className="h-4 w-4" /></button>
+          </>
         ) : <p className="mt-2 text-sm leading-6 text-slate-500">Полезные конструкции будут появляться из ваших реальных писем и исправлений. Отдельно зубрить список из 100 фраз не нужно.</p>}
       </section>
 
