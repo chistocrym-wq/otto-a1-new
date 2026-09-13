@@ -9,6 +9,8 @@ interface DashboardProps {
   onOpenNews: () => void;
   onOpenAccount: () => void;
   onOpenSettings: () => void;
+  onShare: () => void;
+  onOpenSupport: () => void;
   progress: Progress;
 }
 
@@ -97,6 +99,8 @@ export function Dashboard({
   onOpenNews,
   onOpenAccount,
   onOpenSettings,
+  onShare,
+  onOpenSupport,
   progress,
 }: DashboardProps) {
   const stats = useMemo(() => {
@@ -175,8 +179,8 @@ export function Dashboard({
         <button type="button" className="is-active" aria-current="page"><HomeIcon /><span>Главная</span></button>
         <button type="button" onClick={onOpenSettings}><SettingsIcon /><span>Настройки</span></button>
         <button type="button" onClick={onOpenExamGuide}><CompassIcon /><span>Гайды</span></button>
-        <button type="button"><ShareIcon /><span>Поделиться</span></button>
-        <button type="button"><HelpIcon /><span>Поддержка</span></button>
+        <button type="button" onClick={onShare}><ShareIcon /><span>Поделиться</span></button>
+        <button type="button" onClick={onOpenSupport}><HelpIcon /><span>Поддержка</span></button>
       </nav>
     </div>
   );

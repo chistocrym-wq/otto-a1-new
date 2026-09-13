@@ -12,11 +12,10 @@ import './ottoSceneAssets.css';
 import './ottoSplash.css';
 import './ottoFinalPolish.css';
 import './ottoHomeReact.css';
+import './ottoUnifiedPages.css';
+import './ottoUnifiedPagesFix.css';
 import '@/data/lesen/registerExtraSets';
 
-// Everything below is only needed once the user navigates away from the
-// dashboard, so it's split into its own chunk instead of bloating the
-// initial bundle (this was a big part of the app feeling slow to start).
 const Instructions = lazy(() => import('@/components/Instructions').then((m) => ({ default: m.Instructions })));
 const ExamGuide = lazy(() => import('@/components/ExamGuide').then((m) => ({ default: m.ExamGuide })));
 const MockExam = lazy(() => import('@/components/MockExam').then((m) => ({ default: m.MockExam })));
@@ -24,15 +23,17 @@ const ModulesHub = lazy(() => import('@/components/ModulesHub').then((m) => ({ d
 const AccountPage = lazy(() => import('@/components/AccountPage').then((m) => ({ default: m.AccountPage })));
 const SettingsPage = lazy(() => import('@/components/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const NewsPage = lazy(() => import('@/components/NewsPage').then((m) => ({ default: m.NewsPage })));
+const SupportPage = lazy(() => import('@/components/SupportPage').then((m) => ({ default: m.SupportPage })));
 const ReadingModule = lazy(() => import('@/components/modules/ReadingModule').then((m) => ({ default: m.ReadingModule })));
 const ListeningModule = lazy(() => import('@/components/modules/ListeningModule').then((m) => ({ default: m.ListeningModule })));
 const WritingModule = lazy(() => import('@/components/modules/WritingModule').then((m) => ({ default: m.WritingModule })));
 const SpeakingModule = lazy(() => import('@/components/modules/SpeakingModule').then((m) => ({ default: m.SpeakingModule })));
 
-type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'account' | 'settings' | 'news' | null;
+type View = ModuleId | 'instructions' | 'exam-guide' | 'mock-exam' | 'modules' | 'account' | 'settings' | 'news' | 'support' | null;
 
 export default function App() {
   const [view, setView] = useState<View>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const { progress, recordScore } = useProgress();
   const back = useCallback(() => setView(null), []);
 
@@ -50,12 +51,38 @@ export default function App() {
     return () => { b.offClick(back); };
   }, [back, view]);
 
+  useEffect(() => {
+    if (!actionNotice) return;
+    const id = window.setTimeout(() => setActionNotice(null), 2600);
+    return () => window.clearTimeout(id);
+  }, [actionNotice]);
+
+  const shareApp = useCallback(async () => {
+    const url = window.location.href.split('?')[0];
+    const data = { title: 'OTTO — Zertifikat A1', text: 'Тренажёр OTTO для подготовки к Zertifikat A1', url };
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setActionNotice('Ссылка на OTTO скопирована');
+        return;
+      }
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(data.text)}`, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setActionNotice('Не удалось открыть меню «Поделиться»');
+    }
+  }, []);
+
   const complete = (m: ModuleId) => (score: number, total: number) => recordScore(m, score, total);
   const globalEye = view === 'mock-exam';
   const viewClass = `otto-view-${view ?? 'home'}`;
 
   const activeTab = useMemo<BottomTab>(() => {
-    if (view === null || view === 'mock-exam' || view === 'news') return 'home';
+    if (view === null || view === 'mock-exam' || view === 'news' || view === 'support') return 'home';
     if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen') return 'modules';
     if (view === 'exam-guide' || view === 'instructions') return 'guides';
     if (view === 'account') return 'account';
@@ -102,6 +129,8 @@ export default function App() {
                 onOpenNews={() => setView('news')}
                 onOpenAccount={() => setView('account')}
                 onOpenSettings={() => setView('settings')}
+                onShare={shareApp}
+                onOpenSupport={() => setView('support')}
                 progress={progress}
               />
             )}
@@ -110,6 +139,7 @@ export default function App() {
               {view === 'account' && <AccountPage progress={progress} />}
               {view === 'settings' && <SettingsPage />}
               {view === 'news' && <NewsPage onBack={back} />}
+              {view === 'support' && <SupportPage onBack={back} />}
               {view === 'instructions' && <Instructions onBack={back} />}
               {view === 'exam-guide' && <ExamGuide onBack={back} />}
               {view === 'mock-exam' && <MockExam onBack={back} />}
@@ -127,6 +157,7 @@ export default function App() {
           </div>
         )}
 
+        {actionNotice && <div className="otto-action-toast" role="status">{actionNotice}</div>}
         <BottomNav active={activeTab} onNavigate={navigateBottom} />
       </div>
     </>
