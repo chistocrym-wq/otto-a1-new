@@ -15,6 +15,7 @@ import './ottoHomeReact.css';
 import './ottoUnifiedPages.css';
 import './ottoUnifiedPagesFix.css';
 import './ottoVisualSystem.css';
+import './ottoVisualPages.css';
 import '@/data/lesen/registerExtraSets';
 
 const Instructions = lazy(() => import('@/components/Instructions').then((m) => ({ default: m.Instructions })));
