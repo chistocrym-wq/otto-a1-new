@@ -1,5 +1,29 @@
-import { useMemo } from 'react';
-import type { ModuleId, Progress } from '@/types';
+import { useMemo, useState } from 'react';
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Headphones,
+  HelpCircle,
+  Lightbulb,
+  MessageCircleMore,
+  PenLine,
+  Share2,
+  Sparkles,
+  Target,
+  Trophy,
+} from 'lucide-react';
+import type { ActivityEntry, ModuleId, Progress } from '@/types';
+import {
+  buildDailyPlan,
+  getGreeting,
+  getReadiness,
+  getTodayActivity,
+  MODULE_META,
+  MODULE_ORDER,
+} from '@/lib/preparation';
 
 interface DashboardProps {
   onSelectModule: (module: ModuleId) => void;
@@ -9,87 +33,33 @@ interface DashboardProps {
   onOpenNews: () => void;
   onOpenAccount: () => void;
   onOpenSettings: () => void;
+  onOpenReadiness: () => void;
   onShare: () => void;
   onOpenSupport: () => void;
   progress: Progress;
+  activity: ActivityEntry[];
 }
 
-type IconProps = { className?: string };
+type Minutes = 5 | 15 | 30;
 
-function ProgressBarsIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="38" width="11" height="16" rx="2.5" fill="currentColor"/><rect x="27" y="28" width="11" height="26" rx="2.5" fill="currentColor"/><rect x="44" y="15" width="11" height="39" rx="2.5" fill="currentColor"/></svg>;
-}
+const moduleIcons: Record<ModuleId, typeof PenLine> = {
+  schreiben: PenLine,
+  sprechen: MessageCircleMore,
+  lesen: BookOpen,
+  horen: Headphones,
+};
 
-function CheckRoundIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="m7.4 12 3.1 3.1 6.2-7" fill="none" stroke="#fff" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-}
+const statusStyle = {
+  ready: 'bg-emerald-100 text-emerald-800',
+  almost: 'bg-amber-100 text-amber-800',
+  train: 'bg-rose-100 text-rose-800',
+} as const;
 
-function TrophyIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h8v5.2c0 3.6-1.6 5.9-4 5.9S8 12.3 8 8.7V3.5Z" fill="currentColor"/><path d="M8.2 5.7H4.5v2c0 2.8 1.6 4.5 4.3 4.7M15.8 5.7h3.7v2c0 2.8-1.6 4.5-4.3 4.7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M12 14.5V19M8.5 21h7" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round"/></svg>;
-}
-
-function PencilIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M9 50.5 13.4 34 43.2 4.2a6.2 6.2 0 0 1 8.8 0l7.8 7.8a6.2 6.2 0 0 1 0 8.8L30 50.6 12.8 55Z" fill="currentColor"/><path d="m38.2 9.2 16.6 16.6" fill="none" stroke="#fff" strokeWidth="3.2" opacity=".88"/></svg>;
-}
-
-function SpeechIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M7 13.5C7 7.7 12 3 18.2 3h27.6C52 3 57 7.7 57 13.5v20C57 39.3 52 44 45.8 44H29L15 56V43.2C10.2 41.8 7 38.2 7 33.5v-20Z" fill="currentColor"/><circle cx="23" cy="24" r="3.5" fill="#fff"/><circle cx="32" cy="24" r="3.5" fill="#fff"/><circle cx="41" cy="24" r="3.5" fill="#fff"/></svg>;
-}
-
-function BookIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M6 11c9-2.8 17.2-1.1 26 5v37c-8.8-6.1-17-7.8-26-5V11Zm52 0c-9-2.8-17.2-1.1-26 5v37c8.8-6.1 17-7.8 26-5V11Z" fill="currentColor"/><path d="M32 16v37" stroke="#fff" strokeWidth="2.4" opacity=".95"/></svg>;
-}
-
-function HeadphonesIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M10 35v-6C10 17.2 19.8 7 32 7s22 10.2 22 22v6" fill="none" stroke="currentColor" strokeWidth="5.3" strokeLinecap="round"/><rect x="6" y="31" width="12" height="24" rx="6" fill="currentColor"/><rect x="46" y="31" width="12" height="24" rx="6" fill="currentColor"/><path d="M53 49c-1 5-5 7-10 7h-5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/></svg>;
-}
-
-function ClipboardIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="10" width="40" height="47" rx="5" fill="currentColor"/><rect x="22" y="5" width="20" height="11" rx="4" fill="currentColor"/><path d="m20 29 4.5 4.5 8-9M20 43l4.5 4.5 8-9" fill="none" stroke="#fff" strokeWidth="3.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M37 29h9M37 43h9" stroke="#fff" strokeWidth="3" strokeLinecap="round"/></svg>;
-}
-
-function FileIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M14 7h25l11 11v39H14z" fill="currentColor"/><path d="M39 7v13h13" fill="none" stroke="#fff" strokeWidth="3"/><path d="M22 31h20M22 39h20M22 47h14" stroke="#fff" strokeWidth="3" strokeLinecap="round"/></svg>;
-}
-
-function CapIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><path d="M4 23.5 32 10l28 13.5L32 37 4 23.5Z" fill="currentColor"/><path d="M17 32v12.5c7 6.2 23 6.2 30 0V32" fill="currentColor"/><path d="M56 27v18" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/><circle cx="56" cy="48" r="3" fill="currentColor"/></svg>;
-}
-
-function NewsIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="8" width="41" height="47" rx="4" fill="currentColor"/><rect x="18" y="18" width="25" height="11" fill="#fff"/><path d="M18 36h10M18 43h10M34 36h9M34 43h9" stroke="#fff" strokeWidth="3" strokeLinecap="round"/><path d="M51 16h5v36c0 2-1.5 3-3.2 3H51" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/></svg>;
-}
-
-function ChevronIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-}
-
-function HomeIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 48 48" aria-hidden="true"><path d="M6 23 24 7l18 16v18H29V29H19v12H6V23Z" fill="currentColor"/></svg>;
-}
-
-function SettingsIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 48 48" aria-hidden="true"><path d="M20 5h8l2 6 5 2 6-2 4 7-4 5v6l4 5-4 7-6-2-5 2-2 6h-8l-2-6-5-2-6 2-4-7 4-5v-6l-4-5 4-7 6 2 5-2 2-6Z" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" strokeWidth="3"/></svg>;
-}
-
-function CompassIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="3"/><path d="m30 17-4.4 10.6L15 32l4.4-10.6L30 17Z" fill="currentColor"/></svg>;
-}
-
-function ShareIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 48 48" aria-hidden="true"><circle cx="13" cy="24" r="5" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="35" cy="11" r="5" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="35" cy="37" r="5" fill="none" stroke="currentColor" strokeWidth="3"/><path d="m17 21 13-7M17 27l13 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>;
-}
-
-function HelpIcon({ className }: IconProps) {
-  return <svg className={className} viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="currentColor"/><path d="M18.8 18.5c.9-4.2 4-6.5 8.1-6.5 5 0 8.2 3 8.2 7 0 5.1-5.2 6.2-7.1 9.1-.8 1.1-1.1 2.2-1.1 3.5" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"/><circle cx="26.5" cy="37" r="2" fill="#fff"/></svg>;
-}
-
-const modules = [
-  { id: 'schreiben' as ModuleId, title: 'Schreiben', subtitle: 'Письмо', Icon: PencilIcon, tone: 'peach' },
-  { id: 'sprechen' as ModuleId, title: 'Sprechen', subtitle: 'Говорение', Icon: SpeechIcon, tone: 'mint' },
-  { id: 'lesen' as ModuleId, title: 'Lesen', subtitle: 'Чтение', Icon: BookIcon, tone: 'cream' },
-  { id: 'horen' as ModuleId, title: 'Hören', subtitle: 'Аудирование', Icon: HeadphonesIcon, tone: 'lavender' },
-];
+const statusLabel = {
+  ready: 'готово',
+  almost: 'почти готово',
+  train: 'тренируем',
+} as const;
 
 export function Dashboard({
   onSelectModule,
@@ -99,89 +69,148 @@ export function Dashboard({
   onOpenNews,
   onOpenAccount,
   onOpenSettings,
+  onOpenReadiness,
   onShare,
   onOpenSupport,
   progress,
+  activity,
 }: DashboardProps) {
-  const stats = useMemo(() => {
-    let answered = 0;
-    let correct = 0;
-    let started = 0;
-    modules.forEach(({ id }) => {
-      const item = progress[id];
-      const done = item?.answered ?? 0;
-      answered += done;
-      correct += item?.correct ?? 0;
-      if (done > 0) started += 1;
-    });
-    return { answered, started, accuracy: answered ? Math.round((correct / answered) * 100) : 0 };
-  }, [progress]);
+  const [minutes, setMinutes] = useState<Minutes>(() => {
+    const stored = Number(localStorage.getItem('otto-a1-session-minutes'));
+    return stored === 5 || stored === 15 || stored === 30 ? stored : 15;
+  });
+  const readiness = useMemo(() => getReadiness(progress), [progress]);
+  const plan = useMemo(() => buildDailyPlan(progress, minutes), [progress, minutes]);
+  const today = useMemo(() => getTodayActivity(activity), [activity]);
+  const firstTask = plan[0];
+
+  const chooseMinutes = (value: Minutes) => {
+    setMinutes(value);
+    try { localStorage.setItem('otto-a1-session-minutes', String(value)); } catch { /* ignore */ }
+  };
 
   return (
-    <div className="otto-real-home animate-fade-in">
-      <section className="otto-real-hero" aria-label="Тренажёр OTTO — Zertifikat A1">
-        <div className="otto-real-hero-copy">
-          <div className="otto-real-brand">
-            <span className="otto-real-brand-small">Тренажёр</span>
-            <span className="otto-real-brand-big">OTTO</span>
-            <span className="otto-real-brand-line" aria-hidden="true" />
-          </div>
-          <h1>Zertifikat A1</h1>
-          <p>Подготовка шаг за шагом</p>
-          <p>Подготовимся к экзамену вместе</p>
-          <div className="otto-real-note">Du<br />schaffst<br />das! ♡</div>
+    <div className="animate-fade-in pb-8">
+      <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0b756d] via-[#11877c] to-[#23a395] px-5 pb-5 pt-5 text-white shadow-[0_22px_55px_rgba(15,118,110,.22)] sm:px-7 sm:py-7">
+        <div className="relative z-10 max-w-[72%] sm:max-w-[65%]">
+          <p className="text-sm font-bold text-white/80">{getGreeting()}</p>
+          <h1 className="mt-1 text-[28px] font-black leading-[1.04] sm:text-4xl">Мой путь к сертификату A1</h1>
+          <p className="mt-3 text-sm leading-6 text-white/88">Отто сам подбирает, что тренировать сегодня, чтобы вы не думали, с чего начать.</p>
         </div>
-        <img className="otto-real-hero-otto" src="/otto/otto-home-documents.webp?v=2" alt="OTTO" width={400} height={500} fetchPriority="high" draggable={false} />
+        <img
+          src="/otto/otto-home-documents.webp?v=2"
+          alt="OTTO"
+          className="pointer-events-none absolute -bottom-5 -right-7 h-[185px] w-auto select-none object-contain sm:-right-1 sm:h-[245px]"
+          draggable={false}
+        />
       </section>
 
-      <button type="button" className="otto-real-progress" onClick={onOpenAccount} aria-label="Открыть мой прогресс">
-        <span className="otto-real-progress-icon"><ProgressBarsIcon /></span>
-        <span className="otto-real-progress-main">
-          <span className="otto-real-progress-top"><strong>Мой прогресс</strong><b>{stats.accuracy}%</b></span>
-          <span className="otto-real-progress-track"><i style={{ width: `${stats.accuracy}%` }} /></span>
-          <span className="otto-real-progress-meta">
-            <span><CheckRoundIcon />{stats.answered} заданий выполнено</span>
-            <span className="otto-real-progress-divider" aria-hidden="true" />
-            <span><TrophyIcon />{stats.started} из 4 модулей начато</span>
-          </span>
-        </span>
-      </button>
+      <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_35px_rgba(15,23,42,.07)] sm:p-5">
+        <button type="button" onClick={onOpenReadiness} className="w-full text-left">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[.16em] text-teal-700">Готовность к A1</p>
+              <div className="mt-1 flex items-end gap-2"><strong className="text-4xl font-black text-slate-950">{readiness.overall}%</strong><span className="pb-1 text-sm font-semibold text-slate-500">тренировочная готовность</span></div>
+            </div>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><Target className="h-6 w-6" /></span>
+          </div>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${readiness.overall}%` }} /></div>
+          <div className="mt-3 flex items-center justify-between gap-3 text-sm"><span className="font-semibold text-slate-600">Посмотреть карту готовности</span><ChevronRight className="h-5 w-5 text-slate-400" /></div>
+        </button>
+      </section>
 
-      <section className="otto-real-section otto-real-modules-section">
-        <h2>Выберите модуль</h2>
-        <div className="otto-real-modules">
-          {modules.map(({ id, title, subtitle, Icon, tone }) => (
-            <button key={id} type="button" className={`otto-real-module is-${tone}`} onClick={() => onSelectModule(id)}>
-              <span className="otto-real-module-icon"><Icon /></span>
-              <span className="otto-real-module-copy"><strong>{title}</strong><small>{subtitle}</small></span>
-              <ChevronIcon className="otto-real-chevron" />
-            </button>
+      <section className="mt-4 rounded-[24px] border border-teal-100 bg-[#f7fffd] p-4 shadow-[0_12px_35px_rgba(15,23,42,.05)] sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-teal-700 shadow-sm"><Sparkles className="h-5 w-5" /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-black uppercase tracking-[.15em] text-teal-700">Отто рекомендует</p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-slate-800">{readiness.recommendation}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <div className="flex items-end justify-between gap-3">
+          <div><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Сегодня</p><h2 className="mt-1 text-2xl font-black text-slate-950">Ваша тренировка</h2></div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600"><Clock3 className="h-3.5 w-3.5" />≈ {minutes} мин</span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1.5" aria-label="Выберите длительность тренировки">
+          {([5, 15, 30] as Minutes[]).map((value) => (
+            <button key={value} type="button" onClick={() => chooseMinutes(value)} className={`min-h-10 rounded-xl text-sm font-black transition ${minutes === value ? 'bg-white text-teal-800 shadow-sm' : 'text-slate-500'}`}>{value} минут</button>
           ))}
         </div>
+
+        <div className="mt-3 space-y-2.5">
+          {plan.map((item, index) => {
+            const Icon = moduleIcons[item.module];
+            return (
+              <button key={`${item.module}-${index}`} type="button" onClick={() => onSelectModule(item.module)} className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-[0_8px_24px_rgba(15,23,42,.04)] transition active:scale-[.99]">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><Icon className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-sm font-black text-slate-950">{index + 1}. {item.title}</span><span className="mt-0.5 block text-xs leading-5 text-slate-500">{item.detail}</span></span>
+                <span className="shrink-0 text-xs font-bold text-slate-400">{item.minutes} мин</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button type="button" onClick={() => firstTask && onSelectModule(firstTask.module)} disabled={!firstTask} className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-900/10 disabled:opacity-40">
+          НАЧАТЬ СЕГОДНЯШНЮЮ ТРЕНИРОВКУ <ArrowRight className="h-4 w-4" />
+        </button>
       </section>
 
-      <section className="otto-real-exam">
-        <span className="otto-real-exam-icon"><ClipboardIcon /></span>
-        <span className="otto-real-exam-copy"><strong>Пробный экзамен</strong><small>Проверьте свои знания<br />в формате настоящего экзамена</small></span>
-        <button type="button" onClick={onOpenMockExam}>Начать <ChevronIcon /></button>
-      </section>
+      {(today.attempts > 0 || today.minutes > 0) && (
+        <section className="mt-6 rounded-[24px] border border-emerald-100 bg-emerald-50/70 p-4">
+          <div className="flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-emerald-700" /><div><h2 className="font-black text-slate-950">Сегодня уже сделано</h2><p className="text-sm text-slate-600">{today.attempts} завершённых попыток{today.minutes ? ` · около ${today.minutes} мин активной практики` : ''}</p></div></div>
+        </section>
+      )}
 
-      <section className="otto-real-section otto-real-materials-section">
-        <h2>Полезные материалы</h2>
-        <div className="otto-real-materials">
-          <button type="button" onClick={onOpenInstructions}><FileIcon /><strong>Бланки</strong><small>Шаблоны и образцы</small></button>
-          <button type="button" onClick={onOpenExamGuide}><CapIcon /><strong>Советы OTTO</strong><small>Игры и стратегии</small></button>
-          <button type="button" onClick={onOpenNews}><NewsIcon /><strong>Новости</strong><small>Актуальная<br />информация</small></button>
+      <section className="mt-6">
+        <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-black text-slate-950">Навыки</h2><button type="button" onClick={onOpenReadiness} className="text-sm font-bold text-teal-700">Подробнее</button></div>
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+          {MODULE_ORDER.map((id) => {
+            const metric = readiness.modules[id];
+            const Icon = moduleIcons[id];
+            return (
+              <button key={id} type="button" onClick={() => onSelectModule(id)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_8px_24px_rgba(15,23,42,.04)]">
+                <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-700"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><strong className="block text-base text-slate-950">{MODULE_META[id].title}</strong><small className="text-slate-500">{MODULE_META[id].label}</small></span><b className="text-lg text-slate-950">{metric.score}%</b></div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600" style={{ width: `${metric.score}%` }} /></div>
+                <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ${statusStyle[metric.status]}`}>{statusLabel[metric.status]}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      <nav className="otto-real-home-nav" aria-label="Навигация главного экрана">
-        <button type="button" className="is-active" aria-current="page"><HomeIcon /><span>Главная</span></button>
-        <button type="button" onClick={onOpenSettings}><SettingsIcon /><span>Настройки</span></button>
-        <button type="button" onClick={onOpenExamGuide}><CompassIcon /><span>Гайды</span></button>
-        <button type="button" onClick={onShare}><ShareIcon /><span>Поделиться</span></button>
-        <button type="button" onClick={onOpenSupport}><HelpIcon /><span>Поддержка</span></button>
-      </nav>
+      <section className="mt-6 overflow-hidden rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_8px_28px_rgba(15,23,42,.05)] sm:p-5">
+        <div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><Trophy className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Пробный экзамен</p><h2 className="mt-1 text-lg font-black text-slate-950">{readiness.mockLabel}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{readiness.mockStatus === 'recommended' ? 'Результаты достаточно устойчивы. Пора проверить себя целиком.' : readiness.mockStatus === 'try' ? 'Можно пройти пробник для диагностики, но Отто ещё видит слабые места.' : `Отто рекомендует сначала укрепить ${MODULE_META[readiness.weakest].title}. Открыть пробник всё равно можно.`}</p></div></div>
+        <button type="button" onClick={onOpenMockExam} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white font-black text-slate-900">Попробовать как на экзамене <ArrowRight className="h-4 w-4" /></button>
+      </section>
+
+      <details className="mt-6 rounded-[24px] border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer list-none font-black text-slate-950">Хочу выбрать раздел сама</summary>
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          {MODULE_ORDER.map((id) => {
+            const Icon = moduleIcons[id];
+            return <button key={id} type="button" onClick={() => onSelectModule(id)} className="flex min-h-12 items-center gap-2 rounded-xl bg-slate-50 px-3 text-left text-sm font-bold text-slate-700"><Icon className="h-4 w-4 text-teal-700" />{MODULE_META[id].title}</button>;
+          })}
+        </div>
+      </details>
+
+      <details className="mt-3 rounded-[24px] border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer list-none font-black text-slate-950">Полезные материалы</summary>
+        <p className="mt-2 text-sm leading-6 text-slate-500">Справочник остаётся доступным, но читать всё заранее не нужно: основные подсказки должны появляться по ходу тренировки.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={onOpenInstructions} className="flex min-h-11 items-center gap-2 rounded-xl bg-amber-50 px-3 text-sm font-bold text-amber-900"><Lightbulb className="h-4 w-4" />Как выполнять задания</button><button type="button" onClick={onOpenExamGuide} className="flex min-h-11 items-center gap-2 rounded-xl bg-teal-50 px-3 text-sm font-bold text-teal-900"><BookOpen className="h-4 w-4" />Справочник по экзамену</button></div>
+      </details>
+
+      <div className="mt-6 grid grid-cols-4 gap-2 text-center text-[11px] font-bold text-slate-500">
+        <button type="button" onClick={onOpenAccount} className="rounded-xl bg-white px-2 py-3">Кабинет</button>
+        <button type="button" onClick={onOpenSupport} className="rounded-xl bg-white px-2 py-3"><HelpCircle className="mx-auto mb-1 h-4 w-4" />Поддержка</button>
+        <button type="button" onClick={onShare} className="rounded-xl bg-white px-2 py-3"><Share2 className="mx-auto mb-1 h-4 w-4" />Поделиться</button>
+        <button type="button" onClick={onOpenNews} className="rounded-xl bg-white px-2 py-3">Новости</button>
+      </div>
+
+      <button type="button" onClick={onOpenSettings} className="sr-only">Настройки</button>
     </div>
   );
 }
