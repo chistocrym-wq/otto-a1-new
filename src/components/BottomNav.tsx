@@ -1,7 +1,7 @@
-import { BookOpen, Compass, Home, Settings, UserRound } from 'lucide-react';
+import { BookOpen, Home, Settings, Target, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type BottomTab = 'home' | 'modules' | 'guides' | 'account' | 'settings';
+export type BottomTab = 'home' | 'modules' | 'readiness' | 'account' | 'settings';
 
 interface Props {
   active: BottomTab;
@@ -9,10 +9,10 @@ interface Props {
 }
 
 const items = [
-  { id: 'home' as const, label: 'Главная', icon: Home },
-  { id: 'modules' as const, label: 'Модули', icon: BookOpen },
-  { id: 'guides' as const, label: 'Гайды', icon: Compass },
-  { id: 'account' as const, label: 'Личный кабинет', icon: UserRound },
+  { id: 'home' as const, label: 'Сегодня', icon: Home },
+  { id: 'modules' as const, label: 'Разделы', icon: BookOpen },
+  { id: 'readiness' as const, label: 'Готовность', icon: Target },
+  { id: 'account' as const, label: 'Кабинет', icon: UserRound },
   { id: 'settings' as const, label: 'Настройки', icon: Settings },
 ];
 
