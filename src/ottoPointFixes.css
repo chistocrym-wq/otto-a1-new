@@ -1,0 +1,16 @@
+/* Point fixes requested 2026-09-14. Keep this file limited to the approved targets. */
+
+/* Main hero image: preserve the existing asset and only correct its frame/scale. */
+.otto-view-home .otto-real-hero {
+  height: 75.26cqw;
+}
+
+.otto-view-home .otto-real-hero-otto {
+  top: 4cqw;
+  right: -0.5cqw;
+  width: auto;
+  height: 83cqw;
+  max-width: none;
+  object-fit: contain;
+  object-position: right bottom;
+}
