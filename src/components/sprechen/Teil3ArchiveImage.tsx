@@ -4,35 +4,22 @@ interface Props {
   className?: string;
 }
 
-const SPRITE_COLUMNS = 10;
-const SPRITE_ROWS = 5;
-
 export function Teil3ArchiveImage({ imageIndex, alt, className = '' }: Props) {
   const safeIndex = Math.max(0, Math.min(49, Math.floor(imageIndex)));
-  const column = safeIndex % SPRITE_COLUMNS;
-  const row = Math.floor(safeIndex / SPRITE_COLUMNS);
+  const fileName = String(safeIndex + 1).padStart(3, '0');
 
   return (
     <div
       className={`relative aspect-square overflow-hidden bg-white ${className}`.trim()}
-      role="img"
-      aria-label={alt}
       data-teil3-image={safeIndex + 1}
     >
       <img
-        src="/sprechen/teil3-requests-user.avif?v=1"
-        alt=""
-        aria-hidden="true"
+        src={`/sprechen/teil3-cards/${fileName}.webp`}
+        alt={alt}
         draggable={false}
         loading="eager"
         decoding="async"
-        className="pointer-events-none absolute max-w-none select-none"
-        style={{
-          width: `${SPRITE_COLUMNS * 100}%`,
-          height: `${SPRITE_ROWS * 100}%`,
-          left: `${-column * 100}%`,
-          top: `${-row * 100}%`,
-        }}
+        className="h-full w-full select-none object-contain"
       />
     </div>
   );
