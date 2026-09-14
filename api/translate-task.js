@@ -1,5 +1,6 @@
 const MAX_PARTS = 40;
 const MAX_TOTAL = 7000;
+const MAX_SPEAKING_INPUT = 1500;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,6 +13,57 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+
+    if (body.mode === 'speaking-help') {
+      const question = String(body.question || '').trim();
+      const input = String(body.input || '').trim();
+
+      if (!question || !input) return res.status(400).json({ error: 'Введите свой вариант ответа.' });
+      if (question.length + input.length > MAX_SPEAKING_INPUT) {
+        return res.status(413).json({ error: 'Ответ слишком длинный для тренировки A1.' });
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.1,
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты помощник для устной части Goethe A1. Пользователь отвечает на немецкий вопрос и может написать исходные данные по-русски, по-немецки или смешанно. Сформулируй один естественный короткий ответ уровня A1 на немецком, строго сохраняя факты пользователя и не придумывая личные данные. Дай точный русский перевод и одну очень короткую подсказку по произношению или структуре. Ответ должен быть простым: обычно 1–2 коротких предложения.',
+            },
+            { role: 'user', content: JSON.stringify({ question, input }) },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'speaking_help',
+              strict: true,
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['german', 'russian', 'tip'],
+                properties: {
+                  german: { type: 'string' },
+                  russian: { type: 'string' },
+                  tip: { type: 'string' },
+                },
+              },
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error(`speaking help failed: ${response.status}`);
+      const payload = await response.json();
+      const content = payload.choices?.[0]?.message?.content;
+      if (!content) throw new Error('empty speaking help');
+      const parsed = JSON.parse(content);
+      return res.status(200).json({ german: parsed.german, russian: parsed.russian, tip: parsed.tip });
+    }
+
     const parts = Array.isArray(body.parts)
       ? body.parts.map((value) => String(value || '').trim()).filter(Boolean).slice(0, MAX_PARTS)
       : [];
@@ -63,6 +115,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ translations: parsed.translations });
   } catch (error) {
     console.error('translate-task error', error);
-    return res.status(500).json({ error: 'Не удалось открыть перевод. Попробуйте ещё раз.' });
+    return res.status(500).json({ error: 'Не удалось обработать запрос. Попробуйте ещё раз.' });
   }
 }

@@ -1,0 +1,1 @@
+Lesen stages 22–26 checkpoint. Preview only; production unchanged.

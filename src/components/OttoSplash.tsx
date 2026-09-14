@@ -1,50 +1,38 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { OttoScene } from '@/components/OttoScene';
 
-const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
-  left: 14 + ((i * 37) % 72),
-  top: 14 + ((i * 53) % 70),
-  dx: ((i % 11) - 5) * 18,
-  dy: -52 - ((i * 13) % 124),
-  delay: (i % 12) * 20,
-}));
+type SplashPhase = 'background' | 'figure' | 'leaving';
 
 export function OttoSplash() {
   const [active, setActive] = useState(true);
-  const [visible, setVisible] = useState(false);
-  const [dissolving, setDissolving] = useState(false);
+  const [phase, setPhase] = useState<SplashPhase>('background');
 
   useEffect(() => {
-    const reveal = window.setTimeout(() => setVisible(true), 150);
-    const dissolve = window.setTimeout(() => setDissolving(true), 1100);
-    const finish = window.setTimeout(() => setActive(false), 1500);
+    const showOttoTimer = window.setTimeout(() => setPhase('figure'), 1800);
+    const leaveTimer = window.setTimeout(() => setPhase('leaving'), 5000);
+    const finishTimer = window.setTimeout(() => setActive(false), 6800);
+
     return () => {
-      window.clearTimeout(reveal);
-      window.clearTimeout(dissolve);
-      window.clearTimeout(finish);
+      window.clearTimeout(showOttoTimer);
+      window.clearTimeout(leaveTimer);
+      window.clearTimeout(finishTimer);
     };
   }, []);
 
   if (!active) return null;
 
   return (
-    <div className={`otto-splash-screen ${dissolving ? 'is-dissolving' : ''}`} aria-hidden="true">
-      <div className={`otto-splash-figure ${visible ? 'is-visible' : ''}`}>
-        <OttoScene scene="home" className="otto-splash-otto" eager />
-      </div>
-      <div className="otto-splash-particles">
-        {PARTICLES.map((p, i) => (
-          <i
-            key={i}
-            style={{
-              left: `${p.left}%`,
-              top: `${p.top}%`,
-              '--dx': `${p.dx}px`,
-              '--dy': `${p.dy}px`,
-              '--delay': `${p.delay}ms`,
-            } as CSSProperties}
-          />
-        ))}
+    <div className={`otto-splash-screen is-${phase}`} aria-hidden="true">
+      <div className="otto-splash-glow" />
+      <div className="otto-splash-figure">
+        <div className="otto-splash-bust">
+          <OttoScene scene="home" className="otto-splash-otto" eager />
+        </div>
+        <div className="otto-splash-brand">
+          <strong>Тренажёр Отто</strong>
+          <i />
+          <span>Спокойный путь к сертификату A1</span>
+        </div>
       </div>
     </div>
   );
