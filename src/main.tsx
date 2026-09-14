@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import './ottoPremiumSystem.css';
 import './ottoPremiumVoice.css';
+import { installGermanSpeechPolicy } from './lib/germanSpeechPolicy';
+
+installGermanSpeechPolicy();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
