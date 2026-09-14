@@ -1,29 +1,30 @@
-import { mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const srcDir = path.join(root, 'assets-src', 'sprechen-t3-cards-v2');
+const archivePath = path.join(root, 'assets-src', 'sprechen-t3-cards.tar.gz');
 const outDir = path.join(root, 'public', 'sprechen', 'teil3-cards');
-const pattern = /^part\d+\.b64$/;
-const EXPECTED_PARTS = 6;
+const EXPECTED_BYTES = 71075;
+const EXPECTED_SHA256 = 'c8b1c178fac9769b7df99895a661d687ea8da701f8681ecacd00f71f76f14723';
 
-const files = (await readdir(srcDir)).filter((name) => pattern.test(name)).sort();
-if (files.length !== EXPECTED_PARTS) {
-  throw new Error(`Sprechen Teil 3 cards: expected ${EXPECTED_PARTS} bundle parts, found ${files.length}`);
+const archive = await readFile(archivePath);
+const sha256 = createHash('sha256').update(archive).digest('hex');
+
+if (archive.length !== EXPECTED_BYTES) {
+  throw new Error(`Sprechen Teil 3 cards: expected ${EXPECTED_BYTES} archive bytes, got ${archive.length}`);
 }
-
-const base64 = (await Promise.all(files.map((name) => readFile(path.join(srcDir, name), 'utf8'))))
-  .join('')
-  .replace(/\s+/g, '');
-const archive = Buffer.from(base64, 'base64');
+if (sha256 !== EXPECTED_SHA256) {
+  throw new Error(`Sprechen Teil 3 cards: SHA-256 mismatch (${sha256})`);
+}
 
 let tar;
 try {
   tar = gunzipSync(archive);
 } catch (error) {
-  throw new Error(`Sprechen Teil 3 cards: bundle is not a valid gzip archive: ${error instanceof Error ? error.message : String(error)}`);
+  throw new Error(`Sprechen Teil 3 cards: invalid gzip archive: ${error instanceof Error ? error.message : String(error)}`);
 }
 
 const cards = new Map();
@@ -35,18 +36,15 @@ for (let offset = 0; offset + 512 <= tar.length; ) {
   const sizeText = header.subarray(124, 136).toString('ascii').replace(/\0/g, '').trim();
   const size = sizeText ? Number.parseInt(sizeText, 8) : 0;
   const start = offset + 512;
+  const end = start + size;
 
   if (/^\d{3}\.webp$/.test(name)) {
-    const card = Buffer.from(tar.subarray(start, start + size));
-    const isWebP =
-      card.length >= 12 &&
-      card.subarray(0, 4).toString('ascii') === 'RIFF' &&
-      card.subarray(8, 12).toString('ascii') === 'WEBP';
-    if (!isWebP) {
-      throw new Error(`Sprechen Teil 3 cards: ${name} is not a valid WebP file`);
-    }
-    cards.set(name, card);
+    const buffer = Buffer.from(tar.subarray(start, end));
+    const isWebp = buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+    if (!isWebp) throw new Error(`Sprechen Teil 3 cards: ${name} is not a valid WebP file`);
+    cards.set(name, buffer);
   }
+
   offset = start + Math.ceil(size / 512) * 512;
 }
 
@@ -61,4 +59,4 @@ for (const name of expectedNames) {
   await writeFile(path.join(outDir, name), cards.get(name));
 }
 
-console.log(`Built ${expectedNames.length} separate verified Sprechen Teil 3 cards in ${path.relative(root, outDir)}.`);
+console.log(`Built ${expectedNames.length} separate Sprechen Teil 3 cards in ${path.relative(root, outDir)}.`);
