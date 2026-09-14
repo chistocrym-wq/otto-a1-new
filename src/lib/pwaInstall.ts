@@ -5,6 +5,8 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<InstallChoice>;
 }
 
+type TelegramWebApp = { initData?: string; platform?: string };
+
 export type PwaInstallResult = 'accepted' | 'dismissed' | 'already-installed' | 'manual';
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -75,7 +77,9 @@ function isIos() {
 }
 
 function isTelegramWebView() {
-  return Boolean((window as Window & { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp);
+  const webApp = (window as Window & { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
+  if (!webApp) return false;
+  return Boolean(webApp.initData) || Boolean(webApp.platform && webApp.platform !== 'unknown');
 }
 
 export function manualInstallHint(lang: 'ru' | 'de') {
