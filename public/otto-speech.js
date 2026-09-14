@@ -11,8 +11,8 @@
   const nativeCancel = synth?.cancel ? synth.cancel.bind(synth) : null;
 
   const GERMAN_LETTER_NAMES = {
-    A: 'A', B: 'Be', C: 'Ce', D: 'De', E: 'E', F: 'Eff', G: 'Ge', H: 'Ha', I: 'I', J: 'Jot',
-    K: 'Ka', L: 'Ell', M: 'Emm', N: 'Enn', O: 'O', P: 'Pe', Q: 'Ku', R: 'Er', S: 'Ess', T: 'Te',
+    A: 'A', B: 'Be', C: 'Ce', D: 'De', E: 'E', F: 'Ef', G: 'Ge', H: 'Ha', I: 'I', J: 'Jot',
+    K: 'Ka', L: 'El', M: 'Em', N: 'En', O: 'O', P: 'Pe', Q: 'Ku', R: 'Er', S: 'Es', T: 'Te',
     U: 'U', V: 'Fau', W: 'We', X: 'Iks', Y: 'Ypsilon', Z: 'Zett', Ä: 'Ä', Ö: 'Ö', Ü: 'Ü', ẞ: 'Eszett',
   };
 
@@ -62,17 +62,25 @@
   }
 
   function germanSpellingFallback(text) {
-    const parts = [];
+    const words = [];
+    let letters = [];
+    const flushWord = () => {
+      if (!letters.length) return;
+      words.push(letters.join(', '));
+      letters = [];
+    };
+
     for (const character of String(text || '').normalize('NFC')) {
       if (/\s/u.test(character)) {
-        if (parts.length && parts[parts.length - 1] !== 'Pause') parts.push('Pause');
+        flushWord();
         continue;
       }
       const upper = character.toLocaleUpperCase('de-DE');
-      if (GERMAN_LETTER_NAMES[upper]) parts.push(GERMAN_LETTER_NAMES[upper]);
-      else if (/\d/u.test(character)) parts.push(character);
+      if (GERMAN_LETTER_NAMES[upper]) letters.push(GERMAN_LETTER_NAMES[upper]);
+      else if (/\d/u.test(character)) letters.push(character);
     }
-    return parts.join(', ');
+    flushWord();
+    return words.join('; ');
   }
 
   function browserFallback(text, mode = currentMode(), style = 'normal') {
