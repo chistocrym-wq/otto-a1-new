@@ -1,0 +1,107 @@
+name: Requested Fixes Preview QA
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  preview-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify current preview and capture requested screens
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          cat > /tmp/qa-requested.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const base = process.env.TARGET_URL;
+          fs.mkdirSync('requested-qa', { recursive: true });
+          const browser = await chromium.launch({ headless: true });
+
+          async function openMock(page) {
+            await page.goto(base + '/?qa=requested-fixes', { waitUntil: 'networkidle' });
+            const mockButton = page.getByRole('button', { name: /Попробовать как на экзамене/i });
+            await mockButton.scrollIntoViewIfNeeded();
+            await mockButton.click();
+            await page.getByRole('heading', { name: 'Пробный экзамен Goethe A1' }).waitFor({ timeout: 15000 });
+            await page.getByRole('button', { name: /Sprechen/i }).click();
+            await page.getByText('Teil 1 · Sich vorstellen').waitFor({ timeout: 15000 });
+          }
+
+          let ready = false;
+          for (let attempt = 1; attempt <= 60 && !ready; attempt++) {
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            try {
+              await openMock(page);
+              const img = page.locator('img[src*="/sprechen/teil3-originals/"]').first();
+              await img.waitFor({ timeout: 5000 });
+              ready = await img.evaluate(el => el.complete && el.naturalWidth > 0);
+            } catch {}
+            await page.close();
+            if (!ready) await new Promise(r => setTimeout(r, 10000));
+          }
+          if (!ready) throw new Error('Current Deploy Preview did not expose the updated existing Teil 3 asset connection.');
+
+          const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+          await mobile.goto(base + '/?qa=requested-fixes-mobile', { waitUntil: 'networkidle' });
+          const readiness = mobile.locator('.otto-approved-readiness-button');
+          await readiness.waitFor();
+          const readinessBox = await readiness.boundingBox();
+          const readinessOverflow = await readiness.evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }));
+          if (!readinessBox || readinessBox.x < -0.5 || readinessBox.x + readinessBox.width > 390.5) throw new Error('Readiness button is outside mobile viewport.');
+          if (readinessOverflow.scrollWidth > readinessOverflow.clientWidth + 1 || readinessOverflow.scrollHeight > readinessOverflow.clientHeight + 1) throw new Error('Readiness button content is clipped.');
+          await mobile.screenshot({ path: 'requested-qa/home-mobile.png', fullPage: true });
+
+          const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+          await desktop.goto(base + '/?qa=requested-fixes-desktop', { waitUntil: 'networkidle' });
+          await desktop.locator('.otto-approved-hero').waitFor();
+          await desktop.screenshot({ path: 'requested-qa/home-desktop.png', fullPage: false });
+
+          const mock = await browser.newPage({ viewport: { width: 390, height: 844 } });
+          await openMock(mock);
+          for (const title of ['Teil 1 · Sich vorstellen','Teil 2 · Informationen geben und erfragen','Teil 3 · Bitten formulieren und reagieren']) {
+            if (await mock.getByText(title, { exact: true }).count() !== 1) throw new Error(`Missing mock Sprechen block: ${title}`);
+          }
+          const cards = mock.locator('img[src*="/sprechen/teil3-originals/"]');
+          if (await cards.count() < 2) throw new Error('Mock Sprechen Teil 3 existing cards are not connected.');
+          for (let i=0; i<Math.min(2, await cards.count()); i++) {
+            const ok = await cards.nth(i).evaluate(el => el.complete && el.naturalWidth > 0);
+            if (!ok) throw new Error(`Mock Sprechen Teil 3 image ${i+1} did not decode.`);
+          }
+          const recordButtons = mock.getByRole('button', { name: 'Записать ответ' });
+          if (await recordButtons.count() < 5) throw new Error('Mock Sprechen record controls missing.');
+          await mock.screenshot({ path: 'requested-qa/mock-sprechen-mobile.png', fullPage: true });
+
+          const ai = await mock.request.post(base + '/api/translate-task', { data: { mode: 'explain-pair', text: 'Задание: Heute geschlossen. Правильный ответ: richtig.' } });
+          const aiText = await ai.text();
+          fs.writeFileSync('requested-qa/ai-response.txt', `${ai.status()}\n${aiText}`);
+          if (!ai.ok()) throw new Error(`Otto AI explain-pair failed with ${ai.status()}: ${aiText.slice(0,200)}`);
+          const parsed = JSON.parse(aiText);
+          if (!parsed.explanationRu || typeof parsed.explanationRu !== 'string') throw new Error('Otto AI explain-pair returned no explanationRu.');
+
+          await browser.close();
+          console.log(JSON.stringify({ readinessOverflow, mockCards: await cards.count(), aiStatus: ai.status() }));
+          NODE
+          node /tmp/qa-requested.mjs
+      - name: Upload requested QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requested-fixes-preview-qa
+          path: requested-qa
+          retention-days: 3
