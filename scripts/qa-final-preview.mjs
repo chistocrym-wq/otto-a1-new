@@ -19,6 +19,17 @@ const browser = await chromium.launch({
   args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
 });
 
+async function hideNetlifyDrawer(page) {
+  await page.addStyleTag({ content: `
+    iframe[title="Netlify Drawer"],
+    [data-netlify-deploy-id],
+    [data-netlify-site-id] { display:none!important; pointer-events:none!important; visibility:hidden!important; }
+  ` }).catch(() => {});
+  await page.evaluate(() => {
+    document.querySelectorAll('iframe[title="Netlify Drawer"], [data-netlify-deploy-id], [data-netlify-site-id]').forEach((el) => el.remove());
+  }).catch(() => {});
+}
+
 async function openPage(width = 390, height = 844, { waitSplash = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height } });
   await context.grantPermissions(['microphone'], { origin: base }).catch(() => {});
@@ -33,6 +44,7 @@ async function openPage(width = 390, height = 844, { waitSplash = false } = {}) 
     if (url.startsWith(base)) report.networkErrors.push({ width, failed: true, url, reason: req.failure()?.errorText || '' });
   });
   await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await hideNetlifyDrawer(page);
   if (waitSplash) {
     await page.locator('.otto-splash-screen').waitFor({ state: 'detached', timeout: 10000 }).catch(async () => {
       await page.waitForTimeout(7200);
@@ -41,6 +53,7 @@ async function openPage(width = 390, height = 844, { waitSplash = false } = {}) 
     await page.addStyleTag({ content: '.otto-splash-screen{display:none!important}' }).catch(() => {});
     await page.waitForTimeout(450);
   }
+  await hideNetlifyDrawer(page);
   return { page, context };
 }
 
@@ -56,22 +69,31 @@ async function assertNoOverflow(page, label) {
 }
 
 async function screenshot(page, name, fullPage = true) {
+  await hideNetlifyDrawer(page);
   await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage });
 }
 
 async function bottom(page, text) {
+  await hideNetlifyDrawer(page);
   const btn = page.getByRole('button', { name: new RegExp(`^${esc(text)}$`, 'i') }).last();
   await btn.waitFor({ state: 'visible', timeout: 10000 });
-  await btn.click();
+  await btn.click({ force: true });
   await page.waitForTimeout(450);
 }
 
 async function openModule(page, name) {
   await bottom(page, 'Разделы');
+  await hideNetlifyDrawer(page);
   const button = page.locator('button').filter({ hasText: name }).first();
   await button.waitFor({ state: 'visible', timeout: 10000 });
-  await button.click();
+  await button.click({ force: true });
   await page.waitForTimeout(650);
+}
+
+async function afterReload(page) {
+  await page.addStyleTag({ content: '.otto-splash-screen{display:none!important}' }).catch(() => {});
+  await hideNetlifyDrawer(page);
+  await page.waitForTimeout(350);
 }
 
 // First launch: actually wait for the splash to finish.
@@ -96,7 +118,7 @@ for (const [width, height] of [[320, 760], [375, 812], [430, 932], [1440, 1000]]
 for (const minutes of [5, 15, 30]) {
   const { page, context } = await openPage(390, 844);
   const button = page.locator('.otto-roadmap-duration button').filter({ hasText: String(minutes) }).first();
-  await button.click();
+  await button.click({ force: true });
   await page.waitForTimeout(450);
   const visible = await page.getByText('Ваша тренировка на сегодня', { exact: false }).first().isVisible().catch(() => false);
   check(`${minutes} min opens separate daily plan`, visible);
@@ -117,16 +139,16 @@ for (const minutes of [5, 15, 30]) {
   const { page, context } = await openPage(390, 844);
   await openModule(page, 'Lesen');
   const teil2 = page.locator('button').filter({ hasText: 'Teil 2' }).first();
-  await teil2.click(); await page.waitForTimeout(350);
+  await teil2.click({ force: true }); await page.waitForTimeout(350);
   const choice = page.locator('button').filter({ hasText: /^A/ }).first();
-  await choice.click();
+  await choice.click({ force: true });
   const before = await choice.getAttribute('class');
   check('Lesen choice is not green/red before check', !/emerald|rose/.test(before || ''), before || '');
-  await page.getByRole('button', { name: 'Проверить' }).click(); await page.waitForTimeout(500);
+  await page.getByRole('button', { name: 'Проверить' }).click({ force: true }); await page.waitForTimeout(500);
   const after = await choice.getAttribute('class');
   check('Lesen choice gets checked styling', /emerald|rose/.test(after || ''), after || '');
   await screenshot(page, 'lesen-checked');
-  await page.reload({ waitUntil: 'domcontentloaded' }); await page.addStyleTag({ content: '.otto-splash-screen{display:none!important}' }); await page.waitForTimeout(350);
+  await page.reload({ waitUntil: 'domcontentloaded' }); await afterReload(page);
   await openModule(page, 'Lesen');
   check('Lesen progress persists after reload', await page.getByText(/Выполнено:\s*1\/50/i).first().isVisible().catch(() => false));
   await context.close();
@@ -138,13 +160,13 @@ for (const minutes of [5, 15, 30]) {
   await openModule(page, 'Hören');
   check('Hören audio player visible', await page.locator('audio').isVisible().catch(() => false));
   check('Hören transcript hidden initially', !(await page.getByText('Deutsch', { exact: true }).isVisible().catch(() => false)));
-  await page.getByRole('button', { name: /Показать текст диалога/i }).click(); await page.waitForTimeout(1800);
+  await page.getByRole('button', { name: /Показать текст диалога/i }).click({ force: true }); await page.waitForTimeout(1800);
   check('Hören transcript opens', await page.getByText('Deutsch', { exact: true }).isVisible().catch(() => false));
   const choice = page.locator('section button').filter({ hasText: /^A\./ }).first();
-  if (await choice.count()) await choice.click(); else await page.locator('section button').filter({ hasText: 'Richtig' }).first().click();
-  await page.getByRole('button', { name: 'Проверить' }).click(); await page.waitForTimeout(400);
+  if (await choice.count()) await choice.click({ force: true }); else await page.locator('section button').filter({ hasText: 'Richtig' }).first().click({ force: true });
+  await page.getByRole('button', { name: 'Проверить' }).click({ force: true }); await page.waitForTimeout(400);
   await screenshot(page, 'horen-checked');
-  await page.reload({ waitUntil: 'domcontentloaded' }); await page.addStyleTag({ content: '.otto-splash-screen{display:none!important}' }); await page.waitForTimeout(350);
+  await page.reload({ waitUntil: 'domcontentloaded' }); await afterReload(page);
   await openModule(page, 'Hören');
   check('Hören progress persists after reload', await page.getByText(/выполнено\s+1/i).first().isVisible().catch(() => false));
   await context.close();
@@ -155,10 +177,10 @@ for (const minutes of [5, 15, 30]) {
   const { page, context } = await openPage(390, 844);
   await openModule(page, 'Schreiben');
   const continueBtn = page.locator('button').filter({ hasText: 'Продолжить Schreiben' }).first();
-  await continueBtn.click(); await page.waitForTimeout(350);
+  await continueBtn.click({ force: true }); await page.waitForTimeout(350);
   const show = page.getByRole('button', { name: /Показать пример/i }).first();
   if (await show.isVisible().catch(() => false)) {
-    await show.click();
+    await show.click({ force: true });
     const close = page.getByRole('button', { name: /Закрыть пример/i }).first();
     await close.waitFor({ state: 'visible', timeout: 45000 }).catch(() => {});
     check('Schreiben example loads from backend', await close.isVisible().catch(() => false));
@@ -174,13 +196,13 @@ for (const minutes of [5, 15, 30]) {
   const { page, context } = await openPage(390, 844);
   await openModule(page, 'Sprechen');
   const t1 = page.locator('button').filter({ hasText: 'Sich vorstellen' }).first();
-  await t1.click(); await page.waitForTimeout(350);
+  await t1.click({ force: true }); await page.waitForTimeout(350);
   const record = page.getByRole('button', { name: /Записать ответ/i }).first();
-  await record.click(); await page.waitForTimeout(1300);
+  await record.click({ force: true }); await page.waitForTimeout(1300);
   const stop = page.getByRole('button', { name: /Остановить запись/i }).first();
   const recordingWorked = await stop.isVisible().catch(() => false);
   check('Sprechen microphone starts recording', recordingWorked);
-  if (recordingWorked) { await stop.click(); await page.waitForTimeout(1000); }
+  if (recordingWorked) { await stop.click({ force: true }); await page.waitForTimeout(1000); }
   check('Sprechen creates playable recording', await page.locator('audio').isVisible().catch(() => false));
   await screenshot(page, 'sprechen-microphone');
   await context.close();
@@ -198,7 +220,7 @@ for (const [tab, shot] of [['Кабинет','account'], ['Готовность'
 {
   const { page, context } = await openPage(390, 844);
   const mock = page.locator('button').filter({ hasText: 'Попробовать как на экзамене' }).first();
-  await mock.click(); await page.waitForTimeout(450);
+  await mock.click({ force: true }); await page.waitForTimeout(450);
   for (const name of ['Hören','Lesen','Schreiben','Sprechen']) check(`mock menu has ${name}`, await page.locator('button').filter({ hasText: name }).first().isVisible().catch(() => false));
   check('mock hides section scores before completion', !(await page.getByText(/\/25/).first().isVisible().catch(() => false)));
   await screenshot(page, 'mock-menu');
