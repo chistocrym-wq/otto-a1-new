@@ -63,11 +63,11 @@
 
 .otto-approved-hero .otto-approved-otto-image {
   position: absolute !important;
-  top: -7% !important;
-  right: -20% !important;
+  top: -2% !important;
+  right: -8% !important;
   width: auto !important;
   max-width: none !important;
-  height: 178% !important;
+  height: 146% !important;
   min-height: 0 !important;
   object-fit: contain !important;
   object-position: right top !important;
@@ -154,6 +154,7 @@
   height: auto !important;
   min-height: 55px !important;
   max-height: none !important;
+  overflow: visible !important;
 }
 
 .otto-approved-readiness-top,
@@ -171,6 +172,15 @@
 .otto-approved-complete p {
   overflow-wrap: break-word !important;
   word-break: normal !important;
+}
+
+.otto-approved-readiness-top strong {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  line-height: 1.18 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
 }
 
 .otto-approved-complete {
