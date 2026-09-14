@@ -1,26 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Bell, Globe2, Play, Smartphone, Volume1, Volume2 } from 'lucide-react';
+import { Bell, Globe2, LifeBuoy, Play, Share2, Smartphone, Volume1, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import { UI_LANGUAGES, useUiLanguage } from '@/lib/i18n';
 import { notificationCapability, readReminder, requestNotifications, saveReminder, type ReminderSettings } from '@/lib/reminders';
+import { canPromptInstall, isStandaloneApp, manualInstallHint, requestPwaInstall, subscribePwaInstall } from '@/lib/pwaInstall';
 
 type SpeechMode='normal'|'slow';
 type OttoSpeechApi={play?:(text:string,options?:{mode?:SpeechMode})=>Promise<boolean>;setMode?:(mode:SpeechMode)=>void};
+interface Props{onOpenSupport:()=>void;onShare:()=>void|Promise<void>}
 function speechApi(){return(window as Window&{OttoSpeech?:OttoSpeechApi}).OttoSpeech}
 const DAY_KEYS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'] as const;
 
-export function SettingsPage(){
+export function SettingsPage({onOpenSupport,onShare}:Props){
   const{lang,setLanguage,t}=useUiLanguage();
   const[voiceMode,setVoiceMode]=useState<SpeechMode>(()=>{try{return localStorage.getItem('ottoSpeechModeV1')==='slow'?'slow':'normal'}catch{return'normal'}});
   const[reminder,setReminder]=useState<ReminderSettings>(readReminder);
   const[permission,setPermission]=useState(()=>notificationCapability());
   const[notice,setNotice]=useState('');
+  const[installNotice,setInstallNotice]=useState('');
+  const[installing,setInstalling]=useState(false);
+  const[,setInstallStateVersion]=useState(0);
   useEffect(()=>{document.documentElement.lang=lang},[lang]);
+  useEffect(()=>subscribePwaInstall(()=>setInstallStateVersion(v=>v+1)),[]);
   const changeVoice=(mode:SpeechMode)=>{setVoiceMode(mode);speechApi()?.setMode?.(mode);try{localStorage.setItem('ottoSpeechModeV1',mode)}catch{}};
   const testVoice=()=>void speechApi()?.play?.('Hallo. Ich heiße Otto. Schön, dass du da bist.',{mode:voiceMode});
   const toggleDay=(day:number)=>setReminder(v=>({...v,days:v.days.includes(day)?v.days.filter(x=>x!==day):[...v.days,day].sort()}));
   const enableNotifications=async()=>{const next=await requestNotifications();setPermission(next);setNotice(next==='granted'?t('notificationSaved'):next==='unsupported'?t('notificationUnsupported'):t('notificationDenied'))};
   const commitReminder=()=>{const next={...reminder,enabled:reminder.days.length>0};saveReminder(next);setReminder(next);setNotice(t('notificationSaved'))};
+  const install=async()=>{setInstalling(true);setInstallNotice('');const result=await requestPwaInstall();setInstalling(false);if(result==='already-installed'){setInstallNotice(lang==='de'?'OTTO ist bereits als App installiert.':'OTTO уже установлен как отдельное приложение.');return}if(result==='accepted'){setInstallNotice(lang==='de'?'Die Installation wurde gestartet.':'Установка приложения запущена.');return}if(result==='dismissed'){setInstallNotice(lang==='de'?'Die Installation wurde abgebrochen. Sie können es später erneut versuchen.':'Установка отменена. Вы сможете повторить её позже.');return}setInstallNotice(manualInstallHint(lang))};
+  const installed=isStandaloneApp();
+  const promptReady=canPromptInstall();
   return <div className="otto-hub-screen otto-settings-screen animate-fade-in">
     <section className="otto-page-hero"><div><p className="otto-kicker">{t('settings')}</p><h1>OTTO A1</h1><p className="mt-1 max-w-lg text-sm text-slate-600">{lang==='de'?'Sprache, Trainingserinnerungen und Audio-Einstellungen.':'Язык интерфейса, напоминания о тренировках и звук.'}</p></div><div className="otto-page-hero-character" aria-hidden="true"><OttoScene scene="guide" className="otto-page-hero-scene"/></div></section>
 
@@ -41,6 +50,10 @@ export function SettingsPage(){
 
     <section className="otto-voice-settings mt-4" aria-labelledby="otto-voice-heading"><div className="otto-voice-heading-row"><span className="otto-setting-icon"><Volume2/></span><div><p className="otto-kicker">{lang==='de'?'OTTO-Stimme':'Фирменный голос'}</p><h2 id="otto-voice-heading">{lang==='de'?'Sprechtempo':'Как говорит Отто'}</h2></div></div><p className="otto-voice-copy">{lang==='de'?'Wählen Sie normales oder etwas langsameres Deutsch.':'Выберите естественный темп или чуть более медленную немецкую речь.'}</p><div className="otto-voice-mode" role="group"><button type="button" className={voiceMode==='normal'?'is-active':''} onClick={()=>changeVoice('normal')}><Volume2/>{lang==='de'?'Normal':'Нормально'}</button><button type="button" className={voiceMode==='slow'?'is-active':''} onClick={()=>changeVoice('slow')}><Volume1/>{lang==='de'?'Langsamer':'Медленнее'}</button></div><button type="button" className="otto-voice-test" onClick={testVoice}><Play/>{lang==='de'?'OTTO anhören':'Послушать голос Отто'}</button></section>
 
-    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 sm:p-5"><div className="flex gap-3"><span className="otto-setting-icon"><Smartphone/></span><div><h2 className="font-black text-slate-950">{t('install')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{lang==='de'?'Wenn Ihr Browser „App installieren“ oder „Zum Startbildschirm hinzufügen“ anbietet, können Sie OTTO als eigene App öffnen.':'Если браузер предлагает «Установить приложение» или «Добавить на главный экран», OTTO можно запускать как отдельное приложение.'}</p></div></div></section>
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 sm:p-5"><div className="flex gap-3"><span className="otto-setting-icon"><Smartphone/></span><div className="min-w-0 flex-1"><h2 className="font-black text-slate-950">{t('install')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{installed?(lang==='de'?'OTTO läuft bereits als eigenständige App.':'OTTO уже запускается как отдельное приложение.'):(lang==='de'?'Installieren Sie OTTO auf diesem Gerät und öffnen Sie es anschließend wie eine normale App.':'Установите OTTO на это устройство и запускайте его затем как отдельное приложение.')}</p><button type="button" onClick={()=>void install()} disabled={installing} className="mt-3 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700 disabled:opacity-50">{installing?(lang==='de'?'Installation…':'Установка…'):installed?(lang==='de'?'App ist installiert':'Приложение установлено'):promptReady?(lang==='de'?'App installieren':'Установить приложение'):(lang==='de'?'App installieren':'Установить приложение')}</button>{installNotice&&<p role="status" className="mt-3 rounded-xl bg-[#F4F7F2] px-3 py-2 text-sm leading-6 text-slate-700">{installNotice}</p>}</div></div></section>
+
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 sm:p-5"><div className="flex gap-3"><span className="otto-setting-icon"><LifeBuoy/></span><div className="min-w-0 flex-1"><h2 className="font-black text-slate-950">{lang==='de'?'Support kontaktieren':'Написать в поддержку'}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{lang==='de'?'Öffnen Sie den bereits vorhandenen OTTO-Supportbereich.':'Откройте уже предусмотренный в OTTO раздел поддержки.'}</p><button type="button" onClick={onOpenSupport} className="mt-3 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">{lang==='de'?'Support öffnen':'Написать в поддержку'}</button></div></div></section>
+
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 sm:p-5"><div className="flex gap-3"><span className="otto-setting-icon"><Share2/></span><div className="min-w-0 flex-1"><h2 className="font-black text-slate-950">{lang==='de'?'Teilen':'Поделиться'}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{lang==='de'?'Teilen Sie OTTO über das Systemmenü Ihres Geräts.':'Поделитесь OTTO через системное меню вашего устройства.'}</p><button type="button" onClick={()=>void onShare()} className="mt-3 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">{lang==='de'?'Teilen':'Поделиться'}</button></div></div></section>
   </div>;
 }
