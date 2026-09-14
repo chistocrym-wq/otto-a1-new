@@ -47,15 +47,33 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
   const urlRef=useRef<string|null>(null);
   const fileRef=useRef<HTMLInputElement|null>(null);
   const resultReportedRef=useRef(false);
+  const evaluationKey=JSON.stringify(evaluation);
+  const previousEvaluationKeyRef=useRef(evaluationKey);
 
   const clearTimer=useCallback(()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null}},[]);
-  const reset=useCallback(()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current);urlRef.current=null;setAudioUrl(null);setAudioBlob(null);setElapsed(0);setResult(null);setError(null);resultReportedRef.current=false},[]);
+  const reset=useCallback(()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current);urlRef.current=null;setAudioUrl(null);setAudioBlob(null);setElapsed(0);setResult(null);setError(null);setChecking(false);resultReportedRef.current=false},[]);
 
   useEffect(()=>{
     let active=true;
     fetch('/api/check-sprechen',{method:'GET'}).then(r=>r.json()).then(p=>{if(active)setAiAvailable(Boolean(p?.aiConfigured))}).catch(()=>{if(active)setAiAvailable(null)});
     return()=>{active=false;clearTimer();if(recorderRef.current?.state==='recording')recorderRef.current.stop();muteSharedMic();if(urlRef.current)URL.revokeObjectURL(urlRef.current)};
   },[clearTimer]);
+
+  useEffect(()=>{
+    if(previousEvaluationKeyRef.current===evaluationKey)return;
+    previousEvaluationKeyRef.current=evaluationKey;
+    clearTimer();
+    const recorder=recorderRef.current;
+    if(recorder?.state==='recording'){
+      recorder.onstop=null;
+      recorder.stop();
+    }
+    recorderRef.current=null;
+    chunksRef.current=[];
+    muteSharedMic();
+    setIsRecording(false);
+    reset();
+  },[clearTimer,evaluationKey,reset]);
 
   const acceptBlob=useCallback((blob:Blob)=>{
     clearTimer();muteSharedMic();setIsRecording(false);recorderRef.current=null;
