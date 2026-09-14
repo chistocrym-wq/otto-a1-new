@@ -5,9 +5,6 @@ on:
     branches:
       - task/master-roadmap-final-46-52
 
-permissions:
-  contents: write
-
 jobs:
   browser-qa:
     runs-on: ubuntu-latest
@@ -15,47 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: task/master-roadmap-final-46-52
-          fetch-depth: 0
-      - name: Apply requested recorder and mock-exam fixes
-        if: github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          recorder = Path('src/components/sprechen/VoiceRecorder.tsx')
-          text = recorder.read_text(encoding='utf-8')
-          old = "  const resultReportedRef=useRef(false);\n\n  const clearTimer=useCallback"
-          new = "  const resultReportedRef=useRef(false);\n  const evaluationKey=JSON.stringify(evaluation);\n  const previousEvaluationKeyRef=useRef(evaluationKey);\n\n  const clearTimer=useCallback"
-          if old not in text:
-              raise SystemExit('VoiceRecorder state marker not found')
-          text = text.replace(old, new, 1)
-          old = "  },[clearTimer]);\n\n  const acceptBlob=useCallback"
-          new = "  },[clearTimer]);\n\n  useEffect(()=>{\n    if(previousEvaluationKeyRef.current===evaluationKey)return;\n    previousEvaluationKeyRef.current=evaluationKey;\n    reset();\n  },[evaluationKey,reset]);\n\n  const acceptBlob=useCallback"
-          if old not in text:
-              raise SystemExit('VoiceRecorder effect marker not found')
-          recorder.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          mock = Path('src/components/MockExam.tsx')
-          text = mock.read_text(encoding='utf-8')
-          old = "import { speakingTeil3ArchiveCards } from '@/data/speakingTeil3Archive';"
-          new = old + "\nimport { Teil3ArchiveImage } from '@/components/sprechen/Teil3ArchiveImage';"
-          if old not in text:
-              raise SystemExit('MockExam import marker not found')
-          text = text.replace(old, new, 1)
-          stale = '<p className="mt-2 text-xs leading-5 text-slate-500">Новый пользовательский архив визуалов Teil 3 ещё не загружен, поэтому в пробнике используется нейтральная текстовая карточка объекта — старые картинки другого стиля не возвращаются.</p>'
-          if stale not in text:
-              raise SystemExit('MockExam stale Teil 3 note not found')
-          text = text.replace(stale, '', 1)
-          marker = '<p className="text-xs font-black uppercase text-amber-700">Karte {i+1}</p><h3 className="mt-2 text-2xl font-black">{card.alt}</h3>'
-          replacement = '<p className="text-xs font-black uppercase text-amber-700">Karte {i+1}</p><Teil3ArchiveImage imageIndex={card.imageIndex} alt={card.alt} className="mx-auto mt-3 w-full max-w-xs rounded-xl"/><h3 className="mt-2 text-2xl font-black">{card.alt}</h3>'
-          if marker not in text:
-              raise SystemExit('MockExam Teil 3 card marker not found')
-          mock.write_text(text.replace(marker, replacement, 1), encoding='utf-8')
-          PY
-          rm -f .github/workflows/apply-user-point-fixes.yml
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -67,14 +23,6 @@ jobs:
         run: npm run typecheck
       - name: Build app
         run: npm run build
-      - name: Commit requested recorder and mock-exam fixes
-        if: github.actor != 'github-actions[bot]'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/components/sprechen/VoiceRecorder.tsx src/components/MockExam.tsx .github/workflows/apply-user-point-fixes.yml
-          git commit -m "Reset Sprechen recordings and restore mock exam cards"
-          git push origin HEAD:task/master-roadmap-final-46-52
       - name: Install Playwright Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
