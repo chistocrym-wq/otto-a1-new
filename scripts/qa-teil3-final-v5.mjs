@@ -31,11 +31,11 @@ await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 90000 });
 await page.addStyleTag({ content: '.otto-splash-screen{display:none!important}' }).catch(() => {});
 await page.waitForTimeout(500);
 
-const sections = page.getByRole('button', { name: /^Разделы$/i }).last();
-await sections.click({ force: true });
-await page.locator('button.otto-module-row').filter({ hasText: 'Sprechen' }).first().click({ force: true });
+// Open Sprechen directly from the current home skill card. This is more stable
+// than routing through the bottom-nav Modules screen, whose label can vary by UI state.
+await page.locator('button.otto-premium-skill-card').filter({ hasText: 'Sprechen' }).first().click({ force: true });
 await page.waitForTimeout(700);
-await page.locator('button').filter({ hasText: 'Bitten' }).first().click({ force: true });
+await page.getByRole('button').filter({ hasText: 'Bitten' }).first().click({ force: true });
 await page.waitForTimeout(500);
 
 const img = page.locator('[data-teil3-image="1"] img').first();
