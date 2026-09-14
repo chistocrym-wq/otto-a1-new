@@ -25,7 +25,7 @@ export function ListeningModule({onBack,onComplete}:Props){
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const task=listeningTasks[index];
   const audioSrc=useMemo(()=>`/audio/${String(task.number).padStart(3,'0')}.mp3`,[task.number]);
-  const imageSrc=useMemo(()=>`/images/${String(task.number).padStart(3,'0')}.png`,[task.number]);
+  const imageSrc=useMemo(()=>`/images/${String(task.number).padStart(3,'0')}.png?v=20260914-2`,[task.number]);
   const isCorrect=task.type==='multiple-choice'?selected===task.correctIndex:selected===task.correctAnswer;
 
   useEffect(()=>saveProgress(progress),[progress]);
