@@ -47,6 +47,7 @@ jobs:
             if (!box) throw new Error(`Hero missing at width ${width}`);
             if (width === 390 && box.height < 280) throw new Error(`Mobile hero still has old height: ${box.height}`);
             if (width === 430 && box.height < 310) throw new Error(`430px hero still has old height: ${box.height}`);
+            await page.locator('.otto-splash-screen').waitFor({ state: 'detached', timeout: 10000 });
             const img = page.locator('.otto-approved-otto-image');
             const imgBox = await img.boundingBox();
             if (!imgBox || imgBox.height < 240) throw new Error(`Otto image not visibly rendered at width ${width}`);
