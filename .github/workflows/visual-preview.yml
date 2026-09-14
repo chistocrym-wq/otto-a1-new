@@ -43,14 +43,14 @@ jobs:
           done
           echo "Timed out waiting for exact marked Netlify preview"
           exit 1
-      - name: Run real-browser QA v4
+      - name: Run focused Teil 3 QA v5
         env:
-          QA_OUT: qa-artifacts
-        run: node scripts/qa-final-preview-v4.mjs
-      - name: Upload QA screenshots and report
+          QA_OUT: qa-artifacts-v5
+        run: node scripts/qa-teil3-final-v5.mjs
+      - name: Upload Teil 3 QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: otto-final-browser-qa
-          path: qa-artifacts
+          name: otto-teil3-final-qa-v5
+          path: qa-artifacts-v5
           retention-days: 3
