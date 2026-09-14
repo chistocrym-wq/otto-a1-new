@@ -92,6 +92,7 @@ jobs:
 
           await fs.copyFile('public/otto-icon-192.png','settings-pwa-qa/otto-icon-192.png');
           await fs.copyFile('public/otto-icon-512.png','settings-pwa-qa/otto-icon-512.png');
+          await fs.copyFile('public/otto/otto-horen.webp','settings-pwa-qa/otto-horen.webp');
           await fs.writeFile('settings-pwa-qa/results.json', JSON.stringify({manifest,serviceWorker:sw,share:shared,promptCalled}, null, 2));
           await browser.close();
           EOF
