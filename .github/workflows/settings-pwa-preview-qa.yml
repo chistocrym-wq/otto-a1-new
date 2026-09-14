@@ -55,12 +55,13 @@ jobs:
           if (overflow) throw new Error('Settings has horizontal overflow at 390px');
           await fs.mkdir('settings-pwa-qa', {recursive:true});
           await page.screenshot({path:'settings-pwa-qa/settings-mobile.png'});
-          await installButton.scrollIntoViewIfNeeded();
-          await page.waitForTimeout(150);
+          const shareButton = page.getByRole('button', {name:'Поделиться', exact:true});
+          await shareButton.evaluate(el => el.scrollIntoView({block:'center'}));
+          await page.waitForTimeout(200);
           await page.screenshot({path:'settings-pwa-qa/settings-actions-mobile.png'});
 
           const manifest = await page.evaluate(async () => {
-            const r = await fetch('/manifest.webmanifest?v=19', {cache:'no-store'});
+            const r = await fetch('/manifest.webmanifest?v=20', {cache:'no-store'});
             return r.json();
           });
           if (manifest.display !== 'standalone') throw new Error(`Manifest display is ${manifest.display}`);
@@ -86,7 +87,7 @@ jobs:
           if (!promptCalled) throw new Error('Install button did not call captured PWA prompt');
           await page.getByText('Установка приложения запущена.', {exact:true}).waitFor({state:'visible'});
 
-          await page.getByRole('button', {name:'Поделиться', exact:true}).click();
+          await shareButton.click();
           const shared = await page.evaluate(() => window.__ottoShared);
           if (!shared || shared.title !== 'OTTO — Zertifikat A1' || shared.url !== base + '/') throw new Error(`Unexpected share payload: ${JSON.stringify(shared)}`);
 
@@ -96,11 +97,7 @@ jobs:
 
           for (const file of [
             'public/otto-icon-192.png',
-            'public/otto-icon-512.png',
-            'public/otto-icon-192.webp',
-            'public/otto-icon-512.webp',
-            'public/otto.png',
-            'public/otto/otto-horen.webp'
+            'public/otto-icon-512.png'
           ]) {
             await fs.copyFile(file, `settings-pwa-qa/${file.split('/').pop()}`);
           }
