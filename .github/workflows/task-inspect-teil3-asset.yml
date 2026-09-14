@@ -1,0 +1,21 @@
+name: Inspect Teil 3 Asset
+
+on:
+  push:
+    branches:
+      - task/2026-09-14-sprechen-teil3-archive-live
+
+jobs:
+  export-asset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build verified archive asset
+        run: node scripts/build-sprechen-teil3.mjs
+      - name: Upload archive asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: teil3-source-asset
+          path: public/sprechen/teil3-requests-user.avif
+          retention-days: 1
