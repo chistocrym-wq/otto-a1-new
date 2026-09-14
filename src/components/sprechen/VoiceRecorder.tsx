@@ -60,6 +60,9 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
 
   const clearTimer=useCallback(()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null}},[]);
   const reset=useCallback(()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current);urlRef.current=null;setAudioUrl(null);setAudioBlob(null);setElapsed(0);setResult(null);setError(null);resultReportedRef.current=false},[]);
+  const evaluationKey=JSON.stringify(evaluation);
+
+  useEffect(()=>{reset()},[evaluationKey,reset]);
 
   useEffect(()=>{
     let active=true;
