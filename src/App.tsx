@@ -74,17 +74,13 @@ export default function App() {
     recordScore(module, score, total, elapsed);
     moduleStartedAt.current = Date.now();
   };
-  const recordMockModule = useCallback((module: ModuleId, score: number, total: number) => {
-    recordScore(module, score, total, 0);
-  }, [recordScore]);
+  const recordMockModule = useCallback((module: ModuleId, score: number, total: number) => { recordScore(module, score, total, 0); }, [recordScore]);
   const viewClass = `otto-view-${view ?? 'home'}`;
 
   const activeTab = useMemo<BottomTab>(() => {
     if (view === null || view === 'mock-exam' || view === 'news' || view === 'support' || view === 'instructions' || view === 'exam-guide' || view === 'daily-training' || view === 'how-to-train') return 'home';
     if (view === 'modules' || view === 'lesen' || view === 'horen' || view === 'schreiben' || view === 'sprechen' || view === 'phrases-speaking') return 'modules';
-    if (view === 'readiness') return 'readiness';
-    if (view === 'account') return 'account';
-    return 'settings';
+    if (view === 'readiness') return 'readiness'; if (view === 'account') return 'account'; return 'settings';
   }, [view]);
 
   const companionScene = useMemo<OttoSceneName | null>(() => {
@@ -110,7 +106,7 @@ export default function App() {
           {view === 'how-to-train' && productMode === 'full' && <HowToTrainPage onBack={back}/>} 
           {view === 'readiness' && productMode === 'full' && <ReadinessPage progress={progress} activity={activity} onBack={back} onSelectModule={openModule} onOpenMockExam={() => setView('mock-exam')} onOpenPhrases={() => setView('phrases-speaking')}/>} 
           {view === 'phrases-speaking' && productMode === 'full' && <PhraseSpeakingPractice onBack={() => setView('readiness')} onOpenWriting={() => openModule('schreiben')} onComplete={complete('sprechen')}/>} 
-          {view === 'account' && <AccountPage progress={progress}/>} 
+          {view === 'account' && <AccountPage progress={progress} activity={activity}/>} 
           {view === 'settings' && <SettingsPage/>} 
           {view === 'news' && <NewsPage onBack={back}/>} 
           {view === 'support' && <SupportPage onBack={back}/>} 
