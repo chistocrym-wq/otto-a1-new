@@ -1,0 +1,1 @@
+Teil 3 uses individual card files only. Sprite cropping is retired.
