@@ -3,11 +3,18 @@ name: Visual Preview Check
 on:
   push:
     branches:
-      - feature/sprechen-lesen-content-refresh-v2
+      - task/master-roadmap-final-46-52
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  screenshot:
+  browser-qa:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      statuses: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,29 +24,45 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install app
-        run: npm install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
       - name: Build app
         run: npm run build
-      - name: Install Chromium
-        run: npx --yes playwright@1.55.0 install --with-deps chromium
-      - name: Start preview
+      - name: Install Playwright Chromium
         run: |
-          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/otto-preview.log 2>&1 &
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173 >/dev/null; then exit 0; fi
-            sleep 1
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Wait for exact Netlify Deploy Preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Waiting for Netlify status on $GITHUB_SHA"
+          for i in {1..72}; do
+            json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" 2>/dev/null || true)"
+            state="$(echo "$json" | jq -r '.statuses[]? | select(.context=="netlify/otto-a1-new/deploy-preview") | .state' | head -1)"
+            url="$(echo "$json" | jq -r '.statuses[]? | select(.context=="netlify/otto-a1-new/deploy-preview") | .target_url' | head -1)"
+            if [ "$state" = "success" ] && [ -n "$url" ] && [ "$url" != "null" ]; then
+              echo "TARGET_URL=$url" >> "$GITHUB_ENV"
+              echo "Exact Deploy Preview ready: $url"
+              exit 0
+            fi
+            if [ "$state" = "failure" ] || [ "$state" = "error" ]; then
+              echo "Netlify preview failed for $GITHUB_SHA"
+              exit 1
+            fi
+            sleep 10
           done
-          cat /tmp/otto-preview.log
+          echo "Timed out waiting for Netlify preview status"
           exit 1
-      - name: Capture approved viewport
-        run: |
-          npx --yes playwright@1.55.0 screenshot --viewport-size="390,693" --wait-for-timeout=8000 http://127.0.0.1:4173 visual-home.png
-          npx --yes playwright@1.55.0 screenshot --full-page --wait-for-timeout=1000 http://127.0.0.1:4173/asset-check.html asset-check.png
-      - name: Upload screenshot
+      - name: Run real-browser QA
+        env:
+          QA_OUT: qa-artifacts
+        run: node scripts/qa-final-preview.mjs
+      - name: Upload QA screenshots and report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: otto-approved-home-visual
-          path: |
-            visual-home.png
-            asset-check.png
-          retention-days: 1
+          name: otto-final-browser-qa
+          path: qa-artifacts
+          retention-days: 3
