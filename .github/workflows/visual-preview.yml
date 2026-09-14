@@ -4,17 +4,11 @@ on:
   push:
     branches:
       - task/master-roadmap-final-46-52
-  pull_request:
-    branches:
-      - main
 
 jobs:
   browser-qa:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: read
-      statuses: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,25 +29,19 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Wait for exact Netlify Deploy Preview
         env:
-          GH_TOKEN: ${{ github.token }}
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v2
         run: |
-          echo "Waiting for Netlify status on $GITHUB_SHA"
           for i in {1..72}; do
-            json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" 2>/dev/null || true)"
-            state="$(echo "$json" | jq -r '.statuses[]? | select(.context=="netlify/otto-a1-new/deploy-preview") | .state' | head -1)"
-            url="$(echo "$json" | jq -r '.statuses[]? | select(.context=="netlify/otto-a1-new/deploy-preview") | .target_url' | head -1)"
-            if [ "$state" = "success" ] && [ -n "$url" ] && [ "$url" != "null" ]; then
-              echo "TARGET_URL=$url" >> "$GITHUB_ENV"
-              echo "Exact Deploy Preview ready: $url"
+            actual="$(curl -fsSL --max-time 12 "$TARGET_URL/qa-version.txt?attempt=$i" 2>/dev/null | tr -d '\r\n' || true)"
+            if [ "$actual" = "$EXPECTED_QA_VERSION" ]; then
+              echo "TARGET_URL=$TARGET_URL" >> "$GITHUB_ENV"
+              echo "Exact marked Deploy Preview ready: $TARGET_URL"
               exit 0
-            fi
-            if [ "$state" = "failure" ] || [ "$state" = "error" ]; then
-              echo "Netlify preview failed for $GITHUB_SHA"
-              exit 1
             fi
             sleep 10
           done
-          echo "Timed out waiting for Netlify preview status"
+          echo "Timed out waiting for exact marked Netlify preview"
           exit 1
       - name: Run real-browser QA
         env:
