@@ -99,10 +99,21 @@ export interface ModuleProgress {
   attempts: number;
   answered?: number;
   correct?: number;
+  recentScores?: number[];
 }
 
 export interface Progress {
   [key: string]: ModuleProgress;
+}
+
+export interface ActivityEntry {
+  id: string;
+  module: string;
+  score: number;
+  total: number;
+  percent: number;
+  at: string;
+  durationSeconds?: number;
 }
 
 export type LesenTeil2VisualType = 'shop' | 'cinema' | 'school' | 'travel' | 'website' | 'housing' | 'doctor' | 'leisure' | 'restaurant' | 'classified' | 'parking' | 'service' | 'transport' | 'course' | 'job' | 'hotel';
