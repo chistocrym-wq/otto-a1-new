@@ -10,6 +10,12 @@
   const nativeSpeak = synth?.speak ? synth.speak.bind(synth) : null;
   const nativeCancel = synth?.cancel ? synth.cancel.bind(synth) : null;
 
+  const GERMAN_LETTER_NAMES = {
+    A: 'A', B: 'Be', C: 'Ce', D: 'De', E: 'E', F: 'Eff', G: 'Ge', H: 'Ha', I: 'I', J: 'Jot',
+    K: 'Ka', L: 'Ell', M: 'Emm', N: 'Enn', O: 'O', P: 'Pe', Q: 'Ku', R: 'Er', S: 'Ess', T: 'Te',
+    U: 'U', V: 'Fau', W: 'We', X: 'Iks', Y: 'Ypsilon', Z: 'Zett', Ä: 'Ä', Ö: 'Ö', Ü: 'Ü', ẞ: 'Eszett',
+  };
+
   function savedMode() {
     try {
       const value = localStorage.getItem(MODE_KEY);
@@ -48,19 +54,34 @@
       let points = 0;
       if (/natural|neural|premium|enhanced/.test(name)) points += 12;
       if (/google|microsoft|apple/.test(name)) points += 6;
-      if (/de-de/i.test(voice.lang || '')) points += 4;
+      if (/^de-de$/i.test(voice.lang || '')) points += 8;
       if (voice.localService) points += 1;
       return points;
     };
     return voices.sort((a, b) => score(b) - score(a))[0] || voices[0];
   }
 
-  function browserFallback(text, mode = currentMode()) {
+  function germanSpellingFallback(text) {
+    const parts = [];
+    for (const character of String(text || '').normalize('NFC')) {
+      if (/\s/u.test(character)) {
+        if (parts.length && parts[parts.length - 1] !== 'Pause') parts.push('Pause');
+        continue;
+      }
+      const upper = character.toLocaleUpperCase('de-DE');
+      if (GERMAN_LETTER_NAMES[upper]) parts.push(GERMAN_LETTER_NAMES[upper]);
+      else if (/\d/u.test(character)) parts.push(character);
+    }
+    return parts.join(', ');
+  }
+
+  function browserFallback(text, mode = currentMode(), style = 'normal') {
     if (!nativeSpeak || !window.SpeechSynthesisUtterance) return false;
     nativeCancel?.();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const spokenText = style === 'spelling' ? germanSpellingFallback(text) : text;
+    const utterance = new SpeechSynthesisUtterance(spokenText);
     utterance.lang = 'de-DE';
-    utterance.rate = mode === 'slow' ? 0.82 : 0.96;
+    utterance.rate = style === 'spelling' ? 0.78 : mode === 'slow' ? 0.82 : 0.96;
     utterance.pitch = 1;
     const voice = bestGermanVoice();
     if (voice) utterance.voice = voice;
@@ -78,14 +99,14 @@
     nativeCancel?.();
   }
 
-  async function fetchAudio(text, mode) {
-    const key = `${mode}:${text}`;
+  async function fetchAudio(text, mode, style) {
+    const key = `${style}:${mode}:${text}`;
     if (memoryCache.has(key)) return memoryCache.get(key);
 
     const response = await fetch('/api/otto-tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, mode }),
+      body: JSON.stringify({ text, mode, style }),
     });
     if (!response.ok || !String(response.headers.get('content-type') || '').includes('audio/')) {
       throw new Error(`TTS unavailable: ${response.status}`);
@@ -100,6 +121,7 @@
     const clean = String(text || '').trim();
     if (!clean) return false;
     const mode = options.mode === 'slow' || options.mode === 'normal' ? options.mode : currentMode();
+    const style = options.style === 'spelling' ? 'spelling' : 'normal';
     const id = ++requestId;
 
     if (activeAudio) {
@@ -110,7 +132,7 @@
     nativeCancel?.();
 
     try {
-      const url = await fetchAudio(clean, mode);
+      const url = await fetchAudio(clean, mode, style);
       if (id !== requestId) return false;
       const audio = new Audio(url);
       activeAudio = audio;
@@ -120,12 +142,17 @@
       return true;
     } catch {
       if (id !== requestId) return false;
-      return browserFallback(clean, mode);
+      return browserFallback(clean, mode, style);
     }
+  }
+
+  function spell(text, options = {}) {
+    return play(text, { ...options, style: 'spelling' });
   }
 
   window.OttoSpeech = {
     play,
+    spell,
     stop,
     setMode,
     getMode: currentMode,
@@ -133,13 +160,13 @@
   };
 
   // Preserve existing application logic: any current speechSynthesis call is upgraded
-  // to the Otto neural voice, while the native German voice remains the fallback.
+  // to Otto's German neural voice, while the best de-DE device voice remains the fallback.
   if (synth && nativeSpeak) {
     try {
       synth.speak = (utterance) => {
         const text = String(utterance?.text || '').trim();
         if (!text) return nativeSpeak(utterance);
-        void play(text, { mode: currentMode() });
+        void play(text, { mode: currentMode(), style: 'normal' });
       };
       synth.cancel = () => stop();
     } catch {
