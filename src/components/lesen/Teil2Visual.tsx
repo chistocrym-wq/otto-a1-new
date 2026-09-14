@@ -14,6 +14,13 @@ export function Teil2Visual({
   onSelect,
   disabled,
 }: Teil2VisualProps) {
+  const statusFor = (answer: 'a' | 'b') => {
+    if (selectedAnswer === null) return 'neutral' as const;
+    if (answer === task.correctAnswer) return 'correct' as const;
+    if (answer === selectedAnswer) return 'wrong' as const;
+    return 'neutral' as const;
+  };
+
   return (
     <div className="space-y-5">
       {/* Ситуация */}
@@ -32,7 +39,7 @@ export function Teil2Visual({
         <Teil2OptionCard
           option={task.options.a}
           label="A"
-          selected={selectedAnswer === 'a'}
+          status={statusFor('a')}
           onClick={() => onSelect('a')}
           disabled={disabled}
         />
@@ -40,7 +47,7 @@ export function Teil2Visual({
         <Teil2OptionCard
           option={task.options.b}
           label="B"
-          selected={selectedAnswer === 'b'}
+          status={statusFor('b')}
           onClick={() => onSelect('b')}
           disabled={disabled}
         />
