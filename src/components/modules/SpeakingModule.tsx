@@ -5,6 +5,7 @@ import { speakingTeil3ArchiveCards } from '@/data/speakingTeil3Archive';
 import { speakingExtraPrompts } from '@/data/speakingExtra';
 import { freeSpeakingTopics } from '@/data/speakingFree';
 import { VoiceRecorder } from '@/components/sprechen/VoiceRecorder';
+import { Teil3Practice } from '@/components/sprechen/Teil3Practice';
 import { RussianVoiceInput } from '@/components/sprechen/RussianVoiceInput';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
@@ -28,7 +29,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <PartCard badge="Teil 1" title="Sich vorstellen" description="Представьтесь по опорным словам." onClick={()=>openPart(1)}/>
       <PartCard badge="Teil 2" title="Informationen" description="Тема + слово: задайте простой вопрос." meta={`${speakingTeil2Cards.length} карточек`} onClick={()=>openPart(2)}/>
-      <PartCard badge="Teil 3" title="Bitten" description="Просьба по картинке и короткая реакция партнёру." meta="Новые карточки будут подключены из вашего архива" onClick={()=>openPart(3)}/>
+      <PartCard badge="Teil 3" title="Bitten" description="Просьба по картинке и короткая реакция партнёру." meta={`${speakingTeil3ArchiveCards.length} карточек`} onClick={()=>openPart(3)}/>
       <PartCard badge="Бонус" title="Короткие рассказы" description="Дополнительная тренировка языка. Не является отдельной частью экзамена." meta={`${freeSpeakingTopics.length} тем`} onClick={()=>{reset();setScreen('free')}} accent/>
     </div>
     <button type="button" onClick={()=>{reset();setScreen('extra')}} className="mt-5 flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-left font-bold text-amber-950">
@@ -67,12 +68,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
 
   if(screen==='teil3')return <div className="animate-fade-in">
     <Header onBack={home} subtitle="Teil 3 · Bitten" translation="Часть 3 · Просьбы"/>
-    <div className="mx-auto max-w-xl rounded-3xl border border-amber-200 bg-amber-50 p-6 text-center shadow-sm">
-      <h3 className="text-xl font-black text-amber-950">Карточки Teil 3 обновляются</h3>
-      <p className="mt-3 text-sm leading-6 text-amber-900">Старые изображения отключены. По вашему заданию я подключу только новый архив изображений, строго по его нумерации и без самостоятельной замены или дорисовки.</p>
-      <p className="mt-3 text-xs font-semibold leading-5 text-amber-800">После загрузки архива здесь снова будут рабочие карточки, запись ответа и отдельная немецкая озвучка примера просьбы и реакции.</p>
-      <button type="button" onClick={home} className="mt-5 min-h-11 rounded-xl bg-slate-900 px-5 font-bold text-white">Вернуться к Sprechen</button>
-    </div>
+    <Teil3Practice onEvaluated={recordEvaluation}/>
   </div>;
 
   if(screen==='extra')return <ExtraSpeakingPractice onBack={home} onEvaluated={recordEvaluation}/>;
