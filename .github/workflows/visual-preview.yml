@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - name: Install app
         run: npm ci
@@ -30,7 +30,7 @@ jobs:
       - name: Wait for exact Netlify Deploy Preview
         env:
           TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
-          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v2
+          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v3
         run: |
           for i in {1..72}; do
             actual="$(curl -fsSL --max-time 12 "$TARGET_URL/qa-version.txt?attempt=$i" 2>/dev/null | tr -d '\r\n' || true)"
