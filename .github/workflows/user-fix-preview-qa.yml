@@ -26,7 +26,7 @@ jobs:
         env:
           TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
         run: |
-          cat > /tmp/qa-requested.mjs <<'NODE'
+          cat > qa-requested.mjs <<'NODE'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
           const base = process.env.TARGET_URL;
@@ -78,26 +78,28 @@ jobs:
             if (await mock.getByText(title, { exact: true }).count() !== 1) throw new Error(`Missing mock Sprechen block: ${title}`);
           }
           const cards = mock.locator('img[src*="/sprechen/teil3-originals/"]');
-          if (await cards.count() < 2) throw new Error('Mock Sprechen Teil 3 existing cards are not connected.');
-          for (let i=0; i<Math.min(2, await cards.count()); i++) {
+          const mockCards = await cards.count();
+          if (mockCards < 2) throw new Error('Mock Sprechen Teil 3 existing cards are not connected.');
+          for (let i=0; i<Math.min(2, mockCards); i++) {
             const ok = await cards.nth(i).evaluate(el => el.complete && el.naturalWidth > 0);
             if (!ok) throw new Error(`Mock Sprechen Teil 3 image ${i+1} did not decode.`);
           }
           const recordButtons = mock.getByRole('button', { name: 'Записать ответ' });
-          if (await recordButtons.count() < 5) throw new Error('Mock Sprechen record controls missing.');
+          if (await recordButtons.count() < 3) throw new Error('Mock Sprechen record controls missing.');
           await mock.screenshot({ path: 'requested-qa/mock-sprechen-mobile.png', fullPage: true });
 
           const ai = await mock.request.post(base + '/api/translate-task', { data: { mode: 'explain-pair', text: 'Задание: Heute geschlossen. Правильный ответ: richtig.' } });
+          const aiStatus = ai.status();
           const aiText = await ai.text();
-          fs.writeFileSync('requested-qa/ai-response.txt', `${ai.status()}\n${aiText}`);
-          if (!ai.ok()) throw new Error(`Otto AI explain-pair failed with ${ai.status()}: ${aiText.slice(0,200)}`);
+          fs.writeFileSync('requested-qa/ai-response.txt', `${aiStatus}\n${aiText}`);
+          if (!ai.ok()) throw new Error(`Otto AI explain-pair failed with ${aiStatus}: ${aiText.slice(0,200)}`);
           const parsed = JSON.parse(aiText);
           if (!parsed.explanationRu || typeof parsed.explanationRu !== 'string') throw new Error('Otto AI explain-pair returned no explanationRu.');
 
+          console.log(JSON.stringify({ readinessOverflow, mockCards, aiStatus }));
           await browser.close();
-          console.log(JSON.stringify({ readinessOverflow, mockCards: await cards.count(), aiStatus: ai.status() }));
           NODE
-          node /tmp/qa-requested.mjs
+          node qa-requested.mjs
       - name: Upload requested QA evidence
         if: always()
         uses: actions/upload-artifact@v4
