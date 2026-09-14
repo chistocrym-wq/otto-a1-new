@@ -57,6 +57,7 @@ export function Teil3Practice({ onEvaluated }: Props) {
             alt={card.alt}
             className="mx-auto w-full max-w-[360px] rounded-xl"
           />
+          <div className="mt-3 text-center text-lg font-bold text-slate-900">{card.alt}</div>
         </div>
       </div>
 
