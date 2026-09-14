@@ -30,7 +30,7 @@ jobs:
       - name: Wait for exact Netlify Deploy Preview
         env:
           TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
-          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v3
+          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v4-teil3
         run: |
           for i in {1..72}; do
             actual="$(curl -fsSL --max-time 12 "$TARGET_URL/qa-version.txt?attempt=$i" 2>/dev/null | tr -d '\r\n' || true)"
@@ -43,10 +43,10 @@ jobs:
           done
           echo "Timed out waiting for exact marked Netlify preview"
           exit 1
-      - name: Run real-browser QA
+      - name: Run real-browser QA v4
         env:
           QA_OUT: qa-artifacts
-        run: node scripts/qa-final-preview.mjs
+        run: node scripts/qa-final-preview-v4.mjs
       - name: Upload QA screenshots and report
         if: always()
         uses: actions/upload-artifact@v4
