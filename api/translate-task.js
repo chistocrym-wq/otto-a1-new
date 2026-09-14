@@ -64,6 +64,52 @@ export default async function handler(req, res) {
       return res.status(200).json({ german: parsed.german, russian: parsed.russian, tip: parsed.tip });
     }
 
+    if (body.mode === 'explain-pair') {
+      const text = String(body.text || '').trim();
+      if (!text) return res.status(400).json({ error: 'Нет текста для объяснения.' });
+      if (text.length > MAX_SPEAKING_INPUT) return res.status(413).json({ error: 'Слишком большой текст для объяснения.' });
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0,
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты помощник тренажёра Goethe A1. Коротко и простым русским языком объясни уже проверенную пару «задание/правильный ответ». Не меняй правильный ответ, не придумывай новых фактов и не добавляй лишних советов. Объяснение — максимум 2 коротких предложения.',
+            },
+            { role: 'user', content: text },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'reading_pair_explanation',
+              strict: true,
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['explanationRu'],
+                properties: {
+                  explanationRu: { type: 'string' },
+                },
+              },
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error(`reading explanation failed: ${response.status}`);
+      const payload = await response.json();
+      const content = payload.choices?.[0]?.message?.content;
+      if (!content) throw new Error('empty reading explanation');
+      const parsed = JSON.parse(content);
+      const explanationRu = String(parsed?.explanationRu || '').trim();
+      if (!explanationRu) throw new Error('invalid reading explanation');
+      return res.status(200).json({ explanationRu });
+    }
+
     const parts = Array.isArray(body.parts)
       ? body.parts.map((value) => String(value || '').trim()).filter(Boolean).slice(0, MAX_PARTS)
       : [];
