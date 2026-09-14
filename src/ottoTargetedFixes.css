@@ -1,0 +1,46 @@
+/* Targeted fixes requested on 2026-09-14. Do not broaden beyond these selectors. */
+
+/* Main hero: preserve the existing asset, change only its visible geometry to match the supplied reference. */
+.otto-view-home .otto-roadmap-dashboard .otto-approved-hero {
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 857 / 645;
+}
+
+.otto-view-home .otto-roadmap-dashboard .otto-approved-hero .otto-approved-otto {
+  top: 0 !important;
+  right: 0 !important;
+  width: 68% !important;
+  height: 100% !important;
+}
+
+.otto-view-home .otto-roadmap-dashboard .otto-approved-hero .otto-approved-otto-image {
+  top: 0 !important;
+  right: -4% !important;
+  width: auto !important;
+  max-width: none !important;
+  height: 118% !important;
+  object-fit: contain !important;
+  object-position: right top !important;
+}
+
+@media (max-width: 360px) {
+  .otto-view-home .otto-roadmap-dashboard .otto-approved-hero .otto-approved-otto-image {
+    right: -4% !important;
+    height: 118% !important;
+  }
+}
+
+/* Readiness: keep all existing content and sizing, only guarantee full vertical access. */
+.otto-view-readiness .otto-inner-screen {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.otto-view-readiness .otto-readiness-screen {
+  box-sizing: border-box;
+  min-height: 100%;
+  overflow: visible !important;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important;
+}

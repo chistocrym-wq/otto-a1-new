@@ -1,0 +1,56 @@
+name: Visual Preview Check
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install app
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build app
+        run: npm run build
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Wait for exact Netlify Deploy Preview
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+          EXPECTED_QA_VERSION: otto-roadmap-final-20260914-v4-teil3
+        run: |
+          for i in {1..72}; do
+            actual="$(curl -fsSL --max-time 12 "$TARGET_URL/qa-version.txt?attempt=$i" 2>/dev/null | tr -d '\r\n' || true)"
+            if [ "$actual" = "$EXPECTED_QA_VERSION" ]; then
+              echo "TARGET_URL=$TARGET_URL" >> "$GITHUB_ENV"
+              echo "Exact marked Deploy Preview ready: $TARGET_URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for exact marked Netlify preview"
+          exit 1
+      - name: Run focused Teil 3 QA v5
+        env:
+          QA_OUT: qa-artifacts-v5
+        run: node scripts/qa-teil3-final-v5.mjs
+      - name: Upload Teil 3 QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: otto-teil3-final-qa-v5
+          path: qa-artifacts-v5
+          retention-days: 3

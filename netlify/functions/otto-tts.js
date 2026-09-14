@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import { getDeployStore, getStore } from '@netlify/blobs';
 
 const MODEL = 'gpt-4o-mini-tts-2025-12-15';
-const VOICE = 'cedar';
-const STORE = 'otto-tts-cache-v1';
+const VOICE = 'marin';
+const STORE = 'otto-tts-cache-v2';
 const MAX_TEXT_LENGTH = 420;
 
 function json(data, status = 200, headers = {}) {
@@ -25,10 +25,12 @@ function speechInstructions(mode) {
 
   return [
     'Speak only the supplied German text.',
-    'Use native Standard German (Hochdeutsch) pronunciation.',
-    'Sound like a warm, composed, friendly adult German teacher: clear, trustworthy, patient and natural.',
-    'Keep articulation precise but never theatrical, sing-song, childish or advertising-like.',
+    'Use native Standard German (Hochdeutsch) pronunciation throughout.',
+    'Sound like a warm, composed, friendly adult native German teacher: clear, trustworthy, patient and natural.',
+    'Keep articulation precise but never theatrical, sing-song, childish, advertising-like or robotic.',
     'Pronounce German phonology natively, especially ch, sch, r, ü, ö, ä, ei, ie, eu, z, sp and st.',
+    'Treat every digit, date, phone number, postcode, house number and other numeric value as German. Never pronounce numbers in Russian or English.',
+    'When the input contains German alphabet letter names separated by commas, pronounce each one separately with a short natural pause and never merge them into a word.',
     pace,
   ].join(' ');
 }

@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import './ottoPremiumSystem.css';
 import './ottoPremiumVoice.css';
+import './ottoTargetedFixes.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

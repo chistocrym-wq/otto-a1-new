@@ -10,6 +10,23 @@
   const nativeSpeak = synth?.speak ? synth.speak.bind(synth) : null;
   const nativeCancel = synth?.cancel ? synth.cancel.bind(synth) : null;
 
+  const germanLetterNames = {
+    A: 'A', B: 'Be', C: 'Ce', D: 'De', E: 'E', F: 'Eff', G: 'Ge', H: 'Ha', I: 'I', J: 'Jott',
+    K: 'Ka', L: 'Ell', M: 'Emm', N: 'Enn', O: 'O', P: 'Pe', Q: 'Ku', R: 'Err', S: 'Ess', T: 'Te',
+    U: 'U', V: 'Vau', W: 'We', X: 'Ix', Y: 'Ypsilon', Z: 'Zett', Ä: 'Ä', Ö: 'Ö', Ü: 'Ü', ẞ: 'Eszett',
+  };
+
+  function prepareGermanSpeechText(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const withoutEnding = text.replace(/[.!?]+\s*$/, '').trim();
+    if (!/^[A-ZÄÖÜẞ](?:\s*[–—-]\s*[A-ZÄÖÜẞ])+$/u.test(withoutEnding)) return text;
+    return withoutEnding
+      .split(/\s*[–—-]\s*/u)
+      .map((letter) => germanLetterNames[letter] || letter)
+      .join(', ');
+  }
+
   function savedMode() {
     try {
       const value = localStorage.getItem(MODE_KEY);
@@ -58,7 +75,7 @@
   function browserFallback(text, mode = currentMode()) {
     if (!nativeSpeak || !window.SpeechSynthesisUtterance) return false;
     nativeCancel?.();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(prepareGermanSpeechText(text));
     utterance.lang = 'de-DE';
     utterance.rate = mode === 'slow' ? 0.82 : 0.96;
     utterance.pitch = 1;
@@ -97,7 +114,7 @@
   }
 
   async function play(text, options = {}) {
-    const clean = String(text || '').trim();
+    const clean = prepareGermanSpeechText(text);
     if (!clean) return false;
     const mode = options.mode === 'slow' || options.mode === 'normal' ? options.mode : currentMode();
     const id = ++requestId;
