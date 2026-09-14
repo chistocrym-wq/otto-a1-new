@@ -14,6 +14,8 @@ export function Teil2Visual({
   onSelect,
   disabled,
 }: Teil2VisualProps) {
+  const revealed = selectedAnswer !== null;
+
   return (
     <div className="space-y-5">
       {/* Ситуация */}
@@ -33,6 +35,8 @@ export function Teil2Visual({
           option={task.options.a}
           label="A"
           selected={selectedAnswer === 'a'}
+          correct={task.correctAnswer === 'a'}
+          revealed={revealed}
           onClick={() => onSelect('a')}
           disabled={disabled}
         />
@@ -41,6 +45,8 @@ export function Teil2Visual({
           option={task.options.b}
           label="B"
           selected={selectedAnswer === 'b'}
+          correct={task.correctAnswer === 'b'}
+          revealed={revealed}
           onClick={() => onSelect('b')}
           disabled={disabled}
         />
