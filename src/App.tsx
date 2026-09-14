@@ -14,6 +14,7 @@ import './ottoFinalPolish.css';
 import './ottoHomeReact.css';
 import './ottoUnifiedPages.css';
 import './ottoUnifiedPagesFix.css';
+import './ottoPointFixes.css';
 import '@/data/lesen/registerExtraSets';
 
 const Instructions = lazy(() => import('@/components/Instructions').then((m) => ({ default: m.Instructions })));
