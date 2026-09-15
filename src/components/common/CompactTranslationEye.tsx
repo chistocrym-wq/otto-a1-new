@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Eye, EyeOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -18,77 +18,110 @@ function keyFor(parts: string[]) {
   return `otto-eye-${(h >>> 0).toString(16)}`;
 }
 
+function readCached(key: string, expectedLength: number) {
+  try {
+    const value = localStorage.getItem(key);
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.length === expectedLength ? parsed.map(String) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function CompactTranslationEye({ parts, translations: preset, className, title = 'Перевод' }: Props) {
-  const clean = useMemo(() => parts.map(String).map((v) => v.trim()).filter(Boolean), [parts]);
-  const key = useMemo(() => keyFor(clean), [clean]);
-  const validPreset = preset && preset.length === clean.length ? preset : null;
+  const clean = parts.map(String).map((v) => v.trim()).filter(Boolean);
+  const key = keyFor(clean);
+  const presetKey = preset && preset.length === clean.length ? JSON.stringify(preset.map(String)) : '';
+  const validPreset = useMemo<string[] | null>(() => presetKey ? JSON.parse(presetKey) as string[] : null, [presetKey]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [translations, setTranslations] = useState<string[] | null>(() => {
-    if (validPreset) return validPreset;
-    try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [translations, setTranslations] = useState<string[] | null>(() => validPreset || readCached(key, clean.length));
+  const requestRef = useRef<AbortController | null>(null);
+  const sourceKeyRef = useRef(key);
 
-  const toggle = async () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
+  useEffect(() => {
+    sourceKeyRef.current = key;
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setOpen(false);
+    setLoading(false);
+    setError('');
+    setTranslations(validPreset || readCached(key, clean.length));
+    return () => requestRef.current?.abort();
+  }, [key, presetKey, validPreset, clean.length]);
+
+  const load = async () => {
     if (translations || loading || !clean.length) return;
+    const requestKey = key;
+    const requestParts = [...clean];
+    const controller = new AbortController();
+    requestRef.current?.abort();
+    requestRef.current = controller;
     setLoading(true);
     setError('');
     try {
       const r = await fetch('/api/translate-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parts: clean }),
+        body: JSON.stringify({ parts: requestParts }),
+        signal: controller.signal,
       });
       const p = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(p.error || 'Перевод недоступен');
       const t = Array.isArray(p.translations) ? p.translations.map(String) : [];
-      if (t.length !== clean.length) throw new Error('Перевод пришёл не полностью');
+      if (t.length !== requestParts.length) throw new Error('Перевод пришёл не полностью');
+      if (controller.signal.aborted || sourceKeyRef.current !== requestKey) return;
       setTranslations(t);
-      try { localStorage.setItem(key, JSON.stringify(t)); } catch { /* ignore */ }
+      try { localStorage.setItem(requestKey, JSON.stringify(t)); } catch { /* ignore */ }
     } catch (e) {
+      if (controller.signal.aborted || sourceKeyRef.current !== requestKey) return;
       setError(e instanceof Error ? e.message : 'Перевод недоступен');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted && sourceKeyRef.current === requestKey) setLoading(false);
+      if (requestRef.current === controller) requestRef.current = null;
     }
   };
 
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    void load();
+  };
+
   return (
-    <div className={cn('relative shrink-0', className)}>
+    <div className={cn('min-w-0 shrink-0 text-right', className)} data-translation-ui>
       <button
         type="button"
         onClick={toggle}
         aria-label={open ? 'Скрыть перевод' : 'Показать перевод'}
         title={open ? 'Скрыть перевод' : 'Показать перевод'}
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-xl border transition',
-          open ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+          'inline-flex h-10 w-10 items-center justify-center rounded-xl border transition',
+          open ? 'border-slate-300 bg-white text-teal-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
         )}
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : open ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {open ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
 
       {open && (
-        <div className="fixed left-4 right-4 top-[76px] z-[100] mx-auto max-h-[55vh] max-w-lg overflow-y-auto rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-800 shadow-2xl sm:left-auto sm:right-6 sm:w-[420px]">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-black uppercase tracking-wider text-amber-800">{title}</p>
-            <button type="button" onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-600" aria-label="Закрыть перевод">
+        <div className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[80] flex max-h-[calc(100dvh-7rem-env(safe-area-inset-bottom))] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-6 text-slate-600 shadow-xl sm:static sm:mt-2 sm:block sm:max-h-none sm:w-[300px] sm:max-w-[min(300px,calc(100vw-2rem))] sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+          <div className="mb-2 flex shrink-0 items-center justify-between gap-3 sm:hidden">
+            <span className="min-w-0 break-words text-xs font-black uppercase tracking-wider text-slate-500 [overflow-wrap:anywhere]">{title}</span>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть перевод" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
               <X className="h-4 w-4" />
             </button>
           </div>
-          {loading && <p>Перевожу…</p>}
-          {error && <p className="text-rose-700">{error}</p>}
-          {translations?.map((t, i) => <p key={i} className={i ? 'mt-2 border-t border-amber-200 pt-2' : ''}>{t}</p>)}
+          <div className="min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain pr-1 sm:overflow-visible sm:pr-0">
+            <span className="sr-only">{title}</span>
+            {loading && <p>Перевожу…</p>}
+            {error && <p className="break-words text-rose-700 [overflow-wrap:anywhere]">{error}</p>}
+            {translations?.map((t, i) => <p key={`${key}-${i}`} className={cn('break-words [overflow-wrap:anywhere]', i ? 'mt-1' : '')}>{t}</p>)}
+          </div>
         </div>
       )}
     </div>

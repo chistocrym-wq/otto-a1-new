@@ -3,23 +3,23 @@
   "short_name": "Отто А1",
   "description": "Тренажёр для подготовки к Goethe-Zertifikat A1",
   "id": "/",
-  "start_url": "/?app=otto-a1-v17",
+  "start_url": "/?app=otto-a1-v19",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone"],
   "orientation": "portrait",
-  "background_color": "#118d84",
-  "theme_color": "#118d84",
+  "background_color": "#f7f1e8",
+  "theme_color": "#f7f1e8",
   "lang": "ru",
   "icons": [
     {
-      "src": "/otto-icon-192.png?v=1",
+      "src": "/otto-icon-192.png?v=3",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/otto-icon-512.png?v=1",
+      "src": "/otto-icon-512.png?v=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
