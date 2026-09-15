@@ -1,16 +1,27 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { CheckCircle2, Mic, RefreshCw, Sparkles, Square, Upload, Volume2 } from 'lucide-react';
+import { CheckCircle2, Mic, RefreshCw, Sparkles, Square, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SpeakingEvaluation =
   | { mode:'teil1'; expectedPoints:string[] }
   | { mode:'teil2'; theme:string; keyword:string; sampleQuestion:string }
   | { mode:'teil3'; object:string; sampleRequest:string }
-  | { mode:'free'; title:string; expectedPoints:string[] };
+  | { mode:'free'; title:string; expectedPoints:string[] }
+  | { mode:'phrase'; expectedText:string };
 
-interface EvaluationResult { score:number; transcript:string; feedbackRu:string; feedbackDe?:string; missing?:string[] }
+type OfficialLevel='full'|'partial'|'zero';
+interface EvaluationResult {
+  score:number;
+  officialLevel:OfficialLevel;
+  transcript:string;
+  strengths:string[];
+  practice:string[];
+  pronunciationRu?:string;
+  missing?:string[];
+}
 interface VoiceRecorderProps { evaluation:SpeakingEvaluation; onPracticed:()=>void; onEvaluated?:(score:number)=>void; hint?:string }
 const MAX_CLIENT_AUDIO_BYTES=2.8*1024*1024;
+const MAX_RECORD_SECONDS=120;
 
 let sharedMicStream:MediaStream|null=null;
 let sharedMicPromise:Promise<MediaStream>|null=null;
@@ -47,15 +58,61 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
   const urlRef=useRef<string|null>(null);
   const fileRef=useRef<HTMLInputElement|null>(null);
   const resultReportedRef=useRef(false);
+  const checkControllerRef=useRef<AbortController|null>(null);
+  const evaluationKey=JSON.stringify(evaluation);
+  const previousEvaluationKeyRef=useRef(evaluationKey);
 
   const clearTimer=useCallback(()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null}},[]);
-  const reset=useCallback(()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current);urlRef.current=null;setAudioUrl(null);setAudioBlob(null);setElapsed(0);setResult(null);setError(null);resultReportedRef.current=false},[]);
+  const stopAndDiscardRecorder=useCallback(()=>{
+    const recorder=recorderRef.current;
+    recorderRef.current=null;
+    chunksRef.current=[];
+    clearTimer();
+    if(recorder){
+      recorder.ondataavailable=null;
+      recorder.onstop=null;
+      recorder.onerror=null;
+      if(recorder.state==='recording')try{recorder.stop()}catch{/* ignore */}
+    }
+    muteSharedMic();
+    setIsRecording(false);
+  },[clearTimer]);
+  const cancelCheck=useCallback(()=>{
+    const controller=checkControllerRef.current;
+    checkControllerRef.current=null;
+    controller?.abort();
+    setChecking(false);
+  },[]);
+  const reset=useCallback(()=>{
+    cancelCheck();
+    stopAndDiscardRecorder();
+    if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    urlRef.current=null;
+    setAudioUrl(null);
+    setAudioBlob(null);
+    setElapsed(0);
+    setResult(null);
+    setError(null);
+    resultReportedRef.current=false;
+  },[cancelCheck,stopAndDiscardRecorder]);
 
   useEffect(()=>{
     let active=true;
     fetch('/api/check-sprechen',{method:'GET'}).then(r=>r.json()).then(p=>{if(active)setAiAvailable(Boolean(p?.aiConfigured))}).catch(()=>{if(active)setAiAvailable(null)});
-    return()=>{active=false;clearTimer();if(recorderRef.current?.state==='recording')recorderRef.current.stop();muteSharedMic();if(urlRef.current)URL.revokeObjectURL(urlRef.current)};
+    return()=>{
+      active=false;
+      checkControllerRef.current?.abort();checkControllerRef.current=null;
+      const recorder=recorderRef.current;recorderRef.current=null;
+      if(recorder){recorder.ondataavailable=null;recorder.onstop=null;recorder.onerror=null;if(recorder.state==='recording')try{recorder.stop()}catch{/* ignore */}}
+      clearTimer();muteSharedMic();if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    };
   },[clearTimer]);
+
+  useEffect(()=>{
+    if(previousEvaluationKeyRef.current===evaluationKey)return;
+    previousEvaluationKeyRef.current=evaluationKey;
+    reset();
+  },[evaluationKey,reset]);
 
   const acceptBlob=useCallback((blob:Blob)=>{
     clearTimer();muteSharedMic();setIsRecording(false);recorderRef.current=null;
@@ -79,9 +136,16 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
       const recorder=mime?new MediaRecorder(stream,{mimeType:mime,audioBitsPerSecond:48000}):new MediaRecorder(stream,{audioBitsPerSecond:48000});
       recorderRef.current=recorder;
       recorder.ondataavailable=e=>{if(e.data.size)chunksRef.current.push(e.data)};
-      recorder.onstart=()=>{setElapsed(0);setIsRecording(true);setError(null);timerRef.current=setInterval(()=>setElapsed(v=>v+1),1000)};
+      recorder.onstart=()=>{
+        let seconds=0;
+        setElapsed(0);setIsRecording(true);setError(null);
+        timerRef.current=setInterval(()=>{
+          seconds+=1;setElapsed(seconds);
+          if(seconds>=MAX_RECORD_SECONDS&&recorderRef.current===recorder&&recorder.state==='recording')recorder.stop();
+        },1000);
+      };
       recorder.onerror=()=>{clearTimer();muteSharedMic();setIsRecording(false);setError('Запись прервалась. Попробуйте ещё раз.')};
-      recorder.onstop=()=>acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}));
+      recorder.onstop=()=>{if(recorderRef.current!==recorder)return;acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}))};
       recorder.start(250);
     }catch(e){clearTimer();muteSharedMic();setIsRecording(false);setError(microphoneErrorMessage(e))}
   },[acceptBlob,clearTimer,reset]);
@@ -91,30 +155,74 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
 
   const check=useCallback(async()=>{
     if(!audioBlob||checking)return;
+    const controller=new AbortController();
+    checkControllerRef.current?.abort();checkControllerRef.current=controller;
+    let timedOut=false;
     setChecking(true);setError(null);setResult(null);
-    const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),70000);
+    const timeout=window.setTimeout(()=>{timedOut=true;controller.abort()},70000);
     try{
       const audioBase64=await blobToBase64(audioBlob);
-      const r=await fetch('/api/check-sprechen',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({...evaluation,audioBase64,mimeType:audioBlob.type||'audio/webm'})});
+      if(controller.signal.aborted||checkControllerRef.current!==controller)return;
+      const r=await fetch('/api/check-sprechen',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({...evaluation,audioBase64,mimeType:normalizeAudioMime(audioBlob.type||'audio/webm')})});
       const p=await r.json().catch(()=>null);
+      if(controller.signal.aborted||checkControllerRef.current!==controller)return;
       if(!r.ok)throw new Error(p?.error||`Проверка недоступна (${r.status}).`);
-      const data=p as EvaluationResult;setResult(data);setAiAvailable(true);
+      const data=parseEvaluationResult(p);
+      setResult(data);setAiAvailable(true);
       if(!resultReportedRef.current&&Number.isFinite(data.score)){resultReportedRef.current=true;onEvaluated?.(Math.max(0,Math.min(100,data.score)))}
-    }catch(e){setError(e instanceof DOMException&&e.name==='AbortError'?'Проверка заняла слишком много времени. Нажмите «Проверить с Отто» ещё раз.':e instanceof Error?e.message:'Не удалось проверить запись.')}finally{window.clearTimeout(timeout);setChecking(false)}
+    }catch(e){
+      if(controller.signal.aborted&&!timedOut)return;
+      if(checkControllerRef.current!==controller)return;
+      setError(timedOut?'Проверка заняла слишком много времени. Нажмите «Проверить с Отто» ещё раз.':e instanceof Error?e.message:'Не удалось проверить запись.');
+    }finally{
+      window.clearTimeout(timeout);
+      if(checkControllerRef.current===controller){checkControllerRef.current=null;setChecking(false)}
+    }
   },[audioBlob,checking,evaluation,onEvaluated]);
 
   return <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">Ответьте вслух</h3><p className="mt-1 text-sm leading-6 text-slate-500">{hint||'Нажмите микрофон, скажите ответ и остановите запись.'}</p></div><div className={cn('rounded-lg px-3 py-2 text-sm font-bold tabular-nums',isRecording?'bg-red-50 text-red-700':'bg-slate-50 text-slate-700')}>{formatTime(elapsed)}</div></div>
+    <div className="mb-4 flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold text-slate-950">Ответьте вслух</h3><p className="mt-1 text-sm leading-6 text-slate-500">{hint||'Нажмите микрофон, скажите ответ и остановите запись.'}</p></div><div className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-bold tabular-nums',isRecording?'bg-red-50 text-red-700':'bg-slate-50 text-slate-700')}>{formatTime(elapsed)}</div></div>
     {!audioUrl&&!isRecording&&<div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={start} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white"><Mic className="h-5 w-5"/>Записать ответ</button><button type="button" onClick={()=>fileRef.current?.click()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700"><Upload className="h-5 w-5"/>Добавить аудио</button><input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={handleFile}/></div>}
     {isRecording&&<button type="button" onClick={stop} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white"><Square className="h-5 w-5"/>Остановить запись</button>}
     {audioUrl&&<div className="space-y-3"><audio src={audioUrl} controls className="w-full"/><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div></div>}
     {aiAvailable===false&&<p className="mt-3 text-sm text-amber-700">AI-проверка временно недоступна, но запись можно прослушать.</p>}
     {error&&<p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-    {result&&<div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4"><div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 font-black text-teal-900"><CheckCircle2 className="h-5 w-5"/>Проверка Отто</span><span className="text-2xl font-black text-teal-800">{result.score}%</span></div><div className="mt-3 rounded-xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Распознано</p><p className="mt-1 text-sm leading-6 text-slate-700">{result.transcript}</p></div><p className="mt-3 text-sm leading-6 text-slate-700">{result.feedbackRu}</p>{result.feedbackDe&&<p className="mt-2 flex gap-2 text-sm font-semibold text-teal-900"><Volume2 className="mt-0.5 h-4 w-4 shrink-0"/>{result.feedbackDe}</p>}{result.missing?.length?<p className="mt-2 text-xs text-slate-500">Ещё добавить: {result.missing.join(' · ')}</p>:null}</div>}
+    {result&&<EvaluationResultCard result={result}/>} 
   </div>;
 }
 
+function EvaluationResultCard({result}:{result:EvaluationResult}){
+  const label=result.officialLevel==='full'?'Задание выполнено':result.officialLevel==='partial'?'Задание выполнено частично':'Задание не выполнено';
+  return <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2 font-black text-teal-900"><CheckCircle2 className="h-5 w-5"/>Проверка Отто</span><span className={cn('rounded-full px-3 py-1 text-sm font-black',result.officialLevel==='full'?'bg-emerald-100 text-emerald-800':result.officialLevel==='partial'?'bg-amber-100 text-amber-900':'bg-rose-100 text-rose-800')}>{label}</span></div>
+    {result.transcript&&<div className="mt-3 rounded-xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Распознано</p><p className="mt-1 text-sm leading-6 text-slate-700">{result.transcript}</p></div>}
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="rounded-xl bg-white p-3"><h4 className="font-black text-emerald-800">Что получилось</h4>{result.strengths?.length?<ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">{result.strengths.map(item=><li key={item}>• {item}</li>)}</ul>:<p className="mt-2 text-sm text-slate-500">Пока нет выполненной части, которую можно засчитать.</p>}</div>
+      <div className="rounded-xl bg-white p-3"><h4 className="font-black text-amber-800">Что нужно потренировать</h4>{result.practice?.length?<ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">{result.practice.map(item=><li key={item}>• {item}</li>)}</ul>:<p className="mt-2 text-sm text-slate-500">Существенных замечаний по этому ответу нет.</p>}</div>
+    </div>
+    {result.pronunciationRu&&<div className="mt-3 rounded-xl bg-white p-3"><h4 className="text-sm font-black text-slate-800">Произношение и понятность</h4><p className="mt-1 text-sm leading-5 text-slate-600">{result.pronunciationRu}</p></div>}
+    {result.missing?.length?<p className="mt-3 text-xs leading-5 text-slate-600">Не прозвучало: {result.missing.join(' · ')}</p>:null}
+    <p className="mt-3 text-[11px] leading-4 text-teal-800">Шкала тренировки повторяет официальную логику Goethe: выполнено и понятно / частично / не выполнено или непонятно. Это учебная оценка, не официальный экзаменационный балл.</p>
+  </div>;
+}
+
+function parseEvaluationResult(value:unknown):EvaluationResult{
+  if(!value||typeof value!=='object')throw new Error('Отто вернул некорректный ответ. Попробуйте ещё раз.');
+  const p=value as Partial<EvaluationResult>;
+  if(!['full','partial','zero'].includes(String(p.officialLevel)))throw new Error('Отто вернул некорректный результат. Попробуйте ещё раз.');
+  if(!Number.isFinite(Number(p.score)))throw new Error('Отто вернул некорректную оценку. Попробуйте ещё раз.');
+  return{
+    score:Number(p.score),
+    officialLevel:p.officialLevel as OfficialLevel,
+    transcript:String(p.transcript||''),
+    strengths:Array.isArray(p.strengths)?p.strengths.map(String).filter(Boolean).slice(0,4):[],
+    practice:Array.isArray(p.practice)?p.practice.map(String).filter(Boolean).slice(0,4):[],
+    pronunciationRu:String(p.pronunciationRu||''),
+    missing:Array.isArray(p.missing)?p.missing.map(String).filter(Boolean).slice(0,10):[],
+  };
+}
 function formatTime(v:number){return `${Math.floor(v/60)}:${String(v%60).padStart(2,'0')}`}
 function blobToBase64(blob:Blob){return new Promise<string>((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||'').split(',')[1]||'');r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
-function guessAudioMime(name:string){const n=name.toLowerCase();if(n.endsWith('.mp3'))return'audio/mpeg';if(n.endsWith('.m4a')||n.endsWith('.mp4'))return'audio/mp4';if(n.endsWith('.wav'))return'audio/wav';if(n.endsWith('.ogg'))return'audio/ogg';return'audio/webm'}
+function normalizeAudioMime(value:string){const mime=String(value||'audio/webm').toLowerCase().split(';')[0].trim();if(mime==='audio/mp4'||mime==='audio/x-m4a')return'audio/m4a';return mime.startsWith('audio/')?mime:'audio/webm'}
+function guessAudioMime(name:string){const n=name.toLowerCase();if(n.endsWith('.mp3'))return'audio/mpeg';if(n.endsWith('.m4a'))return'audio/m4a';if(n.endsWith('.mp4'))return'audio/mp4';if(n.endsWith('.wav'))return'audio/wav';if(n.endsWith('.ogg'))return'audio/ogg';return'audio/webm'}
 function microphoneErrorMessage(e:unknown){if(e instanceof DOMException){if(e.name==='NotAllowedError'||e.name==='SecurityError')return'Разрешите доступ к микрофону один раз в браузере/Telegram и нажмите запись снова.';if(e.name==='NotFoundError')return'Микрофон не найден.';if(e.name==='NotReadableError')return'Микрофон занят другим приложением.'}return e instanceof Error?e.message:'Не удалось включить микрофон.'}
