@@ -110,6 +110,16 @@ jobs:
             assert(await img.isVisible(), `card ${n}: image missing`);
             const src = await img.getAttribute('src');
             assert(src?.includes(`/sprechen/teil3-originals/CARD (${n}).png`), `card ${n}: wrong image ${src}`);
+            await img.evaluate(async el => {
+              if (!el.complete || !el.naturalWidth) {
+                await new Promise((resolve, reject) => {
+                  const timer = setTimeout(() => reject(new Error('image load timeout')), 8000);
+                  el.addEventListener('load', () => { clearTimeout(timer); resolve(); }, { once: true });
+                  el.addEventListener('error', () => { clearTimeout(timer); reject(new Error('image load error')); }, { once: true });
+                });
+              }
+              if (typeof el.decode === 'function') await el.decode().catch(() => {});
+            });
             assert(await page.getByText(label, { exact: true }).first().isVisible(), `card ${n}: caption ${label} missing`);
 
             const sampleToggle = page.getByRole('button', { name: /Показать пример после своего ответа/i });
@@ -131,7 +141,7 @@ jobs:
           assert(errors.length === 0, `browser errors: ${JSON.stringify(errors)}`);
           await context.close();
           await browser.close();
-          console.log('PASS all 48 image-backed Sprechen Teil 3 cards');
+          console.log('PASS all 48 image-backed Sprechen Teil 3 cards after image decode');
           NODE
           node qa-teil3-data.mjs
       - uses: actions/upload-artifact@v4
