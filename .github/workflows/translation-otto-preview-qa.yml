@@ -1,0 +1,135 @@
+name: Translation OTTO Preview QA
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  preview-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify mobile translation UI and stale-response protection
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          sleep 55
+          cat > qa-translations.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base=process.env.TARGET_URL;
+          const browser=await chromium.launch({headless:true});
+          fs.mkdirSync('translation-qa',{recursive:true});
+
+          async function prepare(page,{delayFirst=false}={}){
+            let requestNo=0;
+            await page.route('**/api/translate-task',async route=>{
+              let body={};
+              try{body=route.request().postDataJSON()||{}}catch{}
+              if(body.mode==='explain-pair'){
+                await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({de:String(body.text||''),ru:'Текущее объяснение'})});
+                return;
+              }
+              const parts=Array.isArray(body.parts)?body.parts.map(String):[];
+              requestNo+=1;
+              if(delayFirst&&requestNo===1)await new Promise(r=>setTimeout(r,900));
+              try{await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({translations:parts.map((p,i)=>`${delayFirst&&requestNo===1?'OLD':'RU'}:${i}:${p}`)})})}catch{}
+            });
+            await page.goto(base+'/?qa=translation-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            await page.locator('.otto-splash-screen').waitFor({state:'detached',timeout:15000}).catch(()=>{});
+            await page.waitForTimeout(500);
+            await page.locator('.otto-bottom-nav-item').nth(1).click();
+            await page.getByRole('button',{name:/Hören/}).click();
+          }
+
+          function assert(cond,msg){if(!cond)throw new Error(msg)}
+          async function noHorizontalOverflow(page,label){
+            const v=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
+            assert(v.sw<=v.cw+1,`${label}: horizontal overflow ${v.sw}>${v.cw}`);
+          }
+          async function assertInsideViewport(page,locator,label){
+            const box=await locator.boundingBox();assert(box,`${label}: no bounding box`);
+            const width=await page.evaluate(()=>innerWidth);
+            assert(box.x>=-1&&box.x+box.width<=width+1,`${label}: outside viewport x=${box.x} w=${box.width} viewport=${width}`);
+            const nav=page.locator('.otto-bottom-nav-inner');
+            if(await nav.count()){
+              const n=await nav.boundingBox();
+              if(n)assert(box.y+box.height<=n.y+1,`${label}: overlaps bottom navigation`);
+            }
+          }
+
+          async function mobile(width){
+            const context=await browser.newContext({viewport:{width,height:844}});const page=await context.newPage();
+            await prepare(page);
+            await noHorizontalOverflow(page,`Hören ${width}`);
+            const eyes=page.locator('button[aria-label="Показать перевод"]');
+            assert(await eyes.count()>=2,`Hören ${width}: card translation eye missing`);
+            await eyes.nth(1).click();
+            const panel=page.locator('[data-translation-ui] > div.fixed').last();
+            await panel.waitFor({state:'visible'});
+            await assertInsideViewport(page,panel,`card translation ${width}`);
+            await noHorizontalOverflow(page,`card translation ${width}`);
+            await page.screenshot({path:`translation-qa/card-${width}.png`,fullPage:true});
+            const close=panel.getByRole('button',{name:'Закрыть перевод'});await close.click();await panel.waitFor({state:'hidden'});
+
+            const word=page.locator('section h2 span[role="button"]').first();
+            if(await word.count()){
+              await word.click();
+              const wordPanel=page.locator('span.fixed.inset-x-3').last();
+              await wordPanel.waitFor({state:'visible'});
+              await assertInsideViewport(page,wordPanel,`word translation ${width}`);
+              await noHorizontalOverflow(page,`word translation ${width}`);
+              await page.screenshot({path:`translation-qa/word-${width}.png`,fullPage:true});
+              await wordPanel.getByRole('button',{name:'Закрыть перевод слова'}).click();
+            }
+            await context.close();
+          }
+
+          for(const width of [320,390,430])await mobile(width);
+
+          const desktopContext=await browser.newContext({viewport:{width:1366,height:900}});const desktop=await desktopContext.newPage();
+          await prepare(desktop);await noHorizontalOverflow(desktop,'desktop Hören');
+          const deskEyes=desktop.locator('button[aria-label="Показать перевод"]');await deskEyes.nth(1).click();
+          await noHorizontalOverflow(desktop,'desktop translation');
+          await desktop.screenshot({path:'translation-qa/card-1366.png',fullPage:true});
+          await desktopContext.close();
+
+          const staleContext=await browser.newContext({viewport:{width:390,height:844}});const stale=await staleContext.newPage();
+          await prepare(stale,{delayFirst:true});
+          const titleBefore=(await stale.locator('section h2').first().innerText()).trim();
+          const staleEyes=stale.locator('button[aria-label="Показать перевод"]');await staleEyes.nth(1).click();
+          const answers=stale.locator('button.min-h-12.border-2');await answers.first().click({force:true});
+          await stale.getByRole('button',{name:'Проверить',exact:true}).click({force:true});
+          await stale.getByRole('button',{name:/Следующее|Завершить/}).click({force:true});
+          await stale.waitForTimeout(1200);
+          const titleAfter=(await stale.locator('section h2').first().innerText()).trim();
+          assert(titleAfter!==titleBefore,'Hören did not advance to next task');
+          assert((await stale.getByText(/^OLD:/).count())===0,'Old translation leaked into next task');
+          assert((await stale.locator('[data-translation-ui] > div.fixed').count())===0||!(await stale.locator('[data-translation-ui] > div.fixed').last().isVisible()),'Old translation panel stayed open after task change');
+          await noHorizontalOverflow(stale,'stale-response scenario');
+          await stale.screenshot({path:'translation-qa/after-next-390.png',fullPage:true});
+          await staleContext.close();
+
+          await browser.close();
+          NODE
+          node qa-translations.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: translation-otto-preview-qa
+          path: translation-qa
+          retention-days: 3
