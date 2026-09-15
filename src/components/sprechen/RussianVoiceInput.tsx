@@ -1,9 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Mic, Square } from 'lucide-react';
 
 interface Props {
   onText: (text: string) => void;
 }
+
+const MAX_AUDIO_BYTES = 2.8 * 1024 * 1024;
+const MAX_RECORD_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 45_000;
 
 export function RussianVoiceInput({ onText }: Props) {
   const [recording, setRecording] = useState(false);
@@ -12,39 +16,83 @@ export function RussianVoiceInput({ onText }: Props) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const requestRef = useRef<AbortController | null>(null);
+  const recordTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearRecordTimeout = () => {
+    if (recordTimeoutRef.current) clearTimeout(recordTimeoutRef.current);
+    recordTimeoutRef.current = null;
+  };
 
   const stopTracks = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   };
 
+  useEffect(() => () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    clearRecordTimeout();
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder) {
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      recorder.onerror = null;
+      if (recorder.state === 'recording') try { recorder.stop(); } catch { /* ignore */ }
+    }
+    stopTracks();
+  }, []);
+
   const send = async (blob: Blob) => {
     if (!blob.size) {
       setError('Запись пустая. Попробуйте ещё раз.');
       return;
     }
+    if (blob.size > MAX_AUDIO_BYTES) {
+      setError('Запись слишком длинная. Скажите фразу короче.');
+      return;
+    }
+
+    const controller = new AbortController();
+    requestRef.current?.abort();
+    requestRef.current = controller;
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, REQUEST_TIMEOUT_MS);
     setLoading(true);
     setError(null);
     try {
       const audioBase64 = await blobToBase64(blob);
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       const response = await fetch('/api/transcribe-ru', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioBase64, mimeType: blob.type || 'audio/webm' }),
+        signal: controller.signal,
+        body: JSON.stringify({ audioBase64, mimeType: normalizeAudioMime(blob.type || 'audio/webm') }),
       });
       const payload = await response.json().catch(() => null);
+      if (controller.signal.aborted || requestRef.current !== controller) return;
       if (!response.ok) throw new Error(payload?.error || 'Не удалось распознать русскую речь.');
       const text = String(payload?.text || '').trim();
       if (!text) throw new Error('Речь не распознана. Попробуйте сказать фразу ещё раз.');
       onText(text);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось распознать русскую речь.');
+      if (controller.signal.aborted && !timedOut) return;
+      if (requestRef.current !== controller) return;
+      setError(timedOut ? 'Распознавание заняло слишком много времени. Попробуйте ещё раз.' : e instanceof Error ? e.message : 'Не удалось распознать русскую речь.');
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeout);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setLoading(false);
+      }
     }
   };
 
   const start = async () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setLoading(false);
     setError(null);
     try {
       if (!window.isSecureContext) throw new Error('Микрофон работает только на защищённой HTTPS-странице.');
@@ -62,18 +110,28 @@ export function RussianVoiceInput({ onText }: Props) {
       recorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
       recorder.onstop = () => {
+        if (recorderRef.current !== recorder) return;
+        recorderRef.current = null;
+        clearRecordTimeout();
         setRecording(false);
         stopTracks();
         void send(new Blob(chunksRef.current, { type: recorder.mimeType || mime || 'audio/webm' }));
       };
       recorder.onerror = () => {
+        if (recorderRef.current === recorder) recorderRef.current = null;
+        clearRecordTimeout();
         setRecording(false);
         stopTracks();
         setError('Запись прервалась. Попробуйте ещё раз.');
       };
       recorder.start(250);
       setRecording(true);
+      clearRecordTimeout();
+      recordTimeoutRef.current = setTimeout(() => {
+        if (recorderRef.current === recorder && recorder.state === 'recording') recorder.stop();
+      }, MAX_RECORD_MS);
     } catch (e) {
+      clearRecordTimeout();
       stopTracks();
       setRecording(false);
       setError(microphoneErrorMessage(e));
@@ -105,6 +163,12 @@ function blobToBase64(blob: Blob) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
+}
+
+function normalizeAudioMime(value: string) {
+  const mime = String(value || 'audio/webm').toLowerCase().split(';')[0].trim();
+  if (mime === 'audio/mp4' || mime === 'audio/x-m4a') return 'audio/m4a';
+  return mime.startsWith('audio/') ? mime : 'audio/webm';
 }
 
 function microphoneErrorMessage(error: unknown) {
