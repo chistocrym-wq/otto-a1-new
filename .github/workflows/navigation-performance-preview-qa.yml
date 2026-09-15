@@ -22,7 +22,7 @@ jobs:
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Audit home navigation, runtime errors and latency
+      - name: Audit home navigation, runtime errors, latency and stale-chunk recovery
         env:
           TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
         run: |
@@ -37,16 +37,16 @@ jobs:
           const results=[];
 
           const scenarios=[
-            {label:'readiness',kind:'css',selector:'.otto-approved-readiness-button'},
-            {label:'daily-5',kind:'css',selector:'.otto-roadmap-duration button',nth:0},
-            {label:'daily-15',kind:'css',selector:'.otto-roadmap-duration button',nth:1},
-            {label:'daily-30',kind:'css',selector:'.otto-roadmap-duration button',nth:2},
-            {label:'how-to',kind:'css',selector:'.otto-roadmap-howto-link'},
-            {label:'skill-schreiben',kind:'css',selector:'.otto-premium-skill-card',nth:0},
-            {label:'skill-sprechen',kind:'css',selector:'.otto-premium-skill-card',nth:1},
-            {label:'skill-lesen',kind:'css',selector:'.otto-premium-skill-card',nth:2},
-            {label:'skill-horen',kind:'css',selector:'.otto-premium-skill-card',nth:3},
-            {label:'mock-exam',kind:'css',selector:'.otto-premium-secondary'},
+            {label:'readiness',selector:'.otto-approved-readiness-button'},
+            {label:'daily-5',selector:'.otto-roadmap-duration button',nth:0},
+            {label:'daily-15',selector:'.otto-roadmap-duration button',nth:1},
+            {label:'daily-30',selector:'.otto-roadmap-duration button',nth:2},
+            {label:'how-to',selector:'.otto-roadmap-howto-link'},
+            {label:'skill-schreiben',selector:'.otto-premium-skill-card',nth:0},
+            {label:'skill-sprechen',selector:'.otto-premium-skill-card',nth:1},
+            {label:'skill-lesen',selector:'.otto-premium-skill-card',nth:2},
+            {label:'skill-horen',selector:'.otto-premium-skill-card',nth:3},
+            {label:'mock-exam',selector:'.otto-premium-secondary'},
             {label:'details-schreiben',details:0,button:0},
             {label:'details-sprechen',details:0,button:1},
             {label:'details-lesen',details:0,button:2},
@@ -80,9 +80,8 @@ jobs:
               return detail.locator('button').nth(s.button);
             }
             const loc=page.locator(s.selector);
-            return s.nth===undefined?loc:firstOrNth(loc,s.nth);
+            return s.nth===undefined?loc:loc.nth(s.nth);
           }
-          function firstOrNth(locator,n){return locator.nth(n)}
 
           async function runScenario(s){
             const context=await browser.newContext({viewport:{width:390,height:844}});
@@ -101,13 +100,12 @@ jobs:
               },null,{timeout:10000});
               record.openMs=Date.now()-t0;
               record.textLength=await page.locator('.otto-inner-screen').evaluate(el=>(el.textContent||'').trim().length);
-              if(record.textLength<=8)throw new Error('route content is blank');
               if(await page.locator('.otto-route-loading').count()){
                 const visible=await page.locator('.otto-route-loading').first().isVisible().catch(()=>false);
                 if(visible)throw new Error('route loading fallback remained visible');
               }
               if(record.errors.some(x=>/pageerror|asset 4|asset 5|requestfailed:.*\/assets\//.test(x)))throw new Error(record.errors.join('\n'));
-              const back=page.locator('button[aria-label="Назад"]').filter({visible:true});
+              const back=page.locator('button[aria-label="Назад"]:visible');
               const t1=Date.now();
               if(await back.count())await back.first().click();
               else await page.locator('.otto-bottom-nav-item').nth(0).click();
@@ -117,44 +115,51 @@ jobs:
               record.failure=e instanceof Error?e.message:String(e);
               await page.screenshot({path:`navigation-qa/failure-${s.label}.png`,fullPage:true}).catch(()=>{});
             }finally{
-              results.push(record);
-              await context.close();
+              results.push(record);await context.close();
             }
           }
 
           for(const scenario of scenarios)await runScenario(scenario);
 
-          // Reproduce a failed lazy chunk request on a fresh app shell. This identifies whether
-          // an old/open tab can collapse to a blank route after a deploy changes chunk hashes.
+          // Abort one real Settings lazy chunk during the startup preload. The app must recover
+          // by reloading the current shell once; the same route must then open normally.
           {
-            const context=await browser.newContext({viewport:{width:390,height:844}});
+            const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
             const page=await context.newPage();
-            const record={label:'simulated-lazy-chunk-failure',errors:[],abortedUrl:'',blank:false};
-            wire(page,record);
-            await home(page);
+            const record={label:'stale-lazy-chunk-recovery',errors:[],abortedUrl:'',reloads:0,recovered:false};
             let aborted=false;
-            await page.route('**/assets/*.js',async route=>{
+            page.on('framenavigated',frame=>{if(frame===page.mainFrame())record.reloads+=1});
+            wire(page,record);
+            await page.route(/\/assets\/SettingsPage-[^/]+\.js(?:\?.*)?$/,async route=>{
               if(!aborted){aborted=true;record.abortedUrl=route.request().url();await route.abort('failed');return}
               await route.continue();
             });
-            await page.locator('.otto-bottom-nav-item').nth(4).click();
-            await page.waitForTimeout(2500);
-            record.blank=await page.evaluate(()=>{
-              const inner=document.querySelector('.otto-inner-screen');
-              const text=(inner?.textContent||'').trim();
-              return !inner||text.length<=8;
-            });
-            await page.screenshot({path:'navigation-qa/simulated-chunk-failure.png',fullPage:true}).catch(()=>{});
-            results.push(record);
-            await context.close();
+            try{
+              await page.goto(base+'/?qa=stale-chunk-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+              await page.locator('.otto-splash-screen').waitFor({state:'detached',timeout:20000}).catch(()=>{});
+              await page.locator('.otto-approved-dashboard').waitFor({state:'visible',timeout:20000});
+              if(!record.abortedUrl)throw new Error('Settings lazy chunk was not intercepted');
+              if(record.reloads<2)throw new Error(`Expected recovery reload, navigations=${record.reloads}`);
+              await page.locator('.otto-bottom-nav-item').nth(4).click();
+              await page.waitForFunction(()=>{
+                const inner=document.querySelector('.otto-inner-screen');
+                return !!inner && (inner.textContent||'').trim().length>8;
+              },null,{timeout:10000});
+              record.recovered=true;
+              await page.screenshot({path:'navigation-qa/stale-chunk-recovered.png',fullPage:true});
+            }catch(e){
+              record.failure=e instanceof Error?e.message:String(e);
+              await page.screenshot({path:'navigation-qa/stale-chunk-failure.png',fullPage:true}).catch(()=>{});
+            }
+            results.push(record);await context.close();
           }
 
           fs.writeFileSync('navigation-qa/results.json',JSON.stringify(results,null,2));
           console.log(JSON.stringify(results,null,2));
-          const normal=results.filter(r=>r.label!=='simulated-lazy-chunk-failure');
-          const failures=normal.filter(r=>r.failure);
+          const normal=results.filter(r=>r.openMs!==undefined);
+          const failures=results.filter(r=>r.failure);
           const slow=normal.filter(r=>typeof r.openMs==='number'&&r.openMs>2500);
-          console.log(`normal failures=${failures.length}; slow>2500ms=${slow.length}`);
+          console.log(`failures=${failures.length}; slow>2500ms=${slow.length}`);
           await browser.close();
           if(failures.length)process.exit(2);
           NODE
