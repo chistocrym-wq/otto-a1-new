@@ -56,6 +56,17 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
   const [translations, setTranslations] = useState<string[]>([]);
   const [error, setError] = useState('');
   const lastFingerprint = useRef('');
+  const requestRef = useRef<AbortController | null>(null);
+
+  const clearTranslation = () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setOpen(false);
+    setLoading(false);
+    setSource([]);
+    setTranslations([]);
+    setError('');
+  };
 
   useEffect(() => {
     const root = document.getElementById(scopeId);
@@ -66,15 +77,14 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
       const next = fingerprint(scopeId);
       if (next === lastFingerprint.current) return;
       lastFingerprint.current = next;
-      setOpen(false);
-      setLoading(false);
-      setSource([]);
-      setTranslations([]);
-      setError('');
+      clearTranslation();
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      requestRef.current?.abort();
+    };
   }, [scopeId]);
 
   const toggle = async () => {
@@ -84,7 +94,8 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
     }
 
     const parts = collectGermanText(scopeId);
-    lastFingerprint.current = parts.join('\u241f');
+    const requestFingerprint = parts.join('\u241f');
+    lastFingerprint.current = requestFingerprint;
     setSource(parts);
     setOpen(true);
     setError('');
@@ -109,6 +120,9 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
       // Ignore cache errors.
     }
 
+    const controller = new AbortController();
+    requestRef.current?.abort();
+    requestRef.current = controller;
     setLoading(true);
     setTranslations([]);
     try {
@@ -116,22 +130,26 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parts }),
+        signal: controller.signal,
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Не удалось открыть перевод.');
       const result = Array.isArray(payload.translations) ? payload.translations.map(String) : [];
       if (result.length !== parts.length) throw new Error('Перевод пришёл не полностью.');
+      if (controller.signal.aborted || lastFingerprint.current !== requestFingerprint) return;
       setTranslations(result);
       try { window.localStorage.setItem(key, JSON.stringify(result)); } catch { /* ignore */ }
     } catch (translationError) {
+      if (controller.signal.aborted || lastFingerprint.current !== requestFingerprint) return;
       setError(translationError instanceof Error ? translationError.message : 'Не удалось открыть перевод.');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted && lastFingerprint.current === requestFingerprint) setLoading(false);
+      if (requestRef.current === controller) requestRef.current = null;
     }
   };
 
   return (
-    <div data-translation-ui className="mb-3">
+    <div data-translation-ui className="mb-3 min-w-0 max-w-full">
       <div className="sticky top-2 z-30 flex justify-end">
         <button
           type="button"
@@ -146,16 +164,16 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
       </div>
 
       {open && (
-        <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-800">Перевод текущего задания</p>
+        <div className="mt-3 max-w-full overflow-x-hidden rounded-2xl border border-amber-200 bg-amber-50 p-3 shadow-sm sm:p-4">
+          <p className="break-words text-xs font-black uppercase tracking-[0.14em] text-amber-800 [overflow-wrap:anywhere]">Перевод текущего задания</p>
           {loading && <p className="mt-2 text-sm text-slate-600">Перевожу…</p>}
-          {error && <p className="mt-2 text-sm text-rose-700">{error}</p>}
+          {error && <p className="mt-2 break-words text-sm text-rose-700 [overflow-wrap:anywhere]">{error}</p>}
           {!loading && translations.length > 0 && (
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 min-w-0 space-y-3">
               {translations.map((translation, index) => (
-                <div key={`${source[index]}-${index}`} className="rounded-xl bg-white/80 p-3">
-                  <p className="text-[11px] leading-4 text-slate-400">{source[index]}</p>
-                  <p className="mt-1 text-sm font-medium leading-6 text-slate-800">{translation}</p>
+                <div key={`${source[index]}-${index}`} className="min-w-0 max-w-full overflow-hidden rounded-xl bg-white/80 p-3">
+                  <p className="break-words text-[11px] leading-4 text-slate-400 [overflow-wrap:anywhere]">{source[index]}</p>
+                  <p className="mt-1 break-words text-sm font-medium leading-6 text-slate-800 [overflow-wrap:anywhere]">{translation}</p>
                 </div>
               ))}
             </div>
