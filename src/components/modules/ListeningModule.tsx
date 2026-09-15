@@ -87,6 +87,6 @@ export function ListeningModule({onBack,onComplete}:Props){
   </div>;
 }
 
-function answerClass(selected:boolean,checked:boolean,correct:boolean){return cn('min-h-12 rounded-xl border-2 px-4 py-3 text-left font-semibold transition',checked&&selected?(correct?'border-emerald-500 bg-emerald-50 text-emerald-950':'border-rose-500 bg-rose-50 text-rose-950'):selected?'border-sky-400 bg-sky-50 text-slate-950':'border-slate-200 bg-white text-slate-900')}
+function answerClass(selected:boolean,checked:boolean,correct:boolean){return cn('min-h-12 rounded-xl border-2 px-4 py-3 text-left font-semibold transition',checked&&selected?(correct?'border-emerald-500 bg-emerald-50 text-emerald-950':'border-rose-500 bg-rose-50 text-rose-950'):selected?'border-blue-300 bg-blue-50 text-slate-950':'border-slate-200 bg-white text-slate-900')}
 function reasonDe(task:HorenTask){if(task.type==='multiple-choice')return `Die passende Antwort ist „${task.options[task.correctIndex]}“. Diese Information hören Sie im Dialog.`;return `Die Aussage ist ${task.correctAnswer?'richtig':'falsch'}. Diese Information hören Sie im Dialog.`}
 function Back({onClick}:{onClick:()=>void}){return <button onClick={onClick} aria-label="Назад" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border bg-white"><ArrowLeft className="h-5 w-5"/></button>}
