@@ -35,10 +35,10 @@ jobs:
           const browser = await chromium.launch({ headless: true });
           fs.mkdirSync('answer-state-qa', { recursive: true });
 
-          const SKY = 'rgb(240, 249, 255)';
-          const GREEN = 'rgb(236, 253, 245)';
-          const RED = 'rgb(255, 241, 242)';
-          const STATE_COLORS = new Set([SKY, GREEN, RED]);
+          const BLUE = 'rgb(239, 246, 255)';
+          const GREEN = 'rgb(237, 243, 238)';
+          const RED = 'rgb(251, 239, 238)';
+          const STATE_COLORS = new Set([BLUE, GREEN, RED]);
 
           async function openModules(page) {
             await page.goto(base + '/?qa=answer-state-' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -55,10 +55,10 @@ jobs:
           }
           async function expectSelected(locator, label) {
             const classes = await cls(locator);
-            if (!classes.includes('bg-sky-50') || classes.includes('bg-emerald-50') || classes.includes('bg-rose-50')) throw new Error(`${label} classes are wrong before check: ${classes}`);
+            if (!classes.includes('bg-blue-50') || classes.includes('bg-emerald-50') || classes.includes('bg-rose-50')) throw new Error(`${label} classes are wrong before check: ${classes}`);
             await new Promise(r => setTimeout(r, 250));
             const value = await bg(locator);
-            if (value !== SKY) throw new Error(`${label} is not pale blue after transition: ${value}`);
+            if (value !== BLUE) throw new Error(`${label} is not pale blue after transition: ${value}`);
             return value;
           }
           async function expectChecked(locator, label) {
