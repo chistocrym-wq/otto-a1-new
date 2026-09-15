@@ -48,6 +48,6 @@ export default async (req) => {
 };
 
 export const config = { path: '/api/transcribe-ru' };
-function normalizeMimeType(value){const mime=String(value||'audio/webm').toLowerCase().split(';')[0].trim();return mime.startsWith('audio/')?mime:'audio/webm'}
+function normalizeMimeType(value){const mime=String(value||'audio/webm').toLowerCase().split(';')[0].trim();if(mime==='audio/mp4'||mime==='audio/x-m4a')return'audio/m4a';return mime.startsWith('audio/')?mime:'audio/webm'}
 function stripFences(value){return String(value).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/i,'').trim()}
 function json(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8',...headers}})}
