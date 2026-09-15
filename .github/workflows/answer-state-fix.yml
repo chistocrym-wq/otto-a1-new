@@ -1,0 +1,55 @@
+name: Fix Lesen Horen Answer States
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+permissions:
+  contents: write
+
+jobs:
+  fix-answer-states:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: task/master-roadmap-final-46-52
+          fetch-depth: 0
+      - name: Apply narrow answer-state fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          reading = Path('src/components/modules/ReadingModule.tsx')
+          text = reading.read_text()
+          old = "className={cn('min-w-0 rounded-2xl border-2 bg-white p-4 text-left transition',!checked&&selected?'border-sky-500 bg-sky-50':'border-slate-200',checked&&selected&&correct&&'border-emerald-500 bg-emerald-50',checked&&selected&&!correct&&'border-rose-500 bg-rose-50')}"
+          new = "className={cn('min-w-0 rounded-2xl border-2 p-4 text-left transition',checked&&selected?(correct?'border-emerald-500 bg-emerald-50':'border-rose-500 bg-rose-50'):selected?'border-sky-400 bg-sky-50':'border-slate-200 bg-white')}"
+          if old not in text:
+              raise SystemExit('Reading OptionCard target not found')
+          text = text.replace(old, new, 1)
+
+          old = "className={cn('min-h-12 rounded-xl border-2 px-3 py-2.5 font-bold transition',!checked&&selected===value?'border-sky-500 bg-sky-50':'border-slate-200 bg-white',checked&&selected===value&&value===correctValue&&'border-emerald-500 bg-emerald-50 text-emerald-900',checked&&selected===value&&value!==correctValue&&'border-rose-500 bg-rose-50 text-rose-900')}"
+          new = "className={cn('min-h-12 rounded-xl border-2 px-3 py-2.5 font-bold transition',checked&&selected===value?(value===correctValue?'border-emerald-500 bg-emerald-50 text-emerald-900':'border-rose-500 bg-rose-50 text-rose-900'):selected===value?'border-sky-400 bg-sky-50 text-slate-900':'border-slate-200 bg-white text-slate-900')}"
+          if old not in text:
+              raise SystemExit('Reading AB target not found')
+          text = text.replace(old, new, 1)
+          reading.write_text(text)
+
+          listening = Path('src/components/modules/ListeningModule.tsx')
+          text = listening.read_text()
+          old = "function answerClass(selected:boolean,checked:boolean,correct:boolean){return cn('min-h-12 rounded-xl border-2 bg-white px-4 py-3 text-left font-semibold transition',!checked&&selected?'border-sky-500 bg-sky-50':'border-slate-200',checked&&selected&&correct&&'border-emerald-500 bg-emerald-50 text-emerald-950',checked&&selected&&!correct&&'border-rose-500 bg-rose-50 text-rose-950')}"
+          new = "function answerClass(selected:boolean,checked:boolean,correct:boolean){return cn('min-h-12 rounded-xl border-2 px-4 py-3 text-left font-semibold transition',checked&&selected?(correct?'border-emerald-500 bg-emerald-50 text-emerald-950':'border-rose-500 bg-rose-50 text-rose-950'):selected?'border-sky-400 bg-sky-50 text-slate-950':'border-slate-200 bg-white text-slate-900')}"
+          if old not in text:
+              raise SystemExit('Listening answerClass target not found')
+          text = text.replace(old, new, 1)
+          listening.write_text(text)
+          PY
+      - name: Commit answer-state fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/modules/ReadingModule.tsx src/components/modules/ListeningModule.tsx
+          git commit -m "Fix Lesen and Horen selected answer states"
+          git push origin HEAD:task/master-roadmap-final-46-52
