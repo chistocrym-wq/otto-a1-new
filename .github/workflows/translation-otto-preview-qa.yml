@@ -71,7 +71,6 @@ jobs:
           }
 
           for(const width of [320,390,430]){
-            // Long translation: text area must scroll, close button must stay visible.
             {
               const context=await browser.newContext({viewport:{width,height:844}});const page=await context.newPage();
               await openHoren(page,'long');await (await cardEye(page)).click();
@@ -87,12 +86,11 @@ jobs:
               assert(bottom<=2,`long ${width}: could not reach translation bottom (${bottom})`);
               assert(await close.isVisible(),`long ${width}: close button disappeared after scroll`);
               const last=body.locator('p').last();const lb=await last.boundingBox();const bb=await body.boundingBox();
-              assert(lb&&bb&&lb.y<bb.y+bb.height&&lb.y+Math.min(lb.height,20)>bb.y,`long ${width}: last translation text is not reachable`);
+              assert(lb&&bb&&lb.y+lb.height>bb.y&&lb.y+lb.height<=bb.y+bb.height+2,`long ${width}: final text edge is not reachable`);
               await page.screenshot({path:`translation-qa/long-bottom-${width}.png`,fullPage:true});
               await close.click();assert(!(await panel.isVisible()),`long ${width}: close did not close translation`);
               await context.close();
             }
-            // Short translation: panel should stay compact rather than fill the screen.
             {
               const context=await browser.newContext({viewport:{width,height:844}});const page=await context.newPage();
               await openHoren(page,'short');await (await cardEye(page)).click();
