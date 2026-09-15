@@ -1,4 +1,4 @@
-name: Diagnose OTTO Audio Endpoint
+name: Verify OTTO Audio Endpoints
 
 on:
   push:
@@ -6,27 +6,73 @@ on:
       - task/master-roadmap-final-46-52
 
 jobs:
-  diagnose:
+  audio-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
       - name: Wait for deploy preview
-        run: sleep 45
-      - name: Read server-side Gemini audio diagnostics
+        run: sleep 55
+      - name: Build real audio fixtures
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq espeak-ng ffmpeg
+          espeak-ng -v de -s 125 -w german.wav "Guten Tag. Ich heisse Anna. Ich komme aus Berlin."
+          espeak-ng -v ru -s 125 -w russian.wav "Меня зовут Анна. Я живу в Берлине."
+          ffmpeg -loglevel error -y -i german.wav -c:a libopus -b:a 48k german.webm
+          ffmpeg -loglevel error -y -i german.wav -c:a aac -b:a 64k german.m4a
+      - name: Verify Sprechen WAV WebM and MP4-M4A mapping
         env:
           BASE: https://deploy-preview-17--otto-a1-new.netlify.app
         run: |
-          curl -fsS "$BASE/api/diagnose-sprechen" | tee diagnose.json
           python3 - <<'PY'
-          import json
-          p=json.load(open('diagnose.json'))
-          print(json.dumps(p, ensure_ascii=False, indent=2))
-          assert p.get('configured') is True
+          import base64,json,subprocess
+          cases=[('german.wav','audio/wav'),('german.webm','audio/webm;codecs=opus'),('german.m4a','audio/mp4')]
+          results={}
+          for filename,mime in cases:
+              data=base64.b64encode(open(filename,'rb').read()).decode()
+              body=json.dumps({'mode':'teil1','expectedPoints':['Name','Herkunft'],'audioBase64':data,'mimeType':mime})
+              p=subprocess.run(['curl','-sS','-w','\n%{http_code}','-X','POST',f'{__import__("os").environ["BASE"]}/api/check-sprechen','-H','Content-Type: application/json','--data-binary','@-'],input=body,text=True,capture_output=True,check=True)
+              raw,status=p.stdout.rsplit('\n',1)
+              print(filename,status,raw)
+              assert status=='200', (filename,status,raw)
+              payload=json.loads(raw)
+              assert payload.get('officialLevel') in ('full','partial','zero')
+              assert payload.get('score') in (0,50,100)
+              assert isinstance(payload.get('transcript'),str)
+              results[filename]=payload
+          json.dump(results,open('sprechen-results.json','w'),ensure_ascii=False,indent=2)
+          PY
+      - name: Verify empty and Russian voice handling
+        env:
+          BASE: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          python3 - <<'PY'
+          import base64,json,subprocess,os
+          def post(path,body):
+              p=subprocess.run(['curl','-sS','-w','\n%{http_code}','-X','POST',os.environ['BASE']+path,'-H','Content-Type: application/json','--data-binary','@-'],input=json.dumps(body),text=True,capture_output=True,check=True)
+              raw,status=p.stdout.rsplit('\n',1)
+              return status,raw
+          status,raw=post('/api/check-sprechen',{'mode':'teil1','audioBase64':''})
+          print('empty sprechen',status,raw); assert status=='400'
+          audio=base64.b64encode(open('russian.wav','rb').read()).decode()
+          status,raw=post('/api/transcribe-ru',{'audioBase64':audio,'mimeType':'audio/wav'})
+          print('russian voice',status,raw); assert status=='200'
+          payload=json.loads(raw); assert str(payload.get('text','')).strip()
+          open('russian-result.json','w').write(json.dumps(payload,ensure_ascii=False,indent=2))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: otto-audio-diagnostics
-          path: diagnose.json
+          name: otto-audio-qa
+          path: |
+            sprechen-results.json
+            russian-result.json
           retention-days: 3
