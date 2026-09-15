@@ -1,0 +1,167 @@
+name: Navigation Performance Preview QA
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  navigation-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Audit home navigation, runtime errors and latency
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          sleep 60
+          cat > qa-navigation.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base=process.env.TARGET_URL;
+          const browser=await chromium.launch({headless:true});
+          fs.mkdirSync('navigation-qa',{recursive:true});
+          const results=[];
+
+          const scenarios=[
+            {label:'readiness',kind:'css',selector:'.otto-approved-readiness-button'},
+            {label:'daily-5',kind:'css',selector:'.otto-roadmap-duration button',nth:0},
+            {label:'daily-15',kind:'css',selector:'.otto-roadmap-duration button',nth:1},
+            {label:'daily-30',kind:'css',selector:'.otto-roadmap-duration button',nth:2},
+            {label:'how-to',kind:'css',selector:'.otto-roadmap-howto-link'},
+            {label:'skill-schreiben',kind:'css',selector:'.otto-premium-skill-card',nth:0},
+            {label:'skill-sprechen',kind:'css',selector:'.otto-premium-skill-card',nth:1},
+            {label:'skill-lesen',kind:'css',selector:'.otto-premium-skill-card',nth:2},
+            {label:'skill-horen',kind:'css',selector:'.otto-premium-skill-card',nth:3},
+            {label:'mock-exam',kind:'css',selector:'.otto-premium-secondary'},
+            {label:'details-schreiben',details:0,button:0},
+            {label:'details-sprechen',details:0,button:1},
+            {label:'details-lesen',details:0,button:2},
+            {label:'details-horen',details:0,button:3},
+            {label:'instructions',details:1,button:0},
+            {label:'exam-guide',details:1,button:1},
+            {label:'bottom-modules',bottom:1},
+            {label:'bottom-readiness',bottom:2},
+            {label:'bottom-account',bottom:3},
+            {label:'bottom-settings',bottom:4},
+          ];
+
+          function wire(page,record){
+            page.on('pageerror',e=>record.errors.push(`pageerror: ${e.message}`));
+            page.on('console',msg=>{if(msg.type()==='error')record.errors.push(`console: ${msg.text()}`)});
+            page.on('requestfailed',req=>{const u=req.url();if(u.startsWith(base))record.errors.push(`requestfailed: ${u} :: ${req.failure()?.errorText||''}`)});
+            page.on('response',res=>{const u=res.url();if(res.status()>=400&&u.startsWith(base)&&/\.(js|css)(\?|$)|\/assets\//.test(u))record.errors.push(`asset ${res.status()}: ${u}`)});
+          }
+
+          async function home(page){
+            await page.goto(base+'/?qa=navigation-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            await page.locator('.otto-splash-screen').waitFor({state:'detached',timeout:15000}).catch(()=>{});
+            await page.locator('.otto-approved-dashboard').waitFor({state:'visible',timeout:15000});
+          }
+
+          async function choose(page,s){
+            if(s.bottom!==undefined)return page.locator('.otto-bottom-nav-item').nth(s.bottom);
+            if(s.details!==undefined){
+              const detail=page.locator('details.otto-premium-details').nth(s.details);
+              await detail.evaluate(el=>{el.open=true});
+              return detail.locator('button').nth(s.button);
+            }
+            const loc=page.locator(s.selector);
+            return s.nth===undefined?loc:firstOrNth(loc,s.nth);
+          }
+          function firstOrNth(locator,n){return locator.nth(n)}
+
+          async function runScenario(s){
+            const context=await browser.newContext({viewport:{width:390,height:844}});
+            const page=await context.newPage();
+            const record={label:s.label,errors:[],openMs:null,backMs:null,textLength:0};
+            wire(page,record);
+            try{
+              await home(page);
+              const target=await choose(page,s);
+              await target.waitFor({state:'visible',timeout:10000});
+              const t0=Date.now();
+              await target.click();
+              await page.waitForFunction(()=>{
+                const inner=document.querySelector('.otto-inner-screen');
+                return !!inner && (inner.textContent||'').trim().length>8;
+              },null,{timeout:10000});
+              record.openMs=Date.now()-t0;
+              record.textLength=await page.locator('.otto-inner-screen').evaluate(el=>(el.textContent||'').trim().length);
+              if(record.textLength<=8)throw new Error('route content is blank');
+              if(await page.locator('.otto-route-loading').count()){
+                const visible=await page.locator('.otto-route-loading').first().isVisible().catch(()=>false);
+                if(visible)throw new Error('route loading fallback remained visible');
+              }
+              if(record.errors.some(x=>/pageerror|asset 4|asset 5|requestfailed:.*\/assets\//.test(x)))throw new Error(record.errors.join('\n'));
+              const back=page.locator('button[aria-label="Назад"]').filter({visible:true});
+              const t1=Date.now();
+              if(await back.count())await back.first().click();
+              else await page.locator('.otto-bottom-nav-item').nth(0).click();
+              await page.locator('.otto-approved-dashboard').waitFor({state:'visible',timeout:10000});
+              record.backMs=Date.now()-t1;
+            }catch(e){
+              record.failure=e instanceof Error?e.message:String(e);
+              await page.screenshot({path:`navigation-qa/failure-${s.label}.png`,fullPage:true}).catch(()=>{});
+            }finally{
+              results.push(record);
+              await context.close();
+            }
+          }
+
+          for(const scenario of scenarios)await runScenario(scenario);
+
+          // Reproduce a failed lazy chunk request on a fresh app shell. This identifies whether
+          // an old/open tab can collapse to a blank route after a deploy changes chunk hashes.
+          {
+            const context=await browser.newContext({viewport:{width:390,height:844}});
+            const page=await context.newPage();
+            const record={label:'simulated-lazy-chunk-failure',errors:[],abortedUrl:'',blank:false};
+            wire(page,record);
+            await home(page);
+            let aborted=false;
+            await page.route('**/assets/*.js',async route=>{
+              if(!aborted){aborted=true;record.abortedUrl=route.request().url();await route.abort('failed');return}
+              await route.continue();
+            });
+            await page.locator('.otto-bottom-nav-item').nth(4).click();
+            await page.waitForTimeout(2500);
+            record.blank=await page.evaluate(()=>{
+              const inner=document.querySelector('.otto-inner-screen');
+              const text=(inner?.textContent||'').trim();
+              return !inner||text.length<=8;
+            });
+            await page.screenshot({path:'navigation-qa/simulated-chunk-failure.png',fullPage:true}).catch(()=>{});
+            results.push(record);
+            await context.close();
+          }
+
+          fs.writeFileSync('navigation-qa/results.json',JSON.stringify(results,null,2));
+          console.log(JSON.stringify(results,null,2));
+          const normal=results.filter(r=>r.label!=='simulated-lazy-chunk-failure');
+          const failures=normal.filter(r=>r.failure);
+          const slow=normal.filter(r=>typeof r.openMs==='number'&&r.openMs>2500);
+          console.log(`normal failures=${failures.length}; slow>2500ms=${slow.length}`);
+          await browser.close();
+          if(failures.length)process.exit(2);
+          NODE
+          node qa-navigation.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: navigation-performance-preview-qa
+          path: navigation-qa
+          retention-days: 3
