@@ -60,7 +60,7 @@ ${task}`;
             properties: {
               transcript: { type: 'STRING' },
               officialLevel: { type: 'STRING', enum: ['full','partial','zero'] },
-              score: { type: 'INTEGER', enum: [0,50,100] },
+              score: { type: 'INTEGER' },
               strengths: { type: 'ARRAY', items: { type: 'STRING' }, maxItems: 4 },
               practice: { type: 'ARRAY', items: { type: 'STRING' }, maxItems: 4 },
               pronunciationRu: { type: 'STRING' },
@@ -106,7 +106,11 @@ ${task}`;
 export const config = { path: '/api/check-sprechen' };
 
 function json(data, status = 200, headers = {}) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...headers } }); }
-function normalizeMimeType(value) { const mime = String(value || 'audio/webm').toLowerCase().split(';')[0].trim(); return mime.startsWith('audio/') ? mime : 'audio/webm'; }
+function normalizeMimeType(value) {
+  const mime = String(value || 'audio/webm').toLowerCase().split(';')[0].trim();
+  if (mime === 'audio/mp4' || mime === 'audio/x-m4a') return 'audio/m4a';
+  return mime.startsWith('audio/') ? mime : 'audio/webm';
+}
 function stripFences(value) { return String(value).replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim(); }
 function hasMeaningfulSpeech(transcript, mode) { const words=String(transcript||'').match(/[\p{L}\p{N}]+/gu)||[]; if(!words.length)return false; if(mode==='teil1')return words.length>=2&&words.join('').length>=4; return words.join('').length>=2; }
 function buildTaskDescription(body) {
