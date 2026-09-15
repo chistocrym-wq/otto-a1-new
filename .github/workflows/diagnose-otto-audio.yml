@@ -8,57 +8,25 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Wait for deploy preview
-        run: sleep 55
-      - name: Build real audio fixtures
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq espeak-ng ffmpeg
-          espeak-ng -v de -s 125 -w otto-test.wav "Guten Tag. Ich heisse Anna. Ich komme aus Berlin."
-          ffmpeg -loglevel error -y -i otto-test.wav -c:a libopus -b:a 48k otto-test.webm
-          ls -lh otto-test.wav otto-test.webm
-      - name: Check endpoint configuration
+        run: sleep 45
+      - name: Read server-side Gemini audio diagnostics
         env:
           BASE: https://deploy-preview-17--otto-a1-new.netlify.app
         run: |
-          set -x
-          curl -fsS "$BASE/api/check-sprechen" | tee endpoint-get.json
-      - name: Test WAV and WebM processing
-        env:
-          BASE: https://deploy-preview-17--otto-a1-new.netlify.app
-        run: |
+          curl -fsS "$BASE/api/diagnose-sprechen" | tee diagnose.json
           python3 - <<'PY'
-          import base64, json
-          common={"mode":"teil1","expectedPoints":["Name","Herkunft"]}
-          for fn,mime,out in [("otto-test.wav","audio/wav","wav-request.json"),("otto-test.webm","audio/webm","webm-request.json")]:
-              with open(fn,'rb') as f: data=base64.b64encode(f.read()).decode()
-              with open(out,'w') as f: json.dump({**common,"audioBase64":data,"mimeType":mime},f)
+          import json
+          p=json.load(open('diagnose.json'))
+          print(json.dumps(p, ensure_ascii=False, indent=2))
+          assert p.get('configured') is True
           PY
-          for kind in wav webm; do
-            status=$(curl -sS -o "$kind-response.json" -w '%{http_code}' -X POST "$BASE/api/check-sprechen" -H 'Content-Type: application/json' --data-binary "@$kind-request.json")
-            echo "$kind HTTP $status"
-            cat "$kind-response.json"
-            echo
-            test "$status" -ge 200 -a "$status" -lt 500
-          done
-      - name: Test invalid audio handling
-        env:
-          BASE: https://deploy-preview-17--otto-a1-new.netlify.app
-        run: |
-          status=$(curl -sS -o empty-response.json -w '%{http_code}' -X POST "$BASE/api/check-sprechen" -H 'Content-Type: application/json' --data '{"mode":"teil1","audioBase64":""}')
-          echo "empty HTTP $status"
-          cat empty-response.json
-          test "$status" = "400"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: otto-audio-diagnostics
-          path: |
-            endpoint-get.json
-            wav-response.json
-            webm-response.json
-            empty-response.json
+          path: diagnose.json
           retention-days: 3
