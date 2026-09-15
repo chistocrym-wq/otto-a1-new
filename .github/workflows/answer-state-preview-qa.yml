@@ -44,7 +44,7 @@ jobs:
             await page.goto(base + '/?qa=answer-state-' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.locator('.otto-splash-screen').waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
             await page.waitForTimeout(600);
-            await page.getByRole('button', { name: /Модули|Module/ }).last().click();
+            await page.locator('.otto-bottom-nav-item').nth(1).click();
           }
 
           async function bg(locator) {
