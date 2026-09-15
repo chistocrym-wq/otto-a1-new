@@ -30,9 +30,10 @@ function readCached(key: string, expectedLength: number) {
 }
 
 export function CompactTranslationEye({ parts, translations: preset, className, title = 'Перевод' }: Props) {
-  const clean = useMemo(() => parts.map(String).map((v) => v.trim()).filter(Boolean), [parts]);
-  const key = useMemo(() => keyFor(clean), [clean]);
-  const validPreset = useMemo(() => preset && preset.length === clean.length ? preset.map(String) : null, [preset, clean.length]);
+  const clean = parts.map(String).map((v) => v.trim()).filter(Boolean);
+  const key = keyFor(clean);
+  const presetKey = preset && preset.length === clean.length ? JSON.stringify(preset.map(String)) : '';
+  const validPreset = useMemo<string[] | null>(() => presetKey ? JSON.parse(presetKey) as string[] : null, [presetKey]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +50,7 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
     setError('');
     setTranslations(validPreset || readCached(key, clean.length));
     return () => requestRef.current?.abort();
-  }, [key, validPreset, clean.length]);
+  }, [key, presetKey, validPreset, clean.length]);
 
   const load = async () => {
     if (translations || loading || !clean.length) return;
