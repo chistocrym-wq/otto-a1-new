@@ -21,6 +21,7 @@ interface EvaluationResult {
 }
 interface VoiceRecorderProps { evaluation:SpeakingEvaluation; onPracticed:()=>void; onEvaluated?:(score:number)=>void; hint?:string }
 const MAX_CLIENT_AUDIO_BYTES=2.8*1024*1024;
+const MAX_RECORD_SECONDS=120;
 
 let sharedMicStream:MediaStream|null=null;
 let sharedMicPromise:Promise<MediaStream>|null=null;
@@ -57,16 +58,54 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
   const urlRef=useRef<string|null>(null);
   const fileRef=useRef<HTMLInputElement|null>(null);
   const resultReportedRef=useRef(false);
+  const checkControllerRef=useRef<AbortController|null>(null);
   const evaluationKey=JSON.stringify(evaluation);
   const previousEvaluationKeyRef=useRef(evaluationKey);
 
   const clearTimer=useCallback(()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null}},[]);
-  const reset=useCallback(()=>{if(urlRef.current)URL.revokeObjectURL(urlRef.current);urlRef.current=null;setAudioUrl(null);setAudioBlob(null);setElapsed(0);setResult(null);setError(null);resultReportedRef.current=false},[]);
+  const stopAndDiscardRecorder=useCallback(()=>{
+    const recorder=recorderRef.current;
+    recorderRef.current=null;
+    chunksRef.current=[];
+    clearTimer();
+    if(recorder){
+      recorder.ondataavailable=null;
+      recorder.onstop=null;
+      recorder.onerror=null;
+      if(recorder.state==='recording')try{recorder.stop()}catch{/* ignore */}
+    }
+    muteSharedMic();
+    setIsRecording(false);
+  },[clearTimer]);
+  const cancelCheck=useCallback(()=>{
+    const controller=checkControllerRef.current;
+    checkControllerRef.current=null;
+    controller?.abort();
+    setChecking(false);
+  },[]);
+  const reset=useCallback(()=>{
+    cancelCheck();
+    stopAndDiscardRecorder();
+    if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    urlRef.current=null;
+    setAudioUrl(null);
+    setAudioBlob(null);
+    setElapsed(0);
+    setResult(null);
+    setError(null);
+    resultReportedRef.current=false;
+  },[cancelCheck,stopAndDiscardRecorder]);
 
   useEffect(()=>{
     let active=true;
     fetch('/api/check-sprechen',{method:'GET'}).then(r=>r.json()).then(p=>{if(active)setAiAvailable(Boolean(p?.aiConfigured))}).catch(()=>{if(active)setAiAvailable(null)});
-    return()=>{active=false;clearTimer();if(recorderRef.current?.state==='recording')recorderRef.current.stop();muteSharedMic();if(urlRef.current)URL.revokeObjectURL(urlRef.current)};
+    return()=>{
+      active=false;
+      checkControllerRef.current?.abort();checkControllerRef.current=null;
+      const recorder=recorderRef.current;recorderRef.current=null;
+      if(recorder){recorder.ondataavailable=null;recorder.onstop=null;recorder.onerror=null;if(recorder.state==='recording')try{recorder.stop()}catch{/* ignore */}}
+      clearTimer();muteSharedMic();if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    };
   },[clearTimer]);
 
   useEffect(()=>{
@@ -97,9 +136,16 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
       const recorder=mime?new MediaRecorder(stream,{mimeType:mime,audioBitsPerSecond:48000}):new MediaRecorder(stream,{audioBitsPerSecond:48000});
       recorderRef.current=recorder;
       recorder.ondataavailable=e=>{if(e.data.size)chunksRef.current.push(e.data)};
-      recorder.onstart=()=>{setElapsed(0);setIsRecording(true);setError(null);timerRef.current=setInterval(()=>setElapsed(v=>v+1),1000)};
+      recorder.onstart=()=>{
+        let seconds=0;
+        setElapsed(0);setIsRecording(true);setError(null);
+        timerRef.current=setInterval(()=>{
+          seconds+=1;setElapsed(seconds);
+          if(seconds>=MAX_RECORD_SECONDS&&recorderRef.current===recorder&&recorder.state==='recording')recorder.stop();
+        },1000);
+      };
       recorder.onerror=()=>{clearTimer();muteSharedMic();setIsRecording(false);setError('Запись прервалась. Попробуйте ещё раз.')};
-      recorder.onstop=()=>acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}));
+      recorder.onstop=()=>{if(recorderRef.current!==recorder)return;acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}))};
       recorder.start(250);
     }catch(e){clearTimer();muteSharedMic();setIsRecording(false);setError(microphoneErrorMessage(e))}
   },[acceptBlob,clearTimer,reset]);
@@ -109,16 +155,29 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
 
   const check=useCallback(async()=>{
     if(!audioBlob||checking)return;
+    const controller=new AbortController();
+    checkControllerRef.current?.abort();checkControllerRef.current=controller;
+    let timedOut=false;
     setChecking(true);setError(null);setResult(null);
-    const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),70000);
+    const timeout=window.setTimeout(()=>{timedOut=true;controller.abort()},70000);
     try{
-      const [audioBase64,audioWavBase64]=await Promise.all([blobToBase64(audioBlob),blobToWavBase64(audioBlob).catch(()=>null)]);
-      const r=await fetch('/api/check-sprechen',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({...evaluation,audioBase64,audioWavBase64,mimeType:audioBlob.type||'audio/webm'})});
+      const audioBase64=await blobToBase64(audioBlob);
+      if(controller.signal.aborted||checkControllerRef.current!==controller)return;
+      const r=await fetch('/api/check-sprechen',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({...evaluation,audioBase64,mimeType:normalizeAudioMime(audioBlob.type||'audio/webm')})});
       const p=await r.json().catch(()=>null);
+      if(controller.signal.aborted||checkControllerRef.current!==controller)return;
       if(!r.ok)throw new Error(p?.error||`Проверка недоступна (${r.status}).`);
-      const data=p as EvaluationResult;setResult(data);setAiAvailable(true);
+      const data=parseEvaluationResult(p);
+      setResult(data);setAiAvailable(true);
       if(!resultReportedRef.current&&Number.isFinite(data.score)){resultReportedRef.current=true;onEvaluated?.(Math.max(0,Math.min(100,data.score)))}
-    }catch(e){setError(e instanceof DOMException&&e.name==='AbortError'?'Проверка заняла слишком много времени. Нажмите «Проверить с Отто» ещё раз.':e instanceof Error?e.message:'Не удалось проверить запись.')}finally{window.clearTimeout(timeout);setChecking(false)}
+    }catch(e){
+      if(controller.signal.aborted&&!timedOut)return;
+      if(checkControllerRef.current!==controller)return;
+      setError(timedOut?'Проверка заняла слишком много времени. Нажмите «Проверить с Отто» ещё раз.':e instanceof Error?e.message:'Не удалось проверить запись.');
+    }finally{
+      window.clearTimeout(timeout);
+      if(checkControllerRef.current===controller){checkControllerRef.current=null;setChecking(false)}
+    }
   },[audioBlob,checking,evaluation,onEvaluated]);
 
   return <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -147,40 +206,23 @@ function EvaluationResultCard({result}:{result:EvaluationResult}){
   </div>;
 }
 
+function parseEvaluationResult(value:unknown):EvaluationResult{
+  if(!value||typeof value!=='object')throw new Error('Отто вернул некорректный ответ. Попробуйте ещё раз.');
+  const p=value as Partial<EvaluationResult>;
+  if(!['full','partial','zero'].includes(String(p.officialLevel)))throw new Error('Отто вернул некорректный результат. Попробуйте ещё раз.');
+  if(!Number.isFinite(Number(p.score)))throw new Error('Отто вернул некорректную оценку. Попробуйте ещё раз.');
+  return{
+    score:Number(p.score),
+    officialLevel:p.officialLevel as OfficialLevel,
+    transcript:String(p.transcript||''),
+    strengths:Array.isArray(p.strengths)?p.strengths.map(String).filter(Boolean).slice(0,4):[],
+    practice:Array.isArray(p.practice)?p.practice.map(String).filter(Boolean).slice(0,4):[],
+    pronunciationRu:String(p.pronunciationRu||''),
+    missing:Array.isArray(p.missing)?p.missing.map(String).filter(Boolean).slice(0,10):[],
+  };
+}
 function formatTime(v:number){return `${Math.floor(v/60)}:${String(v%60).padStart(2,'0')}`}
 function blobToBase64(blob:Blob){return new Promise<string>((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||'').split(',')[1]||'');r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
-
-async function blobToWavBase64(blob:Blob){
-  const AudioContextCtor=window.AudioContext||(window as typeof window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
-  if(!AudioContextCtor)throw new Error('AudioContext unavailable');
-  const context=new AudioContextCtor();
-  try{
-    const source=await context.decodeAudioData(await blob.arrayBuffer());
-    const targetRate=16000;
-    const frames=Math.max(1,Math.floor(source.duration*targetRate));
-    const mono=new Float32Array(frames);
-    for(let i=0;i<frames;i++){
-      const sourcePos=(i/targetRate)*source.sampleRate;
-      const left=Math.min(source.length-1,Math.floor(sourcePos));
-      const right=Math.min(source.length-1,left+1);
-      const mix=sourcePos-left;
-      let sample=0;
-      for(let ch=0;ch<source.numberOfChannels;ch++){
-        const data=source.getChannelData(ch);
-        sample+=data[left]*(1-mix)+data[right]*mix;
-      }
-      mono[i]=sample/source.numberOfChannels;
-    }
-    return arrayBufferToBase64(encodeWav(mono,targetRate));
-  }finally{void context.close()}
-}
-
-function encodeWav(samples:Float32Array,sampleRate:number){
-  const buffer=new ArrayBuffer(44+samples.length*2);const view=new DataView(buffer);
-  writeAscii(view,0,'RIFF');view.setUint32(4,36+samples.length*2,true);writeAscii(view,8,'WAVE');writeAscii(view,12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);writeAscii(view,36,'data');view.setUint32(40,samples.length*2,true);
-  let offset=44;for(let i=0;i<samples.length;i++,offset+=2){const s=Math.max(-1,Math.min(1,samples[i]));view.setInt16(offset,s<0?s*0x8000:s*0x7fff,true)}return buffer;
-}
-function writeAscii(view:DataView,offset:number,value:string){for(let i=0;i<value.length;i++)view.setUint8(offset+i,value.charCodeAt(i))}
-function arrayBufferToBase64(buffer:ArrayBuffer){const bytes=new Uint8Array(buffer);let binary='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));return btoa(binary)}
-function guessAudioMime(name:string){const n=name.toLowerCase();if(n.endsWith('.mp3'))return'audio/mpeg';if(n.endsWith('.m4a')||n.endsWith('.mp4'))return'audio/mp4';if(n.endsWith('.wav'))return'audio/wav';if(n.endsWith('.ogg'))return'audio/ogg';return'audio/webm'}
+function normalizeAudioMime(value:string){const mime=String(value||'audio/webm').toLowerCase().split(';')[0].trim();if(mime==='audio/mp4'||mime==='audio/x-m4a')return'audio/m4a';return mime.startsWith('audio/')?mime:'audio/webm'}
+function guessAudioMime(name:string){const n=name.toLowerCase();if(n.endsWith('.mp3'))return'audio/mpeg';if(n.endsWith('.m4a'))return'audio/m4a';if(n.endsWith('.mp4'))return'audio/mp4';if(n.endsWith('.wav'))return'audio/wav';if(n.endsWith('.ogg'))return'audio/ogg';return'audio/webm'}
 function microphoneErrorMessage(e:unknown){if(e instanceof DOMException){if(e.name==='NotAllowedError'||e.name==='SecurityError')return'Разрешите доступ к микрофону один раз в браузере/Telegram и нажмите запись снова.';if(e.name==='NotFoundError')return'Микрофон не найден.';if(e.name==='NotReadableError')return'Микрофон занят другим приложением.'}return e instanceof Error?e.message:'Не удалось включить микрофон.'}
