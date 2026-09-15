@@ -46,13 +46,27 @@ jobs:
             await page.waitForTimeout(600);
             await page.locator('.otto-bottom-nav-item').nth(1).click();
           }
-
-          async function bg(locator) {
-            return locator.evaluate(el => getComputedStyle(el).backgroundColor);
-          }
+          async function bg(locator) { return locator.evaluate(el => getComputedStyle(el).backgroundColor); }
+          async function cls(locator) { return (await locator.getAttribute('class')) || ''; }
           async function expectNeutral(locator, label) {
             const value = await bg(locator);
             if (STATE_COLORS.has(value)) throw new Error(`${label} is already state-colored: ${value}`);
+            return value;
+          }
+          async function expectSelected(locator, label) {
+            const classes = await cls(locator);
+            if (!classes.includes('bg-sky-50') || classes.includes('bg-emerald-50') || classes.includes('bg-rose-50')) throw new Error(`${label} classes are wrong before check: ${classes}`);
+            await new Promise(r => setTimeout(r, 250));
+            const value = await bg(locator);
+            if (value !== SKY) throw new Error(`${label} is not pale blue after transition: ${value}`);
+            return value;
+          }
+          async function expectChecked(locator, label) {
+            await new Promise(r => setTimeout(r, 250));
+            const classes = await cls(locator);
+            const value = await bg(locator);
+            if (![GREEN, RED].includes(value)) throw new Error(`${label} is not green/red after check: ${value}; ${classes}`);
+            if (!(classes.includes('bg-emerald-50') || classes.includes('bg-rose-50'))) throw new Error(`${label} has no checked state class: ${classes}`);
             return value;
           }
 
@@ -67,19 +81,17 @@ jobs:
             await answers.first().waitFor({ state: 'visible' });
             if (await answers.count() !== 2) throw new Error('Lesen Teil 3 answer buttons not found');
             const neutral = [await expectNeutral(answers.nth(0), 'Lesen first answer'), await expectNeutral(answers.nth(1), 'Lesen second answer')];
-            await page.screenshot({ path: `answer-state-qa/lesen-neutral-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/lesen-neutral-${suffix}.png` });
             await answers.nth(0).click();
-            const selected = await bg(answers.nth(0));
-            if (selected !== SKY) throw new Error(`Lesen selected answer is not pale blue before check: ${selected}`);
+            const selected = await expectSelected(answers.nth(0), 'Lesen selected answer');
             await expectNeutral(answers.nth(1), 'Lesen unselected answer before check');
-            await page.screenshot({ path: `answer-state-qa/lesen-selected-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/lesen-selected-${suffix}.png` });
             await page.getByRole('button', { name: 'Проверить', exact: true }).click();
-            const after = await bg(answers.nth(0));
-            if (![GREEN, RED].includes(after)) throw new Error(`Lesen selected answer is not green/red after check: ${after}`);
+            const checked = await expectChecked(answers.nth(0), 'Lesen selected answer');
             await expectNeutral(answers.nth(1), 'Lesen unselected answer after check');
-            await page.screenshot({ path: `answer-state-qa/lesen-checked-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/lesen-checked-${suffix}.png` });
             await context.close();
-            return {neutral, selected, checked: after};
+            return { neutral, selected, checked };
           }
 
           async function testHoren(viewport, suffix) {
@@ -93,19 +105,17 @@ jobs:
             if (count < 2) throw new Error('Hören answer buttons not found');
             const neutral = [];
             for (let i = 0; i < count; i++) neutral.push(await expectNeutral(answers.nth(i), `Hören answer ${i+1}`));
-            await page.screenshot({ path: `answer-state-qa/horen-neutral-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/horen-neutral-${suffix}.png` });
             await answers.nth(0).click();
-            const selected = await bg(answers.nth(0));
-            if (selected !== SKY) throw new Error(`Hören selected answer is not pale blue before check: ${selected}`);
+            const selected = await expectSelected(answers.nth(0), 'Hören selected answer');
             for (let i = 1; i < count; i++) await expectNeutral(answers.nth(i), `Hören unselected answer ${i+1} before check`);
-            await page.screenshot({ path: `answer-state-qa/horen-selected-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/horen-selected-${suffix}.png` });
             await page.getByRole('button', { name: 'Проверить', exact: true }).click();
-            const after = await bg(answers.nth(0));
-            if (![GREEN, RED].includes(after)) throw new Error(`Hören selected answer is not green/red after check: ${after}`);
+            const checked = await expectChecked(answers.nth(0), 'Hören selected answer');
             for (let i = 1; i < count; i++) await expectNeutral(answers.nth(i), `Hören unselected answer ${i+1} after check`);
-            await page.screenshot({ path: `answer-state-qa/horen-checked-${suffix}.png`, fullPage: false });
+            await page.screenshot({ path: `answer-state-qa/horen-checked-${suffix}.png` });
             await context.close();
-            return {neutral, selected, checked: after};
+            return { neutral, selected, checked };
           }
 
           const result = {
