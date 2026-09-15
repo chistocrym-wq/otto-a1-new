@@ -1,0 +1,121 @@
+name: Lesen Horen Answer State Preview QA
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  answer-state-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify Lesen and Horen selected answer states
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          sleep 55
+          cat > qa-answer-states.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base = process.env.TARGET_URL;
+          const browser = await chromium.launch({ headless: true });
+          fs.mkdirSync('answer-state-qa', { recursive: true });
+
+          const SKY = 'rgb(240, 249, 255)';
+          const WHITE = 'rgb(255, 255, 255)';
+          const GREEN = 'rgb(236, 253, 245)';
+          const RED = 'rgb(255, 241, 242)';
+
+          async function openModules(page) {
+            await page.goto(base + '/?qa=answer-state-' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.locator('.otto-splash-screen').waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+            await page.waitForTimeout(600);
+            await page.getByRole('button', { name: /Модули|Module/ }).last().click();
+          }
+
+          async function bg(locator) {
+            return locator.evaluate(el => getComputedStyle(el).backgroundColor);
+          }
+
+          async function testLesen(viewport, suffix) {
+            const context = await browser.newContext({ viewport });
+            const page = await context.newPage();
+            await openModules(page);
+            await page.getByRole('button', { name: /Lesen/ }).click();
+            const starts = page.getByRole('button', { name: /Начать тренировку|Продолжить/ });
+            await starts.nth(2).click();
+            const answers = page.locator('button.min-h-12.border-2');
+            await answers.first().waitFor({ state: 'visible' });
+            if (await answers.count() !== 2) throw new Error('Lesen Teil 3 answer buttons not found');
+            if ((await bg(answers.nth(0))) !== WHITE || (await bg(answers.nth(1))) !== WHITE) throw new Error('Lesen is not neutral before selection');
+            await answers.nth(0).click();
+            if ((await bg(answers.nth(0))) !== SKY) throw new Error('Lesen selected answer is not pale blue before check');
+            if ((await bg(answers.nth(1))) !== WHITE) throw new Error('Lesen unselected answer changed before check');
+            await page.screenshot({ path: `answer-state-qa/lesen-selected-${suffix}.png`, fullPage: false });
+            await page.getByRole('button', { name: 'Проверить', exact: true }).click();
+            const after = await bg(answers.nth(0));
+            if (![GREEN, RED].includes(after)) throw new Error(`Lesen selected answer is not green/red after check: ${after}`);
+            if ((await bg(answers.nth(1))) !== WHITE) throw new Error('Lesen unselected answer is highlighted after check');
+            await page.screenshot({ path: `answer-state-qa/lesen-checked-${suffix}.png`, fullPage: false });
+            await context.close();
+            return after;
+          }
+
+          async function testHoren(viewport, suffix) {
+            const context = await browser.newContext({ viewport });
+            const page = await context.newPage();
+            await openModules(page);
+            await page.getByRole('button', { name: /Hören/ }).click();
+            const answers = page.locator('button.min-h-12.border-2');
+            await answers.first().waitFor({ state: 'visible' });
+            const count = await answers.count();
+            if (count < 2) throw new Error('Hören answer buttons not found');
+            for (let i = 0; i < count; i++) if ((await bg(answers.nth(i))) !== WHITE) throw new Error('Hören is not neutral before selection');
+            await answers.nth(0).click();
+            if ((await bg(answers.nth(0))) !== SKY) throw new Error('Hören selected answer is not pale blue before check');
+            for (let i = 1; i < count; i++) if ((await bg(answers.nth(i))) !== WHITE) throw new Error('Hören unselected answer changed before check');
+            await page.screenshot({ path: `answer-state-qa/horen-selected-${suffix}.png`, fullPage: false });
+            await page.getByRole('button', { name: 'Проверить', exact: true }).click();
+            const after = await bg(answers.nth(0));
+            if (![GREEN, RED].includes(after)) throw new Error(`Hören selected answer is not green/red after check: ${after}`);
+            for (let i = 1; i < count; i++) if ((await bg(answers.nth(i))) !== WHITE) throw new Error('Hören unselected/correct answer is revealed after check');
+            await page.screenshot({ path: `answer-state-qa/horen-checked-${suffix}.png`, fullPage: false });
+            await context.close();
+            return after;
+          }
+
+          const result = {
+            mobile: {
+              lesen: await testLesen({ width: 390, height: 844 }, '390'),
+              horen: await testHoren({ width: 390, height: 844 }, '390')
+            },
+            desktop: {
+              lesen: await testLesen({ width: 1366, height: 900 }, '1366'),
+              horen: await testHoren({ width: 1366, height: 900 }, '1366')
+            }
+          };
+          fs.writeFileSync('answer-state-qa/results.json', JSON.stringify(result, null, 2));
+          console.log(JSON.stringify(result));
+          await browser.close();
+          NODE
+          node qa-answer-states.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lesen-horen-answer-state-qa
+          path: answer-state-qa
+          retention-days: 3
