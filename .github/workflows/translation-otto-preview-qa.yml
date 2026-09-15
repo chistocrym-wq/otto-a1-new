@@ -18,6 +18,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+      - name: Audit direct translation callers
+        run: |
+          grep -R "/api/translate-task" -n src --include='*.tsx' --include='*.ts' | tee translation-callers.txt
       - name: Install Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
@@ -46,14 +49,16 @@ jobs:
               }
               const parts=Array.isArray(body.parts)?body.parts.map(String):[];
               requestNo+=1;
-              if(delayFirst&&requestNo===1)await new Promise(r=>setTimeout(r,900));
-              try{await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({translations:parts.map((p,i)=>`${delayFirst&&requestNo===1?'OLD':'RU'}:${i}:${p}`)})})}catch{}
+              const thisRequest=requestNo;
+              if(delayFirst&&thisRequest===1)await new Promise(r=>setTimeout(r,900));
+              try{await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({translations:parts.map((p,i)=>`${delayFirst&&thisRequest===1?'OLD':'RU'}:${i}:${p}`)})})}catch{}
             });
             await page.goto(base+'/?qa=translation-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
             await page.locator('.otto-splash-screen').waitFor({state:'detached',timeout:15000}).catch(()=>{});
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(600);
             await page.locator('.otto-bottom-nav-item').nth(1).click();
             await page.getByRole('button',{name:/Hören/}).click();
+            await page.locator('section').first().waitFor({state:'visible',timeout:10000});
           }
 
           function assert(cond,msg){if(!cond)throw new Error(msg)}
@@ -71,15 +76,19 @@ jobs:
               if(n)assert(box.y+box.height<=n.y+1,`${label}: overlaps bottom navigation`);
             }
           }
+          async function cardEye(page){
+            const eye=page.locator('section [data-translation-ui] button[aria-label="Показать перевод"]').first();
+            await eye.waitFor({state:'visible',timeout:10000});
+            return eye;
+          }
 
           async function mobile(width){
             const context=await browser.newContext({viewport:{width,height:844}});const page=await context.newPage();
             await prepare(page);
             await noHorizontalOverflow(page,`Hören ${width}`);
-            const eyes=page.locator('button[aria-label="Показать перевод"]');
-            assert(await eyes.count()>=2,`Hören ${width}: card translation eye missing`);
-            await eyes.nth(1).click();
-            const panel=page.locator('[data-translation-ui] > div.fixed').last();
+            const eye=await cardEye(page);
+            await eye.click();
+            const panel=page.locator('section [data-translation-ui] > div.fixed').first();
             await panel.waitFor({state:'visible'});
             await assertInsideViewport(page,panel,`card translation ${width}`);
             await noHorizontalOverflow(page,`card translation ${width}`);
@@ -103,7 +112,7 @@ jobs:
 
           const desktopContext=await browser.newContext({viewport:{width:1366,height:900}});const desktop=await desktopContext.newPage();
           await prepare(desktop);await noHorizontalOverflow(desktop,'desktop Hören');
-          const deskEyes=desktop.locator('button[aria-label="Показать перевод"]');await deskEyes.nth(1).click();
+          await (await cardEye(desktop)).click();
           await noHorizontalOverflow(desktop,'desktop translation');
           await desktop.screenshot({path:'translation-qa/card-1366.png',fullPage:true});
           await desktopContext.close();
@@ -111,7 +120,7 @@ jobs:
           const staleContext=await browser.newContext({viewport:{width:390,height:844}});const stale=await staleContext.newPage();
           await prepare(stale,{delayFirst:true});
           const titleBefore=(await stale.locator('section h2').first().innerText()).trim();
-          const staleEyes=stale.locator('button[aria-label="Показать перевод"]');await staleEyes.nth(1).click();
+          await (await cardEye(stale)).click();
           const answers=stale.locator('button.min-h-12.border-2');await answers.first().click({force:true});
           await stale.getByRole('button',{name:'Проверить',exact:true}).click({force:true});
           await stale.getByRole('button',{name:/Следующее|Завершить/}).click({force:true});
@@ -119,7 +128,8 @@ jobs:
           const titleAfter=(await stale.locator('section h2').first().innerText()).trim();
           assert(titleAfter!==titleBefore,'Hören did not advance to next task');
           assert((await stale.getByText(/^OLD:/).count())===0,'Old translation leaked into next task');
-          assert((await stale.locator('[data-translation-ui] > div.fixed').count())===0||!(await stale.locator('[data-translation-ui] > div.fixed').last().isVisible()),'Old translation panel stayed open after task change');
+          const oldPanel=stale.locator('section [data-translation-ui] > div.fixed');
+          assert((await oldPanel.count())===0||!(await oldPanel.first().isVisible()),'Old translation panel stayed open after task change');
           await noHorizontalOverflow(stale,'stale-response scenario');
           await stale.screenshot({path:'translation-qa/after-next-390.png',fullPage:true});
           await staleContext.close();
@@ -131,5 +141,7 @@ jobs:
         if: always()
         with:
           name: translation-otto-preview-qa
-          path: translation-qa
+          path: |
+            translation-qa
+            translation-callers.txt
           retention-days: 3
