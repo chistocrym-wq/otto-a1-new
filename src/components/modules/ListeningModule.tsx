@@ -23,22 +23,49 @@ export function ListeningModule({onBack,onComplete}:Props){
   const[transcriptLoading,setTranscriptLoading]=useState(false);
   const[why,setWhy]=useState<{de:string;ru:string}|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
+  const transcriptRequestRef=useRef<AbortController|null>(null);
+  const whyRequestRef=useRef<AbortController|null>(null);
   const task=listeningTasks[index];
   const audioSrc=useMemo(()=>`/audio/${String(task.number).padStart(3,'0')}.mp3`,[task.number]);
   const imageSrc=useMemo(()=>`/images/${String(task.number).padStart(3,'0')}.png?v=20260914-2`,[task.number]);
   const isCorrect=task.type==='multiple-choice'?selected===task.correctIndex:selected===task.correctAnswer;
 
   useEffect(()=>saveProgress(progress),[progress]);
-  useEffect(()=>{setSelected(null);setChecked(false);setTranscriptOpen(false);setTranscriptRu('');setWhy(null);audioRef.current?.pause();if(audioRef.current)audioRef.current.currentTime=0},[index]);
+  useEffect(()=>{
+    transcriptRequestRef.current?.abort();transcriptRequestRef.current=null;
+    whyRequestRef.current?.abort();whyRequestRef.current=null;
+    setSelected(null);setChecked(false);setTranscriptOpen(false);setTranscriptRu('');setTranscriptLoading(false);setWhy(null);
+    audioRef.current?.pause();if(audioRef.current)audioRef.current.currentTime=0;
+  },[index]);
+  useEffect(()=>()=>{transcriptRequestRef.current?.abort();whyRequestRef.current?.abort()},[]);
 
   const openTranscript=async()=>{
-    const next=!transcriptOpen;setTranscriptOpen(next);if(!next||transcriptRu||transcriptLoading)return;
+    const next=!transcriptOpen;
+    setTranscriptOpen(next);
+    if(!next){transcriptRequestRef.current?.abort();transcriptRequestRef.current=null;setTranscriptLoading(false);return}
+    if(transcriptRu||transcriptLoading)return;
+    const controller=new AbortController();
+    transcriptRequestRef.current?.abort();transcriptRequestRef.current=controller;
+    const currentText=task.audioText;
     setTranscriptLoading(true);
-    try{const r=await fetch('/api/translate-task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts:[task.audioText]})});const p=await r.json();if(r.ok&&Array.isArray(p.translations))setTranscriptRu(String(p.translations[0]||''))}catch{/* keep German transcript */}finally{setTranscriptLoading(false)}
+    try{
+      const r=await fetch('/api/translate-task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts:[currentText]}),signal:controller.signal});
+      const p=await r.json().catch(()=>({}));
+      if(!controller.signal.aborted&&transcriptRequestRef.current===controller&&r.ok&&Array.isArray(p.translations))setTranscriptRu(String(p.translations[0]||''));
+    }catch{/* keep German transcript */}
+    finally{if(transcriptRequestRef.current===controller){transcriptRequestRef.current=null;setTranscriptLoading(false)}}
   };
   const loadWhy=async()=>{
     const de=reasonDe(task);
-    try{const r=await fetch('/api/translate-task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'explain-pair',text:de})});const p=await r.json();if(r.ok&&p.de&&p.ru)setWhy({de:String(p.de),ru:String(p.ru)});else setWhy({de,ru:''})}catch{setWhy({de,ru:''})}
+    const controller=new AbortController();
+    whyRequestRef.current?.abort();whyRequestRef.current=controller;
+    try{
+      const r=await fetch('/api/translate-task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'explain-pair',text:de}),signal:controller.signal});
+      const p=await r.json().catch(()=>({}));
+      if(controller.signal.aborted||whyRequestRef.current!==controller)return;
+      if(r.ok&&p.de&&p.ru)setWhy({de:String(p.de),ru:String(p.ru)});else setWhy({de,ru:''});
+    }catch{if(!controller.signal.aborted&&whyRequestRef.current===controller)setWhy({de,ru:''})}
+    finally{if(whyRequestRef.current===controller)whyRequestRef.current=null}
   };
   const check=()=>{
     if(selected===null||checked)return;
@@ -73,7 +100,7 @@ export function ListeningModule({onBack,onComplete}:Props){
         <p className="rounded-xl bg-slate-50 p-4 text-base font-semibold leading-7 text-slate-700"><HoverTranslateText text={task.instruction}/></p>
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><audio ref={audioRef} src={audioSrc} controls preload="metadata" className="w-full"/></div>
         <button type="button" onClick={openTranscript} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700"><Eye className="h-4 w-4"/>{transcriptOpen?'Скрыть текст диалога':'Показать текст диалога'}</button>
-        {transcriptOpen&&<div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6"><b className="text-slate-950">Deutsch</b><p className="mt-1 text-slate-700">{task.audioText}</p><b className="mt-4 block text-slate-950">Русский</b><p className="mt-1 text-slate-700">{transcriptLoading?'Перевожу…':transcriptRu||'Перевод временно недоступен.'}</p></div>}
+        {transcriptOpen&&<div className="max-w-full overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6"><b className="text-slate-950">Deutsch</b><p className="mt-1 break-words text-slate-700 [overflow-wrap:anywhere]">{task.audioText}</p><b className="mt-4 block text-slate-950">Русский</b><p className="mt-1 break-words text-slate-700 [overflow-wrap:anywhere]">{transcriptLoading?'Перевожу…':transcriptRu||'Перевод временно недоступен.'}</p></div>}
         <img src={imageSrc} alt={`Aufgabe ${task.number}`} className="mx-auto max-h-[420px] w-full max-w-[520px] rounded-2xl object-contain" onError={e=>{e.currentTarget.style.display='none'}}/>
         <p className="text-xl font-bold leading-8 text-slate-950"><HoverTranslateText text={task.prompt}/></p>
         <div className="grid gap-3">
