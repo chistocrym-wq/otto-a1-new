@@ -1,0 +1,71 @@
+name: Requested Fixes Preview QA
+
+on:
+  push:
+    branches:
+      - task/master-roadmap-final-46-52
+
+jobs:
+  preview-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify visible hero geometry on current Netlify preview
+        env:
+          TARGET_URL: https://deploy-preview-17--otto-a1-new.netlify.app
+        run: |
+          cat > qa-requested.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const base = process.env.TARGET_URL;
+          fs.mkdirSync('requested-qa', { recursive: true });
+          const browser = await chromium.launch({ headless: true });
+
+          async function capture(width, height, file) {
+            const page = await browser.newPage({ viewport: { width, height } });
+            let box = null;
+            for (let attempt = 1; attempt <= 40; attempt++) {
+              await page.goto(base + `/?qa=hero-reference-${Date.now()}-${attempt}`, { waitUntil: 'networkidle' });
+              const hero = page.locator('.otto-approved-hero');
+              await hero.waitFor({ timeout: 15000 });
+              box = await hero.boundingBox();
+              if (box && box.height >= (width <= 390 ? 280 : 310)) break;
+              await page.waitForTimeout(5000);
+            }
+            if (!box) throw new Error(`Hero missing at width ${width}`);
+            if (width === 390 && box.height < 280) throw new Error(`Mobile hero still has old height: ${box.height}`);
+            if (width === 430 && box.height < 310) throw new Error(`430px hero still has old height: ${box.height}`);
+            await page.locator('.otto-splash-screen').waitFor({ state: 'detached', timeout: 10000 });
+            const img = page.locator('.otto-approved-otto-image');
+            const imgBox = await img.boundingBox();
+            if (!imgBox || imgBox.height < 240) throw new Error(`Otto image not visibly rendered at width ${width}`);
+            await page.screenshot({ path: `requested-qa/${file}`, fullPage: false });
+            return { hero: box, otto: imgBox };
+          }
+
+          const mobile390 = await capture(390, 844, 'home-390.png');
+          const mobile430 = await capture(430, 900, 'home-430.png');
+          fs.writeFileSync('requested-qa/geometry.json', JSON.stringify({ mobile390, mobile430 }, null, 2));
+          console.log(JSON.stringify({ mobile390, mobile430 }));
+          await browser.close();
+          NODE
+          node qa-requested.mjs
+      - name: Upload requested QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requested-fixes-preview-qa
+          path: requested-qa
+          retention-days: 3
