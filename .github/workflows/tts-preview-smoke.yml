@@ -1,0 +1,58 @@
+name: TTS preview smoke
+
+on:
+  push:
+    branches:
+      - preview/major-learning-update-2026-09-17
+
+jobs:
+  tts-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Netlify preview and verify OTTO TTS cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://deploy-preview-23--otto-a1-new.netlify.app/api/otto-tts?probe=otto-final-voice-v2'
+
+          request_case() {
+            local case_name="$1"
+            local result=''
+            for attempt in $(seq 1 18); do
+              if result=$(curl --silent --show-error --fail --max-time 30 "${BASE}&case=${case_name}"); then
+                echo "${case_name}: ${result}"
+                RESULT="$result"
+                return 0
+              fi
+              sleep 10
+            done
+            echo "TTS probe failed for ${case_name}" >&2
+            return 1
+          }
+
+          verify_json() {
+            CASE_NAME="$1" BODY="$2" node <<'NODE'
+          const body = JSON.parse(process.env.BODY);
+          const expected = process.env.CASE_NAME;
+          if (!body.ok) throw new Error(`${expected}: ok=false`);
+          if (body.case !== expected) throw new Error(`${expected}: wrong case ${body.case}`);
+          if (body.contentType !== 'audio/mpeg') throw new Error(`${expected}: wrong contentType ${body.contentType}`);
+          if (!String(body.providerContentType || '').includes('audio/mpeg')) throw new Error(`${expected}: provider content type ${body.providerContentType}`);
+          if (body.voice !== 'marin') throw new Error(`${expected}: wrong voice ${body.voice}`);
+          if (body.cacheVersion !== 'v2-marin-de') throw new Error(`${expected}: wrong cache ${body.cacheVersion}`);
+          if (body.language !== 'de-DE') throw new Error(`${expected}: wrong language ${body.language}`);
+          if (!(body.bytes > 1000)) throw new Error(`${expected}: suspicious audio size ${body.bytes}`);
+          NODE
+          }
+
+          for case_name in normal slow spelling numbers phrase; do
+            request_case "$case_name"
+            verify_json "$case_name" "$RESULT"
+          done
+
+          request_case normal
+          CASE_NAME='normal' BODY="$RESULT" node <<'NODE'
+          const body = JSON.parse(process.env.BODY);
+          if (body.source !== 'cache') throw new Error(`expected second normal request from cache, got ${body.source}`);
+          console.log('cache-hit verified:', body);
+          NODE
