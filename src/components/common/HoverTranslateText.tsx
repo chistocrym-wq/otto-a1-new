@@ -29,15 +29,25 @@ const PHRASES:Array<{de:string;ru:string}>=[
   {de:'bitte schön',ru:'пожалуйста'},
 ];
 
-const AMBIGUOUS=new Set(['sie','ihr','ihre','ihren','ihrem','ihres','ihnen','es','da','doch','schon','noch','man']);
 const cache=new Map<string,string>();
 const pending=new Map<string,Promise<string>>();
+const STORAGE_PREFIX='otto-context-translation-v2:';
 
 function normalizeWord(value:string){return value.toLocaleLowerCase('de-DE').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'')}
 function tokenize(text:string){return text.split(/(\s+|(?=[,.;:!?()„“"\-–—/])|(?<=[,.;:!?()„“"\-–—/]))/u).filter(Boolean)}
 function speak(value:string){if(!value||!('speechSynthesis' in window))return;window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);utterance.lang='de-DE';utterance.rate=.88;window.speechSynthesis.speak(utterance)}
 
-type ContextSelection={source:string;cacheKey:string;staticTranslation?:string};
+function readCached(key:string){
+  const memory=cache.get(key);if(memory)return memory;
+  try{const stored=sessionStorage.getItem(`${STORAGE_PREFIX}${key}`);if(stored){cache.set(key,stored);return stored}}catch{/* ignore */}
+  return '';
+}
+function writeCached(key:string,value:string){
+  if(!value)return;cache.set(key,value);
+  try{sessionStorage.setItem(`${STORAGE_PREFIX}${key}`,value)}catch{/* ignore */}
+}
+
+type ContextSelection={source:string;cacheKey:string;staticTranslation?:string;fallbackTranslation?:string};
 type WordToken={tokenIndex:number;word:string;raw:string};
 
 function wordTokens(tokens:string[]):WordToken[]{
@@ -50,7 +60,17 @@ function sentenceFragment(tokens:string[],tokenIndex:number){
   let start=tokenIndex;let end=tokenIndex;
   while(start>0&&!/[.!?]/u.test(tokens[start-1]))start-=1;
   while(end<tokens.length-1&&!/[.!?]/u.test(tokens[end+1]))end+=1;
-  const fragment=tokens.slice(start,end+1).join('').replace(/\s+/gu,' ').trim();
+  const fragment=tokens.slice(start,end+1).join('').replace(/\s+/gu,' ').trim().replace(/^[,;:\s]+|[,;:\s]+$/gu,'');
+  return fragment.length>180?fragment.slice(0,180).trim():fragment;
+}
+
+function semanticFragment(tokens:string[],tokenIndex:number){
+  let start=tokenIndex;let end=tokenIndex;
+  while(start>0&&!/[,.;:!?–—]/u.test(tokens[start-1]))start-=1;
+  while(end<tokens.length-1&&!/[,.;:!?–—]/u.test(tokens[end+1]))end+=1;
+  let fragment=tokens.slice(start,end+1).join('').replace(/\s+/gu,' ').trim().replace(/^[,;:\s]+|[,;:\s]+$/gu,'');
+  const count=(fragment.match(/\p{L}+/gu)||[]).length;
+  if(count<2)fragment=sentenceFragment(tokens,tokenIndex);
   return fragment.length>180?fragment.slice(0,180).trim():fragment;
 }
 
@@ -68,18 +88,28 @@ function resolveContext(tokens:string[],tokenIndex:number):ContextSelection{
       }
     }
   }
-  if(clickedWord&&STATIC[clickedWord]&&!AMBIGUOUS.has(clickedWord))return{source:tokens[tokenIndex],cacheKey:`word:${clickedWord}`,staticTranslation:STATIC[clickedWord]};
-  const fragment=sentenceFragment(tokens,tokenIndex)||tokens[tokenIndex];
-  return{source:fragment,cacheKey:`context:${fragment.toLocaleLowerCase('de-DE')}`};
+  const fragment=semanticFragment(tokens,tokenIndex);
+  const fragmentWords=(fragment.match(/\p{L}+/gu)||[]).length;
+  const fallbackTranslation=clickedWord?STATIC[clickedWord]:undefined;
+  if(fragment&&fragmentWords>1){
+    // Для многословного контекста безопаснее не показывать отдельный словарный смысл,
+    // если контекстный перевод временно не получен: он может исказить значение фразы.
+    return{source:fragment,cacheKey:`context:${fragment.toLocaleLowerCase('de-DE')}`};
+  }
+  if(clickedWord&&fallbackTranslation){
+    return{source:tokens[tokenIndex],cacheKey:`word:${clickedWord}`,staticTranslation:fallbackTranslation};
+  }
+  const source=fragment||tokens[tokenIndex];
+  return{source,cacheKey:`context:${source.toLocaleLowerCase('de-DE')}`};
 }
 
 async function getTranslation(selection:ContextSelection){
-  if(selection.staticTranslation){cache.set(selection.cacheKey,selection.staticTranslation);return selection.staticTranslation}
-  const known=cache.get(selection.cacheKey);if(known)return known;
+  if(selection.staticTranslation){writeCached(selection.cacheKey,selection.staticTranslation);return selection.staticTranslation}
+  const known=readCached(selection.cacheKey);if(known)return known;
   const existing=pending.get(selection.cacheKey);if(existing)return existing;
   const request=fetch('/api/translate-task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts:[selection.source]})})
-    .then(async response=>{const payload=await response.json().catch(()=>({}));const result=Array.isArray(payload.translations)?String(payload.translations[0]||''):'';if(result)cache.set(selection.cacheKey,result);return result})
-    .catch(()=> '')
+    .then(async response=>{const payload=await response.json().catch(()=>({}));const result=Array.isArray(payload.translations)?String(payload.translations[0]||'').trim():'';if(result){writeCached(selection.cacheKey,result);return result}return selection.fallbackTranslation||''})
+    .catch(()=>selection.fallbackTranslation||'')
     .finally(()=>pending.delete(selection.cacheKey));
   pending.set(selection.cacheKey,request);return request;
 }
@@ -87,7 +117,7 @@ async function getTranslation(selection:ContextSelection){
 function Word({token,tokens,tokenIndex}:{token:string;tokens:string[];tokenIndex:number}){
   const word=normalizeWord(token);
   const selection=useMemo(()=>resolveContext(tokens,tokenIndex),[tokens,tokenIndex]);
-  const initial=word?(cache.get(selection.cacheKey)||selection.staticTranslation||''):'';
+  const initial=word?(readCached(selection.cacheKey)||selection.staticTranslation||''):'';
   const[translation,setTranslation]=useState(initial);
   const[open,setOpen]=useState(false);
 

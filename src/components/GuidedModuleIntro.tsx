@@ -30,6 +30,27 @@ const META: Record<ModuleId, { title: string; goal: string; tip: string; Icon: t
   },
 };
 
+const EXTRA:Partial<Record<ModuleId,{title:string;points:string[]}>>={
+  horen:{
+    title:'Как не попасться на ловушку',
+    points:[
+      'Сначала прочитайте вопрос и заранее поймите, что нужно услышать: число, время, место, цену или действие.',
+      'Не выбирайте вариант только из-за знакомого слова: следите за nicht / kein, aber, leider и за окончательным решением.',
+      'В Teil 1 и Teil 3 текст звучит дважды: после первого выберите вероятный ответ, на втором проверьте именно сомнительную деталь.',
+      'В Teil 2 каждый текст звучит один раз: вопрос прочитайте заранее и сразу проверяйте всю формулировку Richtig / Falsch.',
+    ],
+  },
+  schreiben:{
+    title:'Как набрать баллы проще',
+    points:[
+      'Сначала выделите все 3 пункта задания и дайте каждому отдельную простую фразу.',
+      'Берите надёжные слова и формулировки прямо из задания; не усложняйте грамматику ради эффекта.',
+      'Используйте выученные конструкции и готовое обращение/завершение письма.',
+      'Перед отправкой проверьте: обращение есть, все 3 пункта закрыты, завершение есть.',
+    ],
+  },
+};
+
 function readSeen(): ModuleId[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -50,6 +71,7 @@ export function markGuidedModuleIntroSeen(module: ModuleId) {
 
 export function GuidedModuleIntro({ module, onContinue, onBack }: { module: ModuleId; onContinue: () => void; onBack: () => void }) {
   const meta = META[module];
+  const extra=EXTRA[module];
   const Icon = meta.Icon;
   return (
     <div className="animate-fade-in py-4 sm:py-8">
@@ -60,6 +82,7 @@ export function GuidedModuleIntro({ module, onContinue, onBack }: { module: Modu
         <div className="mt-5 space-y-3 text-sm leading-6 text-slate-600">
           <div className="rounded-2xl bg-slate-50 p-4"><b className="text-slate-950">Что делать</b><p className="mt-1">{meta.goal}</p></div>
           <div className="rounded-2xl bg-teal-50 p-4 text-teal-950"><b>Совет для экзамена</b><p className="mt-1">{meta.tip}</p></div>
+          {extra&&<div className="rounded-2xl bg-slate-50 p-4"><b className="text-slate-950">{extra.title}</b><ul className="mt-2 space-y-1.5">{extra.points.map(point=><li key={point} className="flex gap-2"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600"/><span>{point}</span></li>)}</ul></div>}
         </div>
         <div className="mt-6 grid gap-2 sm:grid-cols-[auto_1fr]">
           <button type="button" onClick={onBack} className="min-h-12 rounded-xl border border-slate-200 bg-white px-5 font-bold text-slate-600">Назад</button>

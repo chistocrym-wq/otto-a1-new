@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleX, Eye, Headphones, Loader2, RotateCcw } from 'lucide-react';
 import { listeningTasks, type HorenTask } from '@/data/listening';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
+import { GuidedTaskPrep } from '@/components/GuidedTaskPrep';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { cn } from '@/lib/utils';
 
@@ -91,6 +92,7 @@ export function ListeningModule({onBack,onComplete}:Props){
       <CompactTranslationEye parts={['Hören','Hören Sie den Text und wählen Sie die passende Antwort.']} translations={['Аудирование','Прослушайте текст и выберите подходящий ответ.']} title="Перевод"/>
     </div>
 
+    <GuidedTaskPrep focus={`${task.instruction} ${task.prompt}`} tip="Сначала поймите, что именно нужно услышать. Отмечайте числа, время, место, отрицания и изменение планов."/>
     <section className="overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-sm">
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-sky-50 p-5">
         <div className="min-w-0"><p className="text-xs font-black uppercase tracking-wider text-sky-700">Aufgabe {task.number}</p><h2 className="mt-1 text-2xl font-black leading-tight text-slate-950"><HoverTranslateText text={task.title}/></h2></div>
