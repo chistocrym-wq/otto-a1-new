@@ -1,0 +1,78 @@
+name: Onboarding mobile preview smoke
+
+on:
+  push:
+    branches:
+      - preview/onboarding-mobile-hotfix-2026-09-17
+
+jobs:
+  mobile-cta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Verify CTA placement on preview
+        env:
+          PREVIEW_URL: https://deploy-preview-25--otto-a1-new.netlify.app
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 36); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "$PREVIEW_URL" || true)"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 5
+          done
+
+          cat > mobile-check.mjs <<'NODE'
+          import { chromium } from 'playwright';
+
+          const url = process.env.PREVIEW_URL;
+          const viewports = [
+            { width: 320, height: 568 },
+            { width: 360, height: 640 },
+            { width: 390, height: 844 },
+            { width: 430, height: 932 },
+          ];
+
+          const browser = await chromium.launch({ headless: true });
+
+          for (const viewport of viewports) {
+            const context = await browser.newContext({ viewport });
+            const page = await context.newPage();
+            await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+            await page.getByRole('button', { name: /Настроить мой профиль/ }).click();
+            await page.getByLabel('Имя').fill('Анна');
+            const email = page.getByPlaceholder('name@example.com');
+            await email.fill('anna@example.com');
+            const cta = page.getByRole('button', { name: /Продолжить/ });
+
+            if (!(await cta.isEnabled())) throw new Error(`${viewport.width}x${viewport.height}: CTA disabled after valid profile`);
+            const bodyText = await page.locator('body').innerText();
+            if (bodyText.includes('Email сохраняется как контакт без подтверждения владения') || bodyText.includes('Telegram считается подтверждённым только когда OTTO открыт как Mini App')) {
+              throw new Error(`${viewport.width}x${viewport.height}: technical text still visible`);
+            }
+
+            const before = await page.evaluate(() => window.scrollY);
+            await cta.scrollIntoViewIfNeeded();
+            const emailBox = await email.boundingBox();
+            const ctaBox = await cta.boundingBox();
+            if (!emailBox || !ctaBox) throw new Error(`${viewport.width}x${viewport.height}: missing bounding box`);
+
+            const gap = Math.round(ctaBox.y - (emailBox.y + emailBox.height));
+            if (gap < 12 || gap > 16) throw new Error(`${viewport.width}x${viewport.height}: gap=${gap}px, expected 12-16px`);
+            if (ctaBox.y < -1 || ctaBox.y + ctaBox.height > viewport.height + 1) {
+              throw new Error(`${viewport.width}x${viewport.height}: CTA not reachable/visible after scroll, y=${ctaBox.y}, h=${ctaBox.height}`);
+            }
+            if (Math.abs(ctaBox.width - emailBox.width) > 2) throw new Error(`${viewport.width}x${viewport.height}: CTA is not full field width`);
+
+            console.log(`${viewport.width}x${viewport.height}: PASS gap=${gap}px CTA-visible scrollY-before=${before}`);
+            await context.close();
+          }
+
+          await browser.close();
+          NODE
+
+          node mobile-check.mjs
