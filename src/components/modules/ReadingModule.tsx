@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, CircleX, Globe2, Loader2
 import { loadLesenArchive, type LesenArchiveData, type LesenArchiveOption, type LesenArchiveTeil1Task, type LesenArchiveTeil2Task, type LesenArchiveTeil3Task } from '@/data/lesen/archiveData';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
+import { GuidedTaskPrep } from '@/components/GuidedTaskPrep';
 import { cn } from '@/lib/utils';
 
 interface Props { onBack:()=>void; onComplete:(score:number,total:number)=>void }
@@ -58,8 +59,11 @@ export function ReadingModule({onBack,onComplete}:Props){
  if(!part)return <Home onBack={onBack} onOpen={open} progress={progress}/>;
  if(finished)return <Result part={part} score={currentProgress.correct} total={total} completed={currentProgress.completedTasks} onRetry={reset} onBack={back}/>;
  if(!current)return <div><Back onClick={back}/><p className="mt-4">В этой части нет задания.</p></div>;
+ const prepFocus=part===1?(current as LesenArchiveTeil1Task).statements[0]?.statement||instruction(part):part===2?(current as LesenArchiveTeil2Task).situation:(current as LesenArchiveTeil3Task).statement;
+ const prepTip=part===1?'Сначала поймите смысл утверждения, потом ищите в тексте подтверждение или противоречие.':part===2?'Определите, какая именно информация нужна в ситуации, и только потом сравнивайте варианты A и B.':'Сначала найдите запрет, разрешение, время или условие на табличке — это обычно ключ к ответу.';
  return <div className="animate-fade-in pb-8"><div className="mb-4 flex items-start gap-3"><Back onClick={back}/><div className="min-w-0 flex-1"><h1 className="text-xl font-black text-slate-950">Lesen · Teil {part}</h1><p className="mt-1 text-sm text-slate-500">Aufgabe {index+1} von 50 · выполнено {currentProgress.completedTasks}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-teal-600" style={{width:`${(currentProgress.completedTasks/50)*100}%`}}/></div></div><CompactTranslationEye parts={[`Lesen Teil ${part}`,META[part].de]} translations={[`Чтение · часть ${part}`,META[part].ru]} title="Перевод"/></div>
  <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border-l-4 border-teal-600 bg-teal-50 px-4 py-3 text-sm leading-6 text-slate-700"><HoverTranslateText text={instruction(part)}/><CompactTranslationEye parts={[instruction(part)]} title="Перевод задания"/></div>
+ <GuidedTaskPrep focus={prepFocus} tip={prepTip}/>
  {part===1&&<Teil1 task={current as LesenArchiveTeil1Task} answers={multi} checked={checked} onAnswer={(i,a)=>{if(checked)return;const len=(current as LesenArchiveTeil1Task).statements.length;setMulti(prev=>{const v=Array<Bin|null>(len).fill(null);prev.forEach((x,j)=>{if(j<len)v[j]=x});v[i]=a;return v})}}/>}
  {part===2&&<Teil2 task={current as LesenArchiveTeil2Task} selected={choice} checked={checked} onSelect={a=>!checked&&setChoice(a)}/>} 
  {part===3&&<Teil3 task={current as LesenArchiveTeil3Task} selected={bin} checked={checked} onSelect={a=>!checked&&setBin(a)}/>} 
