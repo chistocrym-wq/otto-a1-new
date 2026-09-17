@@ -132,9 +132,8 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                   <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Telegram username<div className="relative mt-2"><AtSign className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--otto-muted)]" /><input value={contact.replace(/^@/u, '')} onChange={(event) => setContact(event.target.value)} autoCapitalize="none" autoCorrect="off" placeholder="username" className="min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] pl-10 pr-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></div></label>
                 )}
 
-                <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">Email сохраняется как контакт без подтверждения владения. Telegram считается подтверждённым только когда OTTO открыт как Mini App и сервер успешно проверил Telegram initData.</p>
+                <button type="button" disabled={!profileValid} onClick={() => setStep('mode')} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">Продолжить <ArrowRight className="h-4 w-4" /></button>
                 {!profileValid && (name.trim() || contact.trim()) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя и выбранный контакт.</p>}
-                <button type="button" disabled={!profileValid} onClick={() => setStep('mode')} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">Продолжить <ArrowRight className="h-4 w-4" /></button>
               </div>
             )}
 
