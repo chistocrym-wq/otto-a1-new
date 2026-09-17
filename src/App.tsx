@@ -44,9 +44,17 @@ export default function App(){
  const complete=(module:ModuleId)=>(score:number,total:number)=>{const elapsed=Math.max(0,(Date.now()-moduleStartedAt.current)/1000);recordScore(module,score,total,elapsed);moduleStartedAt.current=Date.now()};
  const recordMockModule=useCallback((module:ModuleId,percent:number)=>{recordScore(module,percent,100,0)},[recordScore]);
  const viewClass=`otto-view-${view??'home'}`;
- const activeTab=useMemo<BottomTab>(()=>{if(view==='mock-exam')return'mock-exam';if(view==='errors')return'errors';if(view==='reference'||view==='instructions'||view==='exam-guide'||view==='how-to-train'||view==='account'||view==='news')return'reference';if(view==='settings'||view==='support')return'settings';return'home'},[view]);
+ const activeTab=useMemo<BottomTab>(()=>{
+   if(productMode==='basic'){
+     if(view==='modules'||(view!==null&&moduleIds.includes(view as ModuleId)))return'modules';
+     if(view==='account')return'account';
+     if(view==='settings'||view==='support')return'settings';
+     return'home';
+   }
+   if(view==='mock-exam')return'mock-exam';if(view==='errors')return'errors';if(view==='reference'||view==='instructions'||view==='exam-guide'||view==='how-to-train'||view==='account'||view==='news')return'reference';if(view==='settings'||view==='support')return'settings';return'home'
+ },[productMode,view]);
  const companionScene=useMemo<OttoSceneName|null>(()=>{if(view==='lesen')return'lesen';if(view==='horen')return'horen';if(view==='schreiben')return'schreiben';if(view==='sprechen'||view==='phrases-speaking'||view==='instructions'||view==='exam-guide'||view==='how-to-train'||view==='reference')return'guide';if(view==='mock-exam')return'exam';if(view==='readiness'||view==='news'||view==='daily-training'||view==='errors')return'home';return null},[view]);
- const navigateBottom=useCallback((tab:BottomTab)=>{if(tab==='home')setView(null);if(tab==='mock-exam')setView('mock-exam');if(tab==='errors')setView('errors');if(tab==='reference')setView('reference');if(tab==='settings')setView('settings')},[]);
+ const navigateBottom=useCallback((tab:BottomTab)=>{if(tab==='home')setView(null);if(tab==='modules')setView('modules');if(tab==='account')setView('account');if(tab==='mock-exam')setView('mock-exam');if(tab==='errors')setView('errors');if(tab==='reference')setView('reference');if(tab==='settings')setView('settings')},[]);
  const needsOnboarding=!completed&&!legacyUser;
  if(needsOnboarding||profileSetupOpen){return <Onboarding initialProfile={profileSetupOpen?profile:null} onCancel={profileSetupOpen?()=>setProfileSetupOpen(false):undefined} onComplete={draft=>{saveProfile(draft);setProfileSetupOpen(false)}}/>}
  return <><OttoSplash/><div className={`telegram-app otto-skin otto-app-shell ${viewClass}`}><div className="otto-backdrop" aria-hidden="true"><div className="otto-glow otto-glow-a"/><div className="otto-glow otto-glow-b"/><div className="otto-line-art"/></div><main className="otto-app-content relative z-10 mx-auto max-w-4xl"><div className={view===null?'otto-home-screen':'otto-inner-screen'}>
