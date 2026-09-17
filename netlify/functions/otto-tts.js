@@ -13,6 +13,13 @@ const SPELLING_RE = /^(?:[A-ZÄÖÜẞß]\s*[–—-]\s*)+[A-ZÄÖÜẞß]$/u;
 const GERMAN_LETTER_NAMES = Object.freeze({
   A:'A',B:'Be',C:'Ce',D:'De',E:'E',F:'Eff',G:'Ge',H:'Ha',I:'I',J:'Jot',K:'Ka',L:'Ell',M:'Em',N:'En',O:'O',P:'Pe',Q:'Ku',R:'Er',S:'Es',T:'Te',U:'U',V:'Vau',W:'We',X:'Ix',Y:'Ypsilon',Z:'Zett',Ä:'Ä',Ö:'Ö',Ü:'Ü',ẞ:'Eszett',ß:'Eszett',
 });
+const PROBE_CASES = Object.freeze({
+  normal: { text: 'Ich heiße Otto. Schön, dass du da bist. Straße. Mädchen. sprechen. fünf. zwölf.', mode: 'normal', kind: 'text' },
+  slow: { text: 'Ich möchte einen Deutschkurs besuchen. Können Sie mir bitte helfen? Wie viel kostet der Kurs?', mode: 'slow', kind: 'text' },
+  spelling: { text: 'A – B – C – D – E – F – G – H – I – J – K – L – M – N – O – P – Q – R – S – T – U – V – W – X – Y – Z – Ä – Ö – Ü – ß', mode: 'normal', kind: 'spelling' },
+  numbers: { text: '0 1 2 7 12 16 17 20 21 27 30 40 50 70 99 100', mode: 'normal', kind: 'numbers' },
+  phrase: { text: 'Heute kann ich leider nicht kommen. Mit freundlichen Grüßen.', mode: 'normal', kind: 'text' },
+});
 
 function cacheStore() {
   const isProduction = Netlify.context?.deploy?.context === 'production';
@@ -64,9 +71,10 @@ function audioResponse(audio, source) {
   });
 }
 
-function probeResponse(audio, source, providerContentType = 'audio/mpeg') {
+function probeResponse(audio, source, providerContentType = 'audio/mpeg', probeCase = 'normal') {
   return Response.json({
     ok: true,
+    case: probeCase,
     source,
     bytes: audio.byteLength,
     contentType: 'audio/mpeg',
@@ -85,8 +93,10 @@ export default async (req) => {
     && url.searchParams.get('probe') === PROBE_TOKEN;
 
   let body;
+  let probeCase = 'normal';
   if (isProbe) {
-    body = { text: 'Ich heiße Otto.', mode: 'normal', kind: 'text' };
+    probeCase = Object.hasOwn(PROBE_CASES, url.searchParams.get('case')) ? url.searchParams.get('case') : 'normal';
+    body = PROBE_CASES[probeCase];
   } else if (req.method === 'POST') {
     try { body = await req.json(); } catch { return new Response('Invalid JSON', { status: 400 }); }
   } else {
@@ -106,7 +116,7 @@ export default async (req) => {
   const store = cacheStore();
 
   const cached = await store.get(key, { type: 'arrayBuffer' });
-  if (cached) return isProbe ? probeResponse(cached, 'cache') : audioResponse(cached, 'cache');
+  if (cached) return isProbe ? probeResponse(cached, 'cache', 'audio/mpeg', probeCase) : audioResponse(cached, 'cache');
 
   const apiKey = Netlify.env.get('OPENAI_API_KEY');
   const baseUrl = (Netlify.env.get('OPENAI_BASE_URL') || 'https://api.openai.com').replace(/\/$/, '');
@@ -139,7 +149,7 @@ export default async (req) => {
 
   const audio = await response.arrayBuffer();
   await store.set(key, audio);
-  return isProbe ? probeResponse(audio, 'generated', providerContentType) : audioResponse(audio, 'generated');
+  return isProbe ? probeResponse(audio, 'generated', providerContentType, probeCase) : audioResponse(audio, 'generated');
 };
 
 export const config = {
