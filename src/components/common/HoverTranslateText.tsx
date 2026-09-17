@@ -92,7 +92,9 @@ function resolveContext(tokens:string[],tokenIndex:number):ContextSelection{
   const fragmentWords=(fragment.match(/\p{L}+/gu)||[]).length;
   const fallbackTranslation=clickedWord?STATIC[clickedWord]:undefined;
   if(fragment&&fragmentWords>1){
-    return{source:fragment,cacheKey:`context:${fragment.toLocaleLowerCase('de-DE')}`,fallbackTranslation};
+    // Для многословного контекста безопаснее не показывать отдельный словарный смысл,
+    // если контекстный перевод временно не получен: он может исказить значение фразы.
+    return{source:fragment,cacheKey:`context:${fragment.toLocaleLowerCase('de-DE')}`};
   }
   if(clickedWord&&fallbackTranslation){
     return{source:tokens[tokenIndex],cacheKey:`word:${clickedWord}`,staticTranslation:fallbackTranslation};
