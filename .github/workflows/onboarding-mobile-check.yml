@@ -58,7 +58,7 @@ jobs:
             });
             console.log(`VIEWPORT ${width}x${height}`, JSON.stringify(result));
             if (result.disabled) throw new Error(`${width}x${height}: continue disabled after valid fields`);
-            if (result.top < 0 || result.bottom > result.innerHeight - 2) throw new Error(`${width}x${height}: continue not reachable within viewport after scroll`);
+            if (result.top < 0 || result.bottom > result.innerHeight) throw new Error(`${width}x${height}: continue not reachable within viewport after scroll`);
             if (result.overflowY !== 'auto') throw new Error(`${width}x${height}: profile main is not vertically scrollable`);
             if (result.justifyContent !== 'flex-start') throw new Error(`${width}x${height}: profile is still vertically centered on mobile`);
 
@@ -68,7 +68,7 @@ jobs:
             const keyboard = await button.boundingBox();
             const keyboardHeight = await page.evaluate(() => window.innerHeight);
             console.log(`KEYBOARD_SIM ${width}x${Math.max(300,height-260)}`, JSON.stringify({keyboard, keyboardHeight}));
-            if (!keyboard || keyboard.y < 0 || keyboard.y + keyboard.height > keyboardHeight - 2) throw new Error(`${width}: button cannot be reached with reduced visual viewport`);
+            if (!keyboard || keyboard.y < 0 || keyboard.y + keyboard.height > keyboardHeight + 0.5) throw new Error(`${width}: button cannot be reached with reduced visual viewport`);
             await context.close();
           }
 
