@@ -18,7 +18,7 @@ jobs:
         env:
           PREVIEW_URL: https://deploy-preview-25--otto-a1-new.netlify.app/
         run: |
-          cat > /tmp/check.mjs <<'NODE'
+          cat > check.mjs <<'NODE'
           import { chromium } from 'playwright';
           const url = process.env.PREVIEW_URL;
           const sizes = [[320,568],[360,640],[390,844],[430,932]];
@@ -62,7 +62,6 @@ jobs:
             if (result.overflowY !== 'auto') throw new Error(`${width}x${height}: profile main is not vertically scrollable`);
             if (result.justifyContent !== 'flex-start') throw new Error(`${width}x${height}: profile is still vertically centered on mobile`);
 
-            // Simulate a reduced visual viewport similar to an on-screen keyboard.
             await page.getByLabel('Email').focus();
             await page.setViewportSize({ width, height: Math.max(300, height - 260) });
             await button.scrollIntoViewIfNeeded();
@@ -91,4 +90,4 @@ jobs:
           await desktop.close();
           await browser.close();
           NODE
-          node /tmp/check.mjs
+          node check.mjs
