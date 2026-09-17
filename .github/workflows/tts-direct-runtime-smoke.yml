@@ -1,4 +1,4 @@
-name: TTS direct runtime smoke
+name: TTS direct preview smoke
 
 on:
   push:
@@ -6,28 +6,98 @@ on:
       - preview/otto-start-voice-hotfix-2026-09-17
 
 jobs:
-  runtime-smoke:
+  preview-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify direct OpenAI WAV runtime
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Verify endpoint and UI voice paths
+        env:
+          PREVIEW_URL: https://deploy-preview-24--otto-a1-new.netlify.app
         shell: bash
         run: |
           set -euo pipefail
-          URL='https://deploy-preview-24--otto-a1-new.netlify.app/api/otto-tts?text=Ich%20hei%C3%9Fe%20Otto'
-          sleep 20
+          for i in $(seq 1 30); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "$PREVIEW_URL/api/otto-tts?text=Ich%20hei%C3%9Fe%20Otto" || true)"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 5
+          done
+
+          URL="$PREVIEW_URL/api/otto-tts?text=Ich%20hei%C3%9Fe%20Otto"
           code="$(curl -sS -w '%{http_code}' -D headers.txt -o audio.wav "$URL")"
           ctype="$(grep -i '^content-type:' headers.txt | tail -1 | tr -d '\r' | cut -d' ' -f2-)"
           bytes="$(wc -c < audio.wav | tr -d ' ')"
           riff="$(dd if=audio.wav bs=1 count=4 2>/dev/null)"
           wave="$(dd if=audio.wav bs=1 skip=8 count=4 2>/dev/null)"
-          echo "HTTP=$code"
-          echo "CONTENT_TYPE=$ctype"
-          echo "BYTES=$bytes"
-          echo "MAGIC=${riff}/${wave}"
-          echo "HEADERS:"
-          cat headers.txt
+          echo "ENDPOINT HTTP=$code CONTENT_TYPE=$ctype BYTES=$bytes MAGIC=${riff}/${wave}"
           test "$code" = '200'
           case "$ctype" in audio/wav*) ;; *) exit 21 ;; esac
           test "$bytes" -gt 1000
           test "$riff" = 'RIFF'
           test "$wave" = 'WAVE'
+
+          cat > ui-check.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          const url = process.env.PREVIEW_URL;
+          const browser = await chromium.launch({ headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
+          const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          await context.addInitScript(() => {
+            const now = new Date().toISOString();
+            localStorage.setItem('otto-user-profile', JSON.stringify({
+              name:'Анна', contactType:'email', contact:'anna@example.com', contactVerified:false,
+              learningMode:'guided', createdAt:now, updatedAt:now,
+            }));
+            localStorage.setItem('otto-onboarding-completed','true');
+            localStorage.setItem('otto-learning-mode-v1','guided');
+            localStorage.removeItem('otto-guided-module-intros-v1');
+          });
+          const page = await context.newPage();
+
+          async function assertWav(response, label) {
+            const type = String(response.headers()['content-type'] || '');
+            const body = await response.body();
+            const riff = body.subarray(0,4).toString('ascii');
+            const wave = body.subarray(8,12).toString('ascii');
+            if (response.status() !== 200 || !type.startsWith('audio/wav') || body.length <= 1000 || riff !== 'RIFF' || wave !== 'WAVE') {
+              throw new Error(`${label}: bad TTS response status=${response.status()} type=${type} bytes=${body.length} magic=${riff}/${wave}`);
+            }
+            console.log(`UI ${label}: PASS status=${response.status()} type=${type} bytes=${body.length} magic=${riff}/${wave}`);
+          }
+
+          async function clickForTts(locator, label) {
+            const responsePromise = page.waitForResponse(r => r.url().includes('/api/otto-tts?') && r.status() === 200, { timeout: 30000 });
+            await locator.click();
+            await assertWav(await responsePromise, label);
+          }
+
+          await page.goto(url, { waitUntil:'networkidle', timeout:90000 });
+          await page.waitForTimeout(8000);
+
+          await page.getByRole('button', { name:'Справочник' }).click();
+          await page.getByRole('button', { name:/Лексика A1/ }).click();
+          await clickForTts(page.getByRole('button', { name:/^Прослушать:/ }).first(), 'Справочник');
+          await page.getByRole('button', { name:'Назад к справочнику' }).click();
+
+          await page.getByRole('button', { name:/Алфавит/ }).click();
+          await clickForTts(page.getByRole('button', { name:'Прослушать: A' }), 'Алфавит');
+          await page.getByRole('button', { name:'Назад к справочнику' }).click();
+
+          await page.getByRole('button', { name:/Основные глаголы/ }).click();
+          await clickForTts(page.getByRole('button', { name:/^Прослушать:/ }).first(), 'Глаголы');
+
+          await page.getByRole('button', { name:'Главная' }).click();
+          await page.getByRole('button', { name:/Sprechen/ }).click();
+          await page.getByRole('heading', { name:/Sprechen · говорение/ }).waitFor({ timeout:15000 });
+          console.log('UI Guided mode intro: PASS');
+          await page.getByRole('button', { name:'Перейти к тренировке' }).click();
+          await page.getByRole('button', { name:/Informationen/ }).click();
+          await page.getByRole('button', { name:/Показать пример после своего ответа/ }).click();
+          await clickForTts(page.getByRole('button', { name:/Прослушать Frage/ }), 'Sprechen + Guided mode');
+
+          await browser.close();
+          NODE
+          node ui-check.mjs
