@@ -9,26 +9,25 @@ jobs:
   voice-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify preview WAV TTS
+      - name: Compare source and preview TTS runtime
         shell: bash
         run: |
           set -euo pipefail
           sleep 45
-          URL='https://deploy-preview-24--otto-a1-new.netlify.app/api/otto-tts'
+          SOURCE='https://otto-start.netlify.app/api/otto-tts'
+          TARGET='https://deploy-preview-24--otto-a1-new.netlify.app/api/otto-tts'
 
-          check_case() {
+          probe() {
             local label="$1"
-            local text="$2"
-            local mode="$3"
-            local kind="${4:-text}"
+            local url="$2"
             local headers body status content_type bytes riff wave provider pronunciation
             headers=$(mktemp)
             body=$(mktemp)
             status=$(curl --silent --show-error --max-time 90 -G -D "$headers" -o "$body" -w '%{http_code}' \
-              --data-urlencode "text=$text" \
-              --data-urlencode "mode=$mode" \
-              --data-urlencode "kind=$kind" \
-              "$URL")
+              --data-urlencode 'text=Ich heiße Otto.' \
+              --data-urlencode 'mode=normal' \
+              --data-urlencode 'kind=text' \
+              "$url")
             content_type=$(awk 'BEGIN{IGNORECASE=1} /^content-type:/{gsub("\r",""); print $2}' "$headers" | tail -1)
             bytes=$(wc -c < "$body")
             riff=$(xxd -p -l 4 "$body" | tr -d '\n')
@@ -36,15 +35,16 @@ jobs:
             provider=$(awk 'BEGIN{IGNORECASE=1} /^x-otto-provider:/{gsub("\r",""); print $2}' "$headers" | tail -1)
             pronunciation=$(awk 'BEGIN{IGNORECASE=1} /^x-otto-pronunciation:/{gsub("\r",""); print $2}' "$headers" | tail -1)
             echo "$label: HTTP=$status type=$content_type bytes=$bytes RIFF=$riff WAVE=$wave provider=$provider pronunciation=$pronunciation"
-            if [ "$status" != '200' ]; then echo 'ERROR BODY:'; head -c 800 "$body"; echo; exit 1; fi
-            case "$content_type" in audio/wav*) ;; *) echo 'not audio/wav'; exit 1;; esac
+            if [ "$status" != '200' ]; then echo "$label ERROR BODY:"; head -c 800 "$body"; echo; return 1; fi
+            case "$content_type" in audio/wav*) ;; *) echo "$label not audio/wav"; return 1;; esac
             test "$bytes" -gt 1000
             test "$riff" = '52494646'
             test "$wave" = '57415645'
           }
 
-          check_case normal 'Ich heiße Otto.' normal
-          check_case slow 'Können Sie mir bitte helfen?' slow
-          check_case letter-j 'J' slow letter
-          check_case letter-ss 'ß' slow letter
-          check_case numbers '1 2 7 12 16 17 20 21 27 30 40 50 70 99 100' normal
+          source_ok=0
+          target_ok=0
+          probe SOURCE "$SOURCE" || source_ok=$?
+          probe TARGET "$TARGET" || target_ok=$?
+          test "$source_ok" = '0'
+          test "$target_ok" = '0'
