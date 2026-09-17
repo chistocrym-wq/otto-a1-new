@@ -6,6 +6,7 @@ const VOICE = 'marin';
 const CACHE_VERSION = 'v2-marin-de';
 const STORE = `otto-tts-cache-${CACHE_VERSION}`;
 const MAX_TEXT_LENGTH = 420;
+const PROBE_TOKEN = 'otto-final-voice-v2';
 const CYRILLIC_RE = /[А-Яа-яЁё]/u;
 const LETTER_RE = /^[A-ZÄÖÜẞß]$/u;
 const SPELLING_RE = /^(?:[A-ZÄÖÜẞß]\s*[–—-]\s*)+[A-ZÄÖÜẞß]$/u;
@@ -63,11 +64,34 @@ function audioResponse(audio, source) {
   });
 }
 
+function probeResponse(audio, source, providerContentType = 'audio/mpeg') {
+  return Response.json({
+    ok: true,
+    source,
+    bytes: audio.byteLength,
+    contentType: 'audio/mpeg',
+    providerContentType,
+    model: MODEL,
+    voice: VOICE,
+    cacheVersion: CACHE_VERSION,
+    language: 'de-DE',
+  }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
 export default async (req) => {
-  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  const url = new URL(req.url);
+  const isProbe = req.method === 'GET'
+    && Netlify.context?.deploy?.context === 'deploy-preview'
+    && url.searchParams.get('probe') === PROBE_TOKEN;
 
   let body;
-  try { body = await req.json(); } catch { return new Response('Invalid JSON', { status: 400 }); }
+  if (isProbe) {
+    body = { text: 'Ich heiße Otto.', mode: 'normal', kind: 'text' };
+  } else if (req.method === 'POST') {
+    try { body = await req.json(); } catch { return new Response('Invalid JSON', { status: 400 }); }
+  } else {
+    return new Response('Method not allowed', { status: 405 });
+  }
 
   const text = String(body?.text || '').replace(/\s+/g, ' ').trim();
   const mode = body?.mode === 'slow' ? 'slow' : 'normal';
@@ -82,7 +106,7 @@ export default async (req) => {
   const store = cacheStore();
 
   const cached = await store.get(key, { type: 'arrayBuffer' });
-  if (cached) return audioResponse(cached, 'cache');
+  if (cached) return isProbe ? probeResponse(cached, 'cache') : audioResponse(cached, 'cache');
 
   const apiKey = Netlify.env.get('OPENAI_API_KEY');
   const baseUrl = (Netlify.env.get('OPENAI_BASE_URL') || 'https://api.openai.com').replace(/\/$/, '');
@@ -107,13 +131,18 @@ export default async (req) => {
     return new Response('TTS provider unavailable', { status: 502 });
   }
 
+  const providerContentType = String(response.headers.get('content-type') || '').toLowerCase();
+  if (!providerContentType.includes('audio/mpeg')) {
+    console.error('OTTO TTS provider returned unexpected content type', providerContentType);
+    return new Response('Unexpected TTS format', { status: 502 });
+  }
+
   const audio = await response.arrayBuffer();
   await store.set(key, audio);
-  return audioResponse(audio, 'generated');
+  return isProbe ? probeResponse(audio, 'generated', providerContentType) : audioResponse(audio, 'generated');
 };
 
 export const config = {
   path: '/api/otto-tts',
-  method: 'POST',
   rateLimit: { windowLimit: 40, windowSize: 60, aggregateBy: ['ip', 'domain'] },
 };
