@@ -1,8 +1,8 @@
-import { BookOpen, ClipboardCheck, Home, Settings, TriangleAlert } from 'lucide-react';
+import { BookOpen, ClipboardCheck, Home, Settings, TriangleAlert, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { OttoProductMode } from '@/lib/productMode';
 
-export type BottomTab='mock-exam'|'errors'|'home'|'reference'|'settings';
+export type BottomTab='mock-exam'|'errors'|'home'|'reference'|'settings'|'modules'|'account';
 interface Props{active:BottomTab;onNavigate:(tab:BottomTab)=>void;mode:OttoProductMode}
 
 type NavItem={id:BottomTab;label:string;Icon:typeof Home};
@@ -15,7 +15,8 @@ const fullItems:NavItem[]=[
 ];
 const basicItems:NavItem[]=[
   {id:'home',label:'Главная',Icon:Home},
-  {id:'reference',label:'Справочник',Icon:BookOpen},
+  {id:'modules',label:'Разделы',Icon:BookOpen},
+  {id:'account',label:'Прогресс',Icon:UserRound},
   {id:'settings',label:'Настройки',Icon:Settings},
 ];
 
