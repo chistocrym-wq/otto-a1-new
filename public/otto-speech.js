@@ -2,9 +2,20 @@
   'use strict';
 
   const MODE_KEY = 'ottoSpeechModeV1';
-  const memoryCache = new Map();
+  const CLIENT_VERSION = 'otto-start-v8-a1';
+  const SPELLING_SEQUENCE = /((?:\b[A-ZÄÖÜẞ]\b\s*[–—-]\s*)+\b[A-ZÄÖÜẞ]\b)/u;
+  const LETTER_NAMES = {
+    A:'A',B:'Be',C:'Ce',D:'De',E:'E',F:'Ef',G:'Ge',H:'Ha',I:'I',J:'Jot',K:'Ka',L:'El',M:'Em',
+    N:'En',O:'O',P:'Pe',Q:'Ku',R:'Er',S:'Es',T:'Te',U:'U',V:'Vau',W:'Weh',X:'Iks',Y:'Ypsilon',Z:'Zett',
+    'Ä':'Ä','Ö':'Ö','Ü':'Ü','ẞ':'Eszett','ß':'Eszett'
+  };
+  const MALE_HINTS = ['conrad','stefan','killian','klaus','ralf','bernd','kasper','hans','michael','christoph','markus','male'];
+  const FEMALE_HINTS = ['katja','hedda','anna','petra','vicki','amala','seraphina','female'];
+
   let activeAudio = null;
+  let activeUtterance = null;
   let requestId = 0;
+  let serverVoiceUnavailableUntil = 0;
 
   const synth = window.speechSynthesis;
   const nativeSpeak = synth?.speak ? synth.speak.bind(synth) : null;
@@ -39,106 +50,230 @@
     window.dispatchEvent(new CustomEvent('otto:speech-mode', { detail: { mode: next } }));
   }
 
-  function bestGermanVoice() {
-    if (!synth?.getVoices) return null;
-    const voices = synth.getVoices().filter((voice) => /^de([_-]|$)/i.test(voice.lang || ''));
-    if (!voices.length) return null;
-    const score = (voice) => {
-      const name = `${voice.name || ''} ${voice.voiceURI || ''}`.toLowerCase();
-      let points = 0;
-      if (/natural|neural|premium|enhanced/.test(name)) points += 12;
-      if (/google|microsoft|apple/.test(name)) points += 6;
-      if (/de-de/i.test(voice.lang || '')) points += 4;
-      if (voice.localService) points += 1;
-      return points;
-    };
-    return voices.sort((a, b) => score(b) - score(a))[0] || voices[0];
+  async function loadVoices(timeoutMs = 2200) {
+    if (!synth?.getVoices) return [];
+    const current = synth.getVoices() || [];
+    if (current.length) return current;
+    return await new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        try { synth.removeEventListener?.('voiceschanged', onChange); } catch {}
+        resolve(synth.getVoices?.() || []);
+      };
+      const onChange = () => {
+        const voices = synth.getVoices?.() || [];
+        if (voices.length) finish();
+      };
+      try { synth.addEventListener?.('voiceschanged', onChange); } catch {}
+      window.setTimeout(finish, timeoutMs);
+    });
   }
 
-  function browserFallback(text, mode = currentMode()) {
-    if (!nativeSpeak || !window.SpeechSynthesisUtterance) return false;
-    nativeCancel?.();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'de-DE';
-    utterance.rate = mode === 'slow' ? 0.82 : 0.96;
-    utterance.pitch = 1;
-    const voice = bestGermanVoice();
-    if (voice) utterance.voice = voice;
-    nativeSpeak(utterance);
-    return true;
+  function rankGermanVoice(voice) {
+    const name = String(voice?.name || '').toLowerCase();
+    const lang = String(voice?.lang || '').replace('_','-').toLowerCase();
+    if (!lang.startsWith('de-') && lang !== 'de') return -9999;
+    let score = 0;
+    if (lang === 'de-de') score += 100;
+    else if (lang.startsWith('de-')) score += 55;
+    else score += 30;
+    if (MALE_HINTS.some((hint) => name.includes(hint))) score += 180;
+    if (FEMALE_HINTS.some((hint) => name.includes(hint))) score -= 20;
+    if (name.includes('natural') || name.includes('online') || name.includes('neural')) score += 45;
+    if (name.includes('microsoft')) score += 24;
+    if (name.includes('google')) score += 18;
+    if (voice.localService === false) score += 8;
+    if (voice.default) score += 2;
+    return score;
+  }
+
+  function pickGermanVoice(voices = []) {
+    return voices
+      .map((voice) => ({ voice, score: rankGermanVoice(voice) }))
+      .filter((entry) => entry.score > -9999)
+      .sort((a, b) => b.score - a.score)[0]?.voice || null;
+  }
+
+  function looksMale(voice) {
+    const name = String(voice?.name || '').toLowerCase();
+    return MALE_HINTS.some((hint) => name.includes(hint));
   }
 
   function stop() {
     requestId += 1;
     if (activeAudio) {
-      activeAudio.pause();
-      activeAudio.currentTime = 0;
+      try { activeAudio.pause(); activeAudio.currentTime = 0; } catch {}
       activeAudio = null;
     }
-    nativeCancel?.();
+    try { nativeCancel?.(); } catch {}
+    activeUtterance = null;
   }
 
-  async function fetchAudio(text, mode) {
-    const key = `${mode}:${text}`;
-    if (memoryCache.has(key)) return memoryCache.get(key);
-
-    const response = await fetch('/api/otto-tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, mode }),
+  function ttsUrl(text, options = {}) {
+    const clean = String(text || '').trim();
+    const kind = options.kind === 'letter' || /^[A-ZÄÖÜẞß]$/iu.test(clean) ? 'letter' : 'text';
+    const q = new URLSearchParams({
+      text: clean,
+      mode: options.mode === 'slow' ? 'slow' : 'normal',
+      kind,
+      v: CLIENT_VERSION,
     });
-    if (!response.ok || !String(response.headers.get('content-type') || '').includes('audio/')) {
-      throw new Error(`TTS unavailable: ${response.status}`);
+    return `/api/otto-tts?${q.toString()}`;
+  }
+
+  async function serverSpeak(text, options = {}, waitForEnd = false) {
+    if (Date.now() < serverVoiceUnavailableUntil || typeof Audio === 'undefined') return false;
+    const clean = String(text || '').trim();
+    if (!clean) return false;
+    return await new Promise((resolve) => {
+      const audio = new Audio();
+      activeAudio = audio;
+      audio.preload = 'auto';
+      audio.playsInline = true;
+      audio.volume = 1;
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!ok && activeAudio === audio) activeAudio = null;
+        resolve(ok);
+      };
+      audio.addEventListener(waitForEnd ? 'ended' : 'playing', () => finish(true), { once: true });
+      audio.addEventListener('error', () => {
+        serverVoiceUnavailableUntil = Date.now() + 60_000;
+        finish(false);
+      }, { once: true });
+      audio.src = ttsUrl(clean, options);
+      const timer = window.setTimeout(() => {
+        serverVoiceUnavailableUntil = Date.now() + 30_000;
+        finish(false);
+      }, waitForEnd ? 25_000 : 6500);
+      try {
+        const p = audio.play();
+        p?.catch?.(() => finish(false));
+      } catch { finish(false); }
+    });
+  }
+
+  async function browserSpeak(text, options = {}, waitForEnd = false) {
+    if (!nativeSpeak || !window.SpeechSynthesisUtterance) return false;
+    const voices = await loadVoices();
+    const voice = pickGermanVoice(voices);
+    if (!voice) return false;
+    const raw = String(text || '').trim();
+    const kind = options.kind === 'letter' || /^[A-ZÄÖÜẞß]$/iu.test(raw) ? 'letter' : 'text';
+    const spoken = kind === 'letter' ? (LETTER_NAMES[raw] || LETTER_NAMES[raw.toLocaleUpperCase('de-DE')] || raw) : raw;
+    if (!spoken) return false;
+    try { nativeCancel?.(); } catch {}
+    return await new Promise((resolve) => {
+      const utterance = new SpeechSynthesisUtterance(spoken);
+      utterance.lang = 'de-DE';
+      utterance.voice = voice;
+      utterance.rate = options.mode === 'slow' ? 0.70 : 0.86;
+      utterance.pitch = looksMale(voice) ? 0.96 : 1.0;
+      utterance.volume = 1;
+      activeUtterance = utterance;
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (activeUtterance === utterance) activeUtterance = null;
+        resolve(ok);
+      };
+      utterance.onstart = () => { if (!waitForEnd) finish(true); };
+      utterance.onend = () => finish(true);
+      utterance.onerror = () => finish(false);
+      try { nativeSpeak(utterance); } catch { finish(false); }
+      window.setTimeout(() => { if (!settled && !synth?.speaking) finish(false); }, waitForEnd ? Math.max(3000, spoken.length * 260) : 1800);
+    });
+  }
+
+  async function speakChunk(text, options = {}, waitForEnd = false) {
+    let ok = await serverSpeak(text, options, waitForEnd);
+    if (!ok) ok = await browserSpeak(text, options, waitForEnd);
+    return ok;
+  }
+
+  function spellingParts(text) {
+    const match = SPELLING_SEQUENCE.exec(String(text || ''));
+    if (!match) return null;
+    const spelling = match[1];
+    const letters = spelling.split(/[–—-]/u).map((value) => value.trim().toLocaleUpperCase('de-DE')).filter(Boolean);
+    return {
+      prefix: String(text).slice(0, match.index).trim(),
+      letters,
+      suffix: String(text).slice(match.index + spelling.length).replace(/^\s*[.!?,;:]\s*/, '').trim(),
+    };
+  }
+
+  const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  async function playSpelling(text, options = {}) {
+    const clean = String(text || '').trim();
+    const parsed = spellingParts(clean);
+    if (!parsed) return play(clean, options);
+    const mode = options.mode === 'normal' || options.mode === 'slow' ? options.mode : currentMode();
+    const id = ++requestId;
+    if (activeAudio) { try { activeAudio.pause(); activeAudio.currentTime = 0; } catch {} activeAudio = null; }
+    try { nativeCancel?.(); } catch {}
+
+    if (parsed.prefix) {
+      if (!(await speakChunk(parsed.prefix, { mode }, true)) || id !== requestId) return false;
+      await delay(180);
     }
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    memoryCache.set(key, url);
-    return url;
+    for (let index = 0; index < parsed.letters.length; index += 1) {
+      if (id !== requestId) return false;
+      if (!(await speakChunk(parsed.letters[index], { mode: 'slow', kind: 'letter' }, true))) return false;
+      if (index < parsed.letters.length - 1) await delay(210);
+    }
+    if (parsed.suffix) {
+      await delay(180);
+      if (!(await speakChunk(parsed.suffix, { mode }, true)) || id !== requestId) return false;
+    }
+    return true;
   }
 
   async function play(text, options = {}) {
     const clean = String(text || '').trim();
     if (!clean) return false;
+    if (SPELLING_SEQUENCE.test(clean)) return playSpelling(clean, options);
     const mode = options.mode === 'slow' || options.mode === 'normal' ? options.mode : currentMode();
+    const kind = options.kind === 'letter' || /^[A-ZÄÖÜẞß]$/iu.test(clean) ? 'letter' : 'text';
     const id = ++requestId;
 
-    if (activeAudio) {
-      activeAudio.pause();
-      activeAudio.currentTime = 0;
-      activeAudio = null;
-    }
-    nativeCancel?.();
+    if (activeAudio) { try { activeAudio.pause(); activeAudio.currentTime = 0; } catch {} activeAudio = null; }
+    try { nativeCancel?.(); } catch {}
 
-    try {
-      const url = await fetchAudio(clean, mode);
-      if (id !== requestId) return false;
-      const audio = new Audio(url);
-      activeAudio = audio;
-      audio.preload = 'auto';
-      audio.playbackRate = 1;
-      await audio.play();
-      return true;
-    } catch {
-      if (id !== requestId) return false;
-      return browserFallback(clean, mode);
-    }
+    const ok = await speakChunk(clean, { mode, kind }, false);
+    return id === requestId && ok;
+  }
+
+  function playNumbers(text, options = {}) {
+    return play(text, options);
   }
 
   window.OttoSpeech = {
     play,
+    playSpelling,
+    playNumbers,
     stop,
     setMode,
     getMode: currentMode,
+    ttsUrl,
     isNeuralPreferred: true,
   };
 
-  // Preserve existing application logic: any current speechSynthesis call is upgraded
-  // to the Otto neural voice, while the native German voice remains the fallback.
+  // Compatibility bridge: all existing German speechSynthesis calls in OTTO A1 use this one voice layer.
   if (synth && nativeSpeak) {
     try {
       synth.speak = (utterance) => {
         const text = String(utterance?.text || '').trim();
         if (!text) return nativeSpeak(utterance);
+        const lang = String(utterance?.lang || '').toLowerCase();
+        if (lang && !lang.startsWith('de')) return nativeSpeak(utterance);
         void play(text, { mode: currentMode() });
       };
       synth.cancel = () => stop();
@@ -182,7 +317,7 @@
     if (screen.querySelector('.settings') && !screen.querySelector('.otto-ai-voice-note')) {
       const note = document.createElement('div');
       note.className = 'otto-ai-voice-note';
-      note.innerHTML = '<b>Голос Отто</b><p>Основная немецкая озвучка создаётся нейросинтезом. Если она временно недоступна, приложение автоматически использует лучший немецкий голос устройства.</p>';
+      note.innerHTML = '<b>Голос Отто</b><p>Основная немецкая озвучка создаётся нейросинтезом. Если она временно недоступна, приложение автоматически использует немецкий голос устройства.</p>';
       screen.querySelector('.settings').after(note);
     }
     syncControls();
@@ -196,6 +331,7 @@
     setMode(button.getAttribute('data-otto-speech-mode'));
   }, true);
 
+  try { synth?.getVoices?.(); } catch {}
   if (synth?.addEventListener) synth.addEventListener('voiceschanged', syncControls);
   const appRoot = document.querySelector('#app');
   if (appRoot) new MutationObserver(() => queueMicrotask(enhanceStartUI)).observe(appRoot, { childList: true, subtree: true });
