@@ -32,7 +32,8 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const profile={name:'QA',contactType:'email',contact:'qa@example.com',contactVerified:false,learningMode:'direct',createdAt:'2026-09-17T00:00:00.000Z',updatedAt:'2026-09-17T00:00:00.000Z'};
-            async function capture(name,width,height,onboarding){
+            function metrics(page,name,width,height){return page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,scrollHeight:document.documentElement.scrollHeight,bodyWidth:document.body.getBoundingClientRect().width})).then(m=>fs.appendFileSync('visual-qa/metrics.jsonl',JSON.stringify({name,width,height,...m})+'\n'));}
+            async function capture(name,width,height,onboarding,navLabel){
               const context=await browser.newContext({viewport:{width,height}});
               const page=await context.newPage();
               if(!onboarding){
@@ -44,9 +45,12 @@ jobs:
               }
               await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
               await page.waitForTimeout(8500);
+              if(navLabel){
+                await page.getByRole('button',{name:new RegExp(navLabel,'i')}).click();
+                await page.waitForTimeout(700);
+              }
               await page.screenshot({path:`visual-qa/${name}.png`,fullPage:true});
-              const metrics=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,scrollHeight:document.documentElement.scrollHeight,bodyWidth:document.body.getBoundingClientRect().width}));
-              fs.appendFileSync('visual-qa/metrics.jsonl',JSON.stringify({name,width,height,...metrics})+'\n');
+              await metrics(page,name,width,height);
               await context.close();
             }
             fs.mkdirSync('visual-qa',{recursive:true});
@@ -55,6 +59,8 @@ jobs:
             await capture('dashboard-360',360,800,false);
             await capture('dashboard-430',430,932,false);
             await capture('dashboard-desktop',1440,1000,false);
+            await capture('errors-360',360,800,false,'Мои ошибки');
+            await capture('reference-360',360,800,false,'Справочник');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
@@ -62,6 +68,6 @@ jobs:
       - name: Upload visual QA
         uses: actions/upload-artifact@v4
         with:
-          name: otto-visual-qa-palette
+          name: otto-visual-qa-palette-pages
           path: visual-qa
           retention-days: 1
