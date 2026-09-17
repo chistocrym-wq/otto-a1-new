@@ -1,0 +1,33 @@
+name: TTS direct runtime smoke
+
+on:
+  push:
+    branches:
+      - preview/otto-start-voice-hotfix-2026-09-17
+
+jobs:
+  runtime-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify direct OpenAI WAV runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://deploy-preview-24--otto-a1-new.netlify.app/api/otto-tts?text=Ich%20hei%C3%9Fe%20Otto'
+          sleep 20
+          code="$(curl -sS -w '%{http_code}' -D headers.txt -o audio.wav "$URL")"
+          ctype="$(grep -i '^content-type:' headers.txt | tail -1 | tr -d '\r' | cut -d' ' -f2-)"
+          bytes="$(wc -c < audio.wav | tr -d ' ')"
+          riff="$(dd if=audio.wav bs=1 count=4 2>/dev/null)"
+          wave="$(dd if=audio.wav bs=1 skip=8 count=4 2>/dev/null)"
+          echo "HTTP=$code"
+          echo "CONTENT_TYPE=$ctype"
+          echo "BYTES=$bytes"
+          echo "MAGIC=${riff}/${wave}"
+          echo "HEADERS:"
+          cat headers.txt
+          test "$code" = '200'
+          case "$ctype" in audio/wav*) ;; *) exit 21 ;; esac
+          test "$bytes" -gt 1000
+          test "$riff" = 'RIFF'
+          test "$wave" = 'WAVE'
