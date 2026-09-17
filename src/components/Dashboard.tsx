@@ -34,7 +34,7 @@ export function Dashboard(props:DashboardProps){
  const overall=readiness.overall;
  const chooseMinutes=(value:Minutes)=>{setMinutes(value);try{localStorage.setItem('otto-a1-session-minutes',String(value))}catch{/* ignore */}props.onOpenDailyTraining(value)};
 
- return <div className="animate-fade-in space-y-4 pb-5">
+ return <div className="animate-fade-in h-full space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain pb-5 [scrollbar-width:none]">
    <section className="relative overflow-hidden rounded-[28px] border border-white/80 bg-[#dff2ed] px-5 py-4 shadow-[0_14px_36px_rgba(15,23,42,.07)] sm:px-6">
      <div className="relative z-10 max-w-[72%]"><p className="text-[11px] font-black uppercase tracking-[.16em] text-[#0F7D74]">OTTO A1</p><h1 className="mt-1 text-2xl font-black leading-tight text-slate-950">{lang==='de'?'Heute weiter zum A1':'Сегодня — ещё шаг к A1'}</h1><p className="mt-1 text-sm leading-6 text-slate-600">{lang==='de'?'Wählen Sie eine kurze Trainingseinheit oder einen Bereich.':'Выберите короткую тренировку или нужный навык.'}</p></div>
      <OttoScene scene="home" className="absolute -bottom-16 -right-7 h-48 w-auto max-w-none sm:-bottom-20 sm:right-0 sm:h-56" />
