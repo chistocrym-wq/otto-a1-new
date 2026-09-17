@@ -73,8 +73,8 @@ export default async(req)=>{
   const key=createHash('sha256').update(fingerprint).digest('hex');const store=cacheStore();
   const cached=await store.get(key,{type:'arrayBuffer'});if(cached)return isProbe?probeResponse(cached,'cache','audio/mpeg',probeCase):audioResponse(cached,'cache');
 
-  const apiKey=Netlify.env.get('OPENROUTER_API_KEY');const baseUrl=String(Netlify.env.get('OPENROUTER_BASE_URL')||'').replace(/\/$/,'');
-  if(!apiKey||!baseUrl)return new Response('TTS is not configured',{status:503});
+  const apiKey=Netlify.env.get('OPENROUTER_API_KEY');const baseUrl='https://openrouter.ai/api/v1';
+  if(!apiKey)return new Response('TTS is not configured',{status:503});
   const response=await fetch(`${baseUrl}/audio/speech`,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,voice:VOICE,input,response_format:'mp3',speed})});
   if(!response.ok){const detail=await response.text().catch(()=>'');console.error('OTTO TTS provider error',response.status,detail.slice(0,300));if(isProbe)return Response.json({ok:false,case:probeCase,providerStatus:response.status,providerDetail:detail.slice(0,300),model:MODEL,voice:VOICE,cacheVersion:CACHE_VERSION},{status:502,headers:{'Cache-Control':'no-store'}});return new Response('TTS provider unavailable',{status:502});}
   const providerContentType=String(response.headers.get('content-type')||'').toLowerCase();const audio=await response.arrayBuffer();
