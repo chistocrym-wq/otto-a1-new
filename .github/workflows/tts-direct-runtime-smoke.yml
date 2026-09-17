@@ -94,7 +94,7 @@ jobs:
           await page.getByRole('heading', { name:/Sprechen · говорение/ }).waitFor({ timeout:15000 });
           console.log('UI Guided mode intro: PASS');
           await page.getByRole('button', { name:'Перейти к тренировке' }).click();
-          await page.getByRole('button', { name:/Informationen/ }).click();
+          await page.getByRole('button', { name:'Teil 2 Informationen' }).click();
           await page.getByRole('button', { name:/Показать пример после своего ответа/ }).click();
           await clickForTts(page.getByRole('button', { name:/Прослушать Frage/ }), 'Sprechen + Guided mode');
 
