@@ -24,6 +24,6 @@ export function BottomNav({active,onNavigate,mode}:Props){
  const items=mode==='full'?fullItems:basicItems;
  return <nav className="otto-bottom-nav" aria-label="Основная навигация"><div className="otto-bottom-nav-inner">{items.map(({id,label,Icon})=>{
    const selected=active===id;const home=id==='home';
-   return <button key={id} type="button" onClick={()=>onNavigate(id)} aria-current={selected?'page':undefined} className={cn('otto-bottom-nav-item',selected&&'is-active',home&&'is-home')}><span className={home?'flex h-9 w-9 items-center justify-center rounded-2xl bg-[#0F7D74] text-white shadow-sm':'otto-bottom-nav-icon'}><Icon className={home?'h-5 w-5':undefined}/></span><span>{label}</span></button>
+   return <button key={id} type="button" onClick={()=>onNavigate(id)} aria-current={selected?'page':undefined} className={cn('otto-bottom-nav-item',selected&&'is-active',home&&'is-home')}><span className={home?'flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--otto-petrol-dark)] text-white shadow-sm':'otto-bottom-nav-icon'}><Icon className={home?'h-5 w-5':undefined}/></span><span>{label}</span></button>
  })}</div></nav>;
 }
