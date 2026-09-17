@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export type ContactType = 'email' | 'telegram';
 export type LearningMode = 'guided' | 'direct';
@@ -81,7 +81,8 @@ export function useUserProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(loadUserProfile);
   const [modePreference, setModePreference] = useState<LearningMode>(getStoredLearningMode);
   const [completed, setCompleted] = useState(() => safeGet(ONBOARDING_KEY) === 'true' && Boolean(loadUserProfile()));
-  const legacyUser = useMemo(() => !profile && hasExistingLearningData(), [profile]);
+  // Старый progress сохраняется как есть, но больше не считается заменой новому профилю/onboarding.
+  const legacyUser = false;
   const learningMode = profile?.learningMode ?? modePreference;
 
   const saveProfile = useCallback((draft: UserProfileDraft) => {
