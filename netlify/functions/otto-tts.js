@@ -1,84 +1,121 @@
 import { createHash } from 'node:crypto';
 import { getDeployStore, getStore } from '@netlify/blobs';
 
-const MODEL = 'x-ai/grok-voice-tts-1.0';
-const VOICE = 'ara';
-const CACHE_VERSION = 'v3-grok-ara-de';
-const STORE = `otto-tts-cache-${CACHE_VERSION}`;
+const MODEL = 'gpt-4o-mini-tts-2025-12-15';
+const VOICE = 'cedar';
+const STORE = 'otto-tts-cache-v1';
 const MAX_TEXT_LENGTH = 420;
-const PROBE_TOKEN = 'otto-final-voice-v3';
-const CYRILLIC_RE = /[А-Яа-яЁё]/u;
-const LETTER_RE = /^[A-ZÄÖÜẞß]$/u;
-const SPELLING_RE = /^(?:[A-ZÄÖÜẞß]\s*[–—-]\s*)+[A-ZÄÖÜẞß]$/u;
-const GERMAN_LETTER_NAMES = Object.freeze({
-  A:'A',B:'Be',C:'Ce',D:'De',E:'E',F:'Eff',G:'Ge',H:'Ha',I:'I',J:'Jot',K:'Ka',L:'Ell',M:'Em',N:'En',O:'O',P:'Pe',Q:'Ku',R:'Er',S:'Es',T:'Te',U:'U',V:'Vau',W:'We',X:'Ix',Y:'Ypsilon',Z:'Zett',Ä:'Ä',Ö:'Ö',Ü:'Ü',ẞ:'Eszett',ß:'Eszett',
-});
-const DIGITS = ['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun'];
-const SMALL = ['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun','zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'];
-const TENS = {20:'zwanzig',30:'dreißig',40:'vierzig',50:'fünfzig',60:'sechzig',70:'siebzig',80:'achtzig',90:'neunzig'};
-const PROBE_CASES = Object.freeze({
-  normal: { text: 'Ich heiße Otto. Schön, dass du da bist. Straße. Mädchen. sprechen. fünf. zwölf.', mode: 'normal', kind: 'text' },
-  slow: { text: 'Ich möchte einen Deutschkurs besuchen. Können Sie mir bitte helfen? Wie viel kostet der Kurs?', mode: 'slow', kind: 'text' },
-  spelling: { text: 'A – B – C – D – E – F – G – H – I – J – K – L – M – N – O – P – Q – R – S – T – U – V – W – X – Y – Z – Ä – Ö – Ü – ß', mode: 'normal', kind: 'spelling' },
-  numbers: { text: '0 1 2 7 12 16 17 20 21 27 30 40 50 70 99 100', mode: 'normal', kind: 'numbers' },
-  phrase: { text: 'Heute kann ich leider nicht kommen. Mit freundlichen Grüßen.', mode: 'normal', kind: 'text' },
-});
+
+function json(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...headers },
+  });
+}
 
 function cacheStore() {
   const isProduction = Netlify.context?.deploy?.context === 'production';
   return isProduction ? getStore(STORE) : getDeployStore(STORE);
 }
-function normalizeKind(value) { return value === 'spelling' || value === 'numbers' ? value : 'text'; }
-function normalizeSpelling(text) {
-  const compact = text.trim();
-  if (!LETTER_RE.test(compact) && !SPELLING_RE.test(compact)) return text;
-  const letters = compact.match(/[A-ZÄÖÜẞß]/gu) || [];
-  return letters.map((letter) => GERMAN_LETTER_NAMES[letter] || letter).join(' [pause] ');
-}
-function numberToGerman(value) {
-  const n = Number(value);
-  if (!Number.isInteger(n) || n < 0 || n > 9999) return String(value);
-  if (n < 20) return SMALL[n];
-  if (n < 100) { const ones=n%10,tens=n-ones; return ones ? `${ones===1?'ein':DIGITS[ones]}und${TENS[tens]}` : TENS[tens]; }
-  if (n < 1000) { const h=Math.floor(n/100),r=n%100,head=`${h===1?'ein':DIGITS[h]}hundert`; return r?`${head}${numberToGerman(r)}`:head; }
-  const th=Math.floor(n/1000),r=n%1000,head=`${th===1?'ein':numberToGerman(th)}tausend`; return r?`${head}${numberToGerman(r)}`:head;
-}
-function digitByDigit(value) { return String(value).replace(/\D/g,'').split('').map((digit)=>DIGITS[Number(digit)]).join(' [pause] '); }
-function normalizeNumbers(text) {
-  let out=String(text);
-  out=out.replace(/\b(\d{1,4})[,.](\d{1,2})\s*€/g,(_,euros,cents)=>`${numberToGerman(euros)} Euro ${numberToGerman(cents)} Cent`);
-  out=out.replace(/\b([01]?\d|2[0-3]):([0-5]\d)\b/g,(_,hour,minute)=>`${numberToGerman(Number(hour))} Uhr ${Number(minute)?numberToGerman(Number(minute)):''}`.trim());
-  out=out.replace(/\b\d{5,}\b/g,(value)=>digitByDigit(value));
-  out=out.replace(/\b\d{1,4}\b/g,(value)=>numberToGerman(value));
-  return out;
-}
-function prepareInput(text,mode,kind){let input=kind==='spelling'?normalizeSpelling(text):kind==='numbers'?normalizeNumbers(text):text;if(mode==='slow')input=`<slow>${input}</slow>`;return input;}
-function audioResponse(audio,source){return new Response(audio,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'private, max-age=0, must-revalidate','X-Otto-TTS':source,'X-Otto-Voice':VOICE,'X-Otto-Model':MODEL,'X-Otto-Cache-Version':CACHE_VERSION,'X-Otto-Language':'de-DE'}});}
-function probeResponse(audio,source,providerContentType='audio/mpeg',probeCase='normal'){return Response.json({ok:true,case:probeCase,source,bytes:audio.byteLength,contentType:'audio/mpeg',providerContentType,model:MODEL,voice:VOICE,cacheVersion:CACHE_VERSION,language:'de-DE'},{headers:{'Cache-Control':'no-store'}});}
-function magicInfo(audio){const bytes=new Uint8Array(audio.slice(0,16));return{hex:Array.from(bytes).map((b)=>b.toString(16).padStart(2,'0')).join(' '),ascii:Array.from(bytes).map((b)=>b>=32&&b<127?String.fromCharCode(b):'.').join('')};}
 
-export default async(req)=>{
-  const url=new URL(req.url);
-  const isProbe=req.method==='GET'&&Netlify.context?.deploy?.context==='deploy-preview'&&url.searchParams.get('probe')===PROBE_TOKEN;
-  let body;let probeCase='normal';
-  if(isProbe){probeCase=Object.hasOwn(PROBE_CASES,url.searchParams.get('case'))?url.searchParams.get('case'):'normal';body=PROBE_CASES[probeCase];}
-  else if(req.method==='POST'){try{body=await req.json();}catch{return new Response('Invalid JSON',{status:400});}}
-  else return new Response('Method not allowed',{status:405});
+function speechInstructions(mode) {
+  const pace = mode === 'slow'
+    ? 'Speak slightly slower than normal conversational German, with natural phrasing. Do not stretch individual phonemes or sound robotic.'
+    : 'Speak at a calm, natural conversational pace for an adult beginner.';
 
-  const text=String(body?.text||'').replace(/\s+/g,' ').trim();const mode=body?.mode==='slow'?'slow':'normal';const kind=normalizeKind(body?.kind);
-  if(!text||text.length>MAX_TEXT_LENGTH)return new Response('Invalid text',{status:400});
-  if(CYRILLIC_RE.test(text))return new Response('German speech accepts German content only',{status:400});
-  const input=prepareInput(text,mode,kind);const speed=mode==='slow'?0.90:0.98;
-  const fingerprint=JSON.stringify({cacheVersion:CACHE_VERSION,model:MODEL,voice:VOICE,language:'de-DE',mode,kind,speed,input});
-  const key=createHash('sha256').update(fingerprint).digest('hex');const store=cacheStore();
-  const cached=await store.get(key,{type:'arrayBuffer'});if(cached)return isProbe?probeResponse(cached,'cache','audio/mpeg',probeCase):audioResponse(cached,'cache');
+  return [
+    'Speak only the supplied German text.',
+    'Use native Standard German (Hochdeutsch) pronunciation.',
+    'Sound like a warm, composed, friendly adult German teacher: clear, trustworthy, patient and natural.',
+    'Keep articulation precise but never theatrical, sing-song, childish or advertising-like.',
+    'Pronounce German phonology natively, especially ch, sch, r, ü, ö, ä, ei, ie, eu, z, sp and st.',
+    pace,
+  ].join(' ');
+}
 
-  const apiKey=Netlify.env.get('OPENROUTER_API_KEY');const baseUrl='https://openrouter.ai/api/v1';
-  if(!apiKey)return new Response('TTS is not configured',{status:503});
-  const response=await fetch(`${baseUrl}/audio/speech`,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,voice:VOICE,input,response_format:'mp3',speed})});
-  if(!response.ok){const detail=await response.text().catch(()=>'');console.error('OTTO TTS provider error',response.status,detail.slice(0,300));if(isProbe)return Response.json({ok:false,case:probeCase,providerStatus:response.status,providerDetail:detail.slice(0,300),model:MODEL,voice:VOICE,cacheVersion:CACHE_VERSION},{status:502,headers:{'Cache-Control':'no-store'}});return new Response('TTS provider unavailable',{status:502});}
-  const providerContentType=String(response.headers.get('content-type')||'').toLowerCase();const audio=await response.arrayBuffer();
-  if(!providerContentType.includes('audio/mpeg')){console.error('OTTO TTS provider returned unexpected content type',providerContentType);if(isProbe)return Response.json({ok:false,case:probeCase,providerContentType,bytes:audio.byteLength,magic:magicInfo(audio),model:MODEL,voice:VOICE,cacheVersion:CACHE_VERSION},{status:502,headers:{'Cache-Control':'no-store'}});return new Response('Unexpected TTS format',{status:502});}
-  await store.set(key,audio);return isProbe?probeResponse(audio,'generated',providerContentType,probeCase):audioResponse(audio,'generated');
+export default async (req) => {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, { Allow: 'POST' });
+
+  const apiKey = Netlify.env.get('OPENAI_API_KEY');
+  const baseUrl = (Netlify.env.get('OPENAI_BASE_URL') || 'https://api.openai.com').replace(/\/$/, '');
+  if (!apiKey) return json({ fallback: true, error: 'Neural voice is not configured.' }, 503);
+
+  const body = await req.json().catch(() => ({}));
+  const text = String(body.text || '').trim();
+  const mode = body.mode === 'slow' ? 'slow' : 'normal';
+
+  if (!text) return json({ error: 'Text is required.' }, 400);
+  if (text.length > MAX_TEXT_LENGTH) return json({ error: 'Text is too long.' }, 413);
+
+  const speed = mode === 'slow' ? 0.86 : 0.98;
+  const fingerprint = JSON.stringify({ model: MODEL, voice: VOICE, mode, speed, text });
+  const key = createHash('sha256').update(fingerprint).digest('hex');
+  const store = cacheStore();
+
+  try {
+    const cached = await store.get(key, { type: 'arrayBuffer' });
+    if (cached) {
+      return new Response(cached, {
+        headers: {
+          'Content-Type': 'audio/mpeg',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'X-Otto-TTS': 'cache',
+        },
+      });
+    }
+  } catch (error) {
+    console.warn('otto-tts cache read failed', error);
+  }
+
+  try {
+    const response = await fetch(`${baseUrl}/v1/audio/speech`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        voice: VOICE,
+        input: text,
+        instructions: speechInstructions(mode),
+        response_format: 'mp3',
+        speed,
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      console.error('otto-tts provider error', response.status, detail.slice(0, 500));
+      return json({ fallback: true, error: 'Neural voice is temporarily unavailable.' }, 502);
+    }
+
+    const audio = await response.arrayBuffer();
+    try {
+      await store.set(key, audio);
+    } catch (error) {
+      console.warn('otto-tts cache write failed', error);
+    }
+
+    return new Response(audio, {
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Otto-TTS': 'generated',
+      },
+    });
+  } catch (error) {
+    console.error('otto-tts error', error);
+    return json({ fallback: true, error: 'Neural voice is temporarily unavailable.' }, 502);
+  }
 };
-export const config={path:'/api/otto-tts',rateLimit:{windowLimit:40,windowSize:60,aggregateBy:['ip','domain']}};
+
+export const config = {
+  path: '/api/otto-tts',
+  method: 'POST',
+  rateLimit: {
+    windowLimit: 40,
+    windowSize: 60,
+    aggregateBy: ['ip', 'domain'],
+  },
+};
