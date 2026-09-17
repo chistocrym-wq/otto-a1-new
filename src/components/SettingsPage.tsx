@@ -1,17 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Bell, Globe2, LifeBuoy, Play, Share2, Smartphone, Volume1, Volume2 } from 'lucide-react';
+import { Bell, BookOpenCheck, Globe2, LifeBuoy, Play, Share2, Smartphone, UserRound, Volume1, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
+import type { LearningMode, UserProfile } from '@/hooks/useUserProfile';
 import { UI_LANGUAGES, useUiLanguage } from '@/lib/i18n';
 import { notificationCapability, readReminder, requestNotifications, saveReminder, type ReminderSettings } from '@/lib/reminders';
 import { canPromptInstall, isStandaloneApp, manualInstallHint, requestPwaInstall, subscribePwaInstall } from '@/lib/pwaInstall';
 
 type SpeechMode='normal'|'slow';
 type OttoSpeechApi={play?:(text:string,options?:{mode?:SpeechMode})=>Promise<boolean>;setMode?:(mode:SpeechMode)=>void};
-interface Props{onOpenSupport:()=>void;onShare:()=>void|Promise<void>}
+interface Props{
+  onOpenSupport:()=>void;
+  onShare:()=>void|Promise<void>;
+  profile:UserProfile|null;
+  learningMode:LearningMode;
+  onLearningModeChange:(mode:LearningMode)=>void;
+  onEditProfile:()=>void;
+  onOpenAccount:()=>void;
+}
 function speechApi(){return(window as Window&{OttoSpeech?:OttoSpeechApi}).OttoSpeech}
 const DAY_KEYS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'] as const;
 
-export function SettingsPage({onOpenSupport,onShare}:Props){
+export function SettingsPage({onOpenSupport,onShare,profile,learningMode,onLearningModeChange,onEditProfile,onOpenAccount}:Props){
   const{lang,setLanguage,t}=useUiLanguage();
   const[voiceMode,setVoiceMode]=useState<SpeechMode>(()=>{try{return localStorage.getItem('ottoSpeechModeV1')==='slow'?'slow':'normal'}catch{return'normal'}});
   const[reminder,setReminder]=useState<ReminderSettings>(readReminder);
@@ -31,9 +40,20 @@ export function SettingsPage({onOpenSupport,onShare}:Props){
   const installed=isStandaloneApp();
   const promptReady=canPromptInstall();
   return <div className="otto-hub-screen otto-settings-screen animate-fade-in">
-    <section className="otto-page-hero"><div><p className="otto-kicker">{t('settings')}</p><h1>OTTO A1</h1><p className="mt-1 max-w-lg text-sm text-slate-600">{lang==='de'?'Sprache, Trainingserinnerungen und Audio-Einstellungen.':'Язык интерфейса, напоминания о тренировках и звук.'}</p></div><div className="otto-page-hero-character" aria-hidden="true"><OttoScene scene="guide" className="otto-page-hero-scene"/></div></section>
+    <section className="otto-page-hero"><div><p className="otto-kicker">{t('settings')}</p><h1>OTTO A1</h1><p className="mt-1 max-w-lg text-sm text-slate-600">{lang==='de'?'Profil, Lernmodus, Sprache, Erinnerungen und Audio.':'Профиль, режим обучения, язык, напоминания и звук.'}</p></div><div className="otto-page-hero-character" aria-hidden="true"><OttoScene scene="guide" className="otto-page-hero-scene"/></div></section>
 
     <section className="rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,.08)] sm:p-5">
+      <div className="flex items-start gap-3"><span className="otto-setting-icon"><UserRound/></span><div className="min-w-0 flex-1"><p className="otto-kicker">Профиль</p><h2 className="text-xl font-black text-slate-950">{profile?.name || 'Профиль пользователя'}</h2><p className="mt-1 break-words text-sm leading-6 text-slate-600">{profile ? `${profile.contactType==='email'?'Email':'Telegram'}: ${profile.contact}${profile.contactVerified?' · подтверждён':''}` : 'Существующий прогресс сохранён. Профиль можно заполнить в любое время.'}</p></div></div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2"><button type="button" onClick={onEditProfile} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">{profile?'Изменить профиль':'Создать профиль'}</button><button type="button" onClick={onOpenAccount} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">Мой прогресс</button></div>
+    </section>
+
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,.08)] sm:p-5">
+      <div className="flex items-start gap-3"><span className="otto-setting-icon"><BookOpenCheck/></span><div><p className="otto-kicker">Обучение</p><h2 className="text-xl font-black text-slate-950">Режим помощи Отто</h2></div></div>
+      <p className="mt-3 text-sm leading-6 text-slate-600">Режим можно менять в любой момент. Сохранённые результаты и задания от этого не меняются.</p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2"><button type="button" onClick={()=>onLearningModeChange('guided')} aria-pressed={learningMode==='guided'} className={`min-h-[76px] rounded-xl border px-4 text-left ${learningMode==='guided'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}><b className="block">Начинаю с нуля</b><span className="mt-1 block text-xs leading-5">Короткие объяснения перед новыми типами заданий.</span></button><button type="button" onClick={()=>onLearningModeChange('direct')} aria-pressed={learningMode==='direct'} className={`min-h-[76px] rounded-xl border px-4 text-left ${learningMode==='direct'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}><b className="block">Я уже немного знаю немецкий</b><span className="mt-1 block text-xs leading-5">Сразу к тренировкам без дополнительного вступления.</span></button></div>
+    </section>
+
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,.08)] sm:p-5">
       <div className="flex items-start gap-3"><span className="otto-setting-icon"><Globe2/></span><div><p className="otto-kicker">{t('language')}</p><h2 className="text-xl font-black text-slate-950">{lang==='de'?'Oberflächensprache':'Язык приложения'}</h2></div></div>
       <p className="mt-3 text-sm leading-6 text-slate-600">{t('uiLanguageHint')}</p>
       <div className="mt-4 grid grid-cols-2 gap-2">{UI_LANGUAGES.map(item=><button key={item.id} type="button" onClick={()=>setLanguage(item.id)} className={`min-h-12 rounded-xl border px-4 font-bold ${lang===item.id?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`} aria-pressed={lang===item.id}>{item.native}</button>)}</div>

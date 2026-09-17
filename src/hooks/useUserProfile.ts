@@ -1,41 +1,120 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-type UserProfile = {
+export type ContactType = 'email' | 'telegram';
+export type LearningMode = 'guided' | 'direct';
+
+export interface UserProfile {
   name: string;
+  contactType: ContactType;
+  contact: string;
+  contactVerified: boolean;
+  learningMode: LearningMode;
   createdAt: string;
-};
+  updatedAt: string;
+}
+
+export interface UserProfileDraft {
+  name: string;
+  contactType: ContactType;
+  contact: string;
+  contactVerified: boolean;
+  learningMode: LearningMode;
+}
 
 const PROFILE_KEY = 'otto-user-profile';
 const ONBOARDING_KEY = 'otto-onboarding-completed';
+const MODE_KEY = 'otto-learning-mode-v1';
+const LEGACY_PROGRESS_KEYS = ['goethe-a1-progress', 'otto-a1-activity-v1'] as const;
 
-function loadProfile(): UserProfile | null {
+function safeGet(key: string) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeSet(key: string, value: string) {
+  try { localStorage.setItem(key, value); } catch { /* ignore */ }
+}
+
+function normalizeProfile(value: unknown): UserProfile | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<UserProfile>;
+  const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
+  const contact = typeof candidate.contact === 'string' ? candidate.contact.trim() : '';
+  const contactType = candidate.contactType === 'email' || candidate.contactType === 'telegram' ? candidate.contactType : null;
+  const learningMode = candidate.learningMode === 'guided' || candidate.learningMode === 'direct' ? candidate.learningMode : null;
+  if (!name || !contact || !contactType || !learningMode) return null;
+  const createdAt = typeof candidate.createdAt === 'string' && candidate.createdAt ? candidate.createdAt : new Date().toISOString();
+  const updatedAt = typeof candidate.updatedAt === 'string' && candidate.updatedAt ? candidate.updatedAt : createdAt;
+  return {
+    name,
+    contactType,
+    contact,
+    contactVerified: candidate.contactVerified === true,
+    learningMode,
+    createdAt,
+    updatedAt,
+  };
+}
+
+export function loadUserProfile(): UserProfile | null {
   try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = safeGet(PROFILE_KEY);
+    return raw ? normalizeProfile(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
 }
 
-function loadCompleted() {
-  return localStorage.getItem(ONBOARDING_KEY) === 'true';
+export function hasExistingLearningData() {
+  return LEGACY_PROGRESS_KEYS.some((key) => {
+    const value = safeGet(key);
+    return Boolean(value && value !== '{}' && value !== '[]');
+  });
+}
+
+export function getStoredLearningMode(): LearningMode {
+  const profile = loadUserProfile();
+  if (profile) return profile.learningMode;
+  return safeGet(MODE_KEY) === 'guided' ? 'guided' : 'direct';
 }
 
 export function useUserProfile() {
-  const [profile, setProfile] = useState<UserProfile | null>(loadProfile);
-  const [completed, setCompleted] = useState<boolean>(loadCompleted);
+  const [profile, setProfile] = useState<UserProfile | null>(loadUserProfile);
+  const [modePreference, setModePreference] = useState<LearningMode>(getStoredLearningMode);
+  const [completed, setCompleted] = useState(() => safeGet(ONBOARDING_KEY) === 'true' && Boolean(loadUserProfile()));
+  const legacyUser = useMemo(() => !profile && hasExistingLearningData(), [profile]);
+  const learningMode = profile?.learningMode ?? modePreference;
 
-  useEffect(() => {
-    if (profile) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  }, [profile]);
-
-  const saveProfile = useCallback((name: string) => {
-    const next = { name: name.trim(), createdAt: new Date().toISOString() };
-    setProfile(next);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-    localStorage.setItem(ONBOARDING_KEY, 'true');
+  const saveProfile = useCallback((draft: UserProfileDraft) => {
+    const now = new Date().toISOString();
+    setProfile((previous) => {
+      const next: UserProfile = {
+        name: draft.name.trim(),
+        contactType: draft.contactType,
+        contact: draft.contact.trim(),
+        contactVerified: draft.contactVerified,
+        learningMode: draft.learningMode,
+        createdAt: previous?.createdAt ?? now,
+        updatedAt: now,
+      };
+      safeSet(PROFILE_KEY, JSON.stringify(next));
+      safeSet(MODE_KEY, next.learningMode);
+      return next;
+    });
+    setModePreference(draft.learningMode);
+    safeSet(ONBOARDING_KEY, 'true');
     setCompleted(true);
   }, []);
 
-  return { profile, completed, saveProfile };
+  const setLearningMode = useCallback((mode: LearningMode) => {
+    setModePreference(mode);
+    safeSet(MODE_KEY, mode);
+    setProfile((previous) => {
+      if (!previous) return previous;
+      const next = { ...previous, learningMode: mode, updatedAt: new Date().toISOString() };
+      safeSet(PROFILE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { profile, completed, legacyUser, learningMode, saveProfile, setLearningMode };
 }
