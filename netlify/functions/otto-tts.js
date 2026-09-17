@@ -138,6 +138,20 @@ export default async (req) => {
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
     console.error('OTTO TTS provider error', response.status, detail.slice(0, 300));
+    if (isProbe) {
+      let providerHost = 'invalid-base-url';
+      try { providerHost = new URL(baseUrl).host; } catch {}
+      return Response.json({
+        ok: false,
+        case: probeCase,
+        providerStatus: response.status,
+        providerDetail: detail.slice(0, 300),
+        providerHost,
+        model: MODEL,
+        voice: VOICE,
+        cacheVersion: CACHE_VERSION,
+      }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+    }
     return new Response('TTS provider unavailable', { status: 502 });
   }
 
