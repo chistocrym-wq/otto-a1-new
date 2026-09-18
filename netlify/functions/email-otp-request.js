@@ -8,6 +8,7 @@ import {
   isValidEmail,
   json,
   normalizeEmail,
+  releaseOtpCooldown,
   reserveOtpRequest,
   sendOtpEmail,
 } from '../lib/email-otp.js';
@@ -46,7 +47,10 @@ export default async (req) => {
   });
 
   if (!sent.ok) {
-    await discardChallenge(challenge.challengeId);
+    await Promise.all([
+      discardChallenge(challenge.challengeId),
+      releaseOtpCooldown(email),
+    ]);
     return json({ error: 'Не удалось отправить код. Попробуйте ещё раз.', code: 'send_failed' }, 502);
   }
 
