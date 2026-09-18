@@ -66,7 +66,10 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
   const [otpError, setOtpError] = useState<string | null>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [busy, setBusy] = useState<BusyState>(null);
+  const [sendFailed, setSendFailed] = useState(false);
+  const [showDelayHint, setShowDelayHint] = useState(false);
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
 
   const telegramVerified = contactType === 'telegram' && status.authenticated && Boolean(status.telegramUserId);
   const normalizedEmail = normalizeEmail(contact);
@@ -88,10 +91,21 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
     return () => window.clearInterval(id);
   }, [resendSeconds, step]);
 
+  useEffect(() => {
+    if (step !== 'otp' || !challengeId) {
+      setShowDelayHint(false);
+      return undefined;
+    }
+    setShowDelayHint(false);
+    const id = window.setTimeout(() => setShowDelayHint(true), 75_000);
+    return () => window.clearTimeout(id);
+  }, [challengeId, step]);
+
   const requestOtp = async () => {
     if (!profileValid || contactType !== 'email' || busy) return;
     setBusy('request');
     setOtpError(null);
+    setSendFailed(false);
     try {
       const response = await fetch('/api/email-otp-request', {
         method: 'POST',
@@ -104,17 +118,21 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
           setResendSeconds(Number(data.retryAfter));
           setOtpError(`Код можно отправить повторно через ${Number(data.retryAfter)} сек.`);
         } else {
-          setOtpError('Не удалось отправить код. Попробуйте ещё раз.');
+          setOtpError('Не удалось отправить код.');
+          setSendFailed(true);
         }
         return;
       }
       setChallengeId(data.challengeId);
       setOtpDigits(Array(6).fill(''));
+      setSendFailed(false);
+      setShowDelayHint(false);
       setResendSeconds(Number(data.resendAfter) > 0 ? Number(data.resendAfter) : 60);
       setStep('otp');
       window.setTimeout(() => otpRefs.current[0]?.focus(), 0);
     } catch {
-      setOtpError('Не удалось отправить код. Попробуйте ещё раз.');
+      setOtpError('Не удалось отправить код.');
+      setSendFailed(true);
     } finally {
       setBusy(null);
     }
@@ -198,12 +216,43 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
     otpRefs.current[Math.min(digits.length, 6) - 1]?.focus();
   };
 
-  const changeEmail = () => {
+  const cancelCurrentChallenge = async () => {
+    if (!challengeId || !validEmail(normalizedEmail)) return;
+    try {
+      await fetch('/api/email-otp-cancel', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ challengeId, email: normalizedEmail }),
+      });
+    } catch {
+      // Cancellation is best-effort for UX; server TTL still limits an unreachable challenge.
+    }
+  };
+
+  const changeEmail = async () => {
+    await cancelCurrentChallenge();
     setChallengeId('');
     setOtpDigits(Array(6).fill(''));
     setOtpError(null);
     setResendSeconds(0);
+    setSendFailed(false);
+    setShowDelayHint(false);
     setStep('profile');
+    window.setTimeout(() => emailInputRef.current?.focus(), 0);
+  };
+
+  const continueAsGuest = async () => {
+    if (busy || contactType !== 'email' || !profileValid) return;
+    setBusy('verify');
+    await cancelCurrentChallenge();
+    onComplete({
+      name: name.trim(),
+      contactType: 'email',
+      contact: normalizedEmail,
+      contactVerified: false,
+      authStatus: 'guest',
+      learningMode: mode,
+    });
   };
 
   const save = () => {
@@ -218,6 +267,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
           ? normalizeTelegram(contactValue)
           : contactValue,
       contactVerified: contactType === 'email' ? emailVerified : telegramVerified,
+      authStatus: contactType === 'email' ? (emailVerified ? 'verified' : 'guest') : (telegramVerified ? 'verified' : 'guest'),
       learningMode: mode,
     });
   };
@@ -279,7 +329,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 </fieldset>
 
                 {contactType === 'email' ? (
-                  <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Email<input value={contact} onChange={(event) => { setContact(event.target.value); setOtpError(null); }} inputMode="email" autoComplete="email" placeholder="name@example.com" className="mt-2 min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] px-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></label>
+                  <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Email<input ref={emailInputRef} value={contact} onChange={(event) => { setContact(event.target.value); setOtpError(null); setSendFailed(false); }} inputMode="email" autoComplete="email" placeholder="name@example.com" className="mt-2 min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] px-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></label>
                 ) : telegramVerified ? (
                   <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-sage-soft)] p-4 text-sm text-[var(--otto-petrol-dark)]"><div className="flex items-center gap-2 font-[850]"><CheckCircle2 className="h-5 w-5" />Telegram подтверждён</div><p className="mt-1 leading-6">Mini App подтвердил Telegram-пользователя{status.firstName ? `: ${status.firstName}` : ''}. Мы не просим вводить логин повторно.</p></div>
                 ) : (
@@ -289,9 +339,18 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Email нужно подтвердить кодом из письма. До подтверждения главный экран OTTO не откроется.' : 'Telegram считается подтверждённым только когда OTTO открыт как Mini App и сервер успешно проверил Telegram initData.'}</p>
                 {!profileValid && (name.trim() || contact.trim()) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя и выбранный контакт.</p>}
                 {otpError && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]" role="alert">{otpError}</p>}
-                <button type="button" disabled={!profileValid || busy !== null} onClick={continueProfile} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">
-                  {busy === 'request' ? 'Отправляем код…' : contactType === 'email' && !emailVerified ? 'Получить код' : 'Продолжить'} <ArrowRight className="h-4 w-4" />
-                </button>
+                {sendFailed && contactType === 'email' ? (
+                  <div className="mt-4 space-y-2">
+                    <button type="button" disabled={busy !== null} onClick={() => void requestOtp()} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:opacity-45">Попробовать ещё раз</button>
+                    <button type="button" disabled={busy !== null} onClick={() => { setSendFailed(false); setOtpError(null); emailInputRef.current?.focus(); }} className="min-h-11 w-full rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-petrol-dark)] disabled:opacity-45">Изменить email</button>
+                    <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Без подтверждения email восстановить доступ и прогресс на другом устройстве не получится.</p>
+                    <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
+                  </div>
+                ) : (
+                  <button type="button" disabled={!profileValid || busy !== null} onClick={continueProfile} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">
+                    {busy === 'request' ? 'Отправляем код…' : contactType === 'email' && !emailVerified ? 'Получить код' : 'Продолжить'} <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             )}
 
@@ -320,6 +379,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 </div>
 
                 {otpError && <p className="mt-3 text-sm font-semibold leading-5 text-[var(--otto-danger)]" role="alert">{otpError}</p>}
+                {showDelayHint && <p className="mt-3 rounded-xl bg-[var(--otto-sand)]/45 px-3 py-2 text-sm leading-5 text-[var(--otto-muted)]">Письмо задерживается? Проверьте папку «Спам» или отправьте код ещё раз.</p>}
 
                 <button type="button" disabled={otpValue.length !== 6 || busy !== null || !challengeId} onClick={() => void verifyOtp()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">
                   {busy === 'verify' ? 'Проверяем…' : 'Подтвердить email'} <CheckCircle2 className="h-5 w-5" />
@@ -328,7 +388,9 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 <button type="button" disabled={resendSeconds > 0 || busy !== null} onClick={() => void requestOtp()} className="mt-3 min-h-11 w-full rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-petrol-dark)] disabled:cursor-not-allowed disabled:opacity-45">
                   {resendSeconds > 0 ? `Отправить код ещё раз через ${resendSeconds} сек.` : busy === 'request' ? 'Отправляем код…' : 'Отправить код ещё раз'}
                 </button>
-                <button type="button" disabled={busy !== null} onClick={changeEmail} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Изменить email</button>
+                <button type="button" disabled={busy !== null} onClick={() => void changeEmail()} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Изменить email</button>
+                <p className="mt-3 px-1 text-xs leading-5 text-[var(--otto-muted)]">Без подтверждения email восстановить доступ и прогресс на другом устройстве не получится.</p>
+                <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="mt-1 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
               </div>
             )}
 
