@@ -174,6 +174,27 @@ export async function releaseOtpCooldown(email) {
   await store().setJSON(key, { ...rate, nextAllowedAt: 0, updatedAt: now });
 }
 
+export async function cancelChallenge({ challengeId, email }) {
+  if (!/^[0-9a-f-]{20,80}$/iu.test(String(challengeId || ''))) return true;
+  const key = challengeKey(challengeId);
+  const record = await store().get(key, { type: 'json' });
+  if (!record) return true;
+  if (record.emailDigest !== sha256(email)) return false;
+
+  const now = Date.now();
+  const rateKey = emailRateKey(email);
+  const rate = await readRate(rateKey, now);
+  await Promise.all([
+    store().delete(key),
+    store().setJSON(rateKey, {
+      ...rate,
+      activeChallengeId: rate.activeChallengeId === challengeId ? null : rate.activeChallengeId,
+      updatedAt: now,
+    }),
+  ]);
+  return true;
+}
+
 export async function discardChallenge(challengeId) {
   if (challengeId) await store().delete(challengeKey(challengeId));
 }
