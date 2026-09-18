@@ -2,12 +2,14 @@ import { useCallback, useState } from 'react';
 
 export type ContactType = 'email' | 'telegram';
 export type LearningMode = 'guided' | 'direct';
+export type AuthStatus = 'guest' | 'verified';
 
 export interface UserProfile {
   name: string;
   contactType: ContactType;
   contact: string;
   contactVerified: boolean;
+  authStatus: AuthStatus;
   learningMode: LearningMode;
   createdAt: string;
   updatedAt: string;
@@ -18,6 +20,7 @@ export interface UserProfileDraft {
   contactType: ContactType;
   contact: string;
   contactVerified: boolean;
+  authStatus?: AuthStatus;
   learningMode: LearningMode;
 }
 
@@ -44,11 +47,14 @@ function normalizeProfile(value: unknown): UserProfile | null {
   if (!name || !contact || !contactType || !learningMode) return null;
   const createdAt = typeof candidate.createdAt === 'string' && candidate.createdAt ? candidate.createdAt : new Date().toISOString();
   const updatedAt = typeof candidate.updatedAt === 'string' && candidate.updatedAt ? candidate.updatedAt : createdAt;
+  const contactVerified = candidate.contactVerified === true;
+  const authStatus: AuthStatus = contactVerified ? 'verified' : 'guest';
   return {
     name,
     contactType,
     contact,
-    contactVerified: candidate.contactVerified === true,
+    contactVerified,
+    authStatus,
     learningMode,
     createdAt,
     updatedAt,
@@ -93,6 +99,7 @@ export function useUserProfile() {
         contactType: draft.contactType,
         contact: draft.contact.trim(),
         contactVerified: draft.contactVerified,
+        authStatus: draft.contactVerified ? 'verified' : 'guest',
         learningMode: draft.learningMode,
         createdAt: previous?.createdAt ?? now,
         updatedAt: now,
