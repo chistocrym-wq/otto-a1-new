@@ -102,7 +102,7 @@ const MODE_META: Record<WritingMode, { step: string; title: string; description:
   },
   solo: {
     step: 'Этап 3',
-    title: 'Пишу сам',
+    title: 'Пишу самостоятельно',
     description: 'Без готового примера и подсказок: только задание, ваш текст и проверка после завершения.',
   },
 };
