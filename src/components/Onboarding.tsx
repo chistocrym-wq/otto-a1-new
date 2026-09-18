@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type Keyboar
 import { ArrowLeft, ArrowRight, AtSign, CheckCircle2, Mail, Send, Sparkles } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import { useAccess } from '@/hooks/useAccess';
-import type { ContactType, LearningMode, UserProfile, UserProfileDraft } from '@/hooks/useUserProfile';
+import type { ContactType, Gender, LearningMode, UserProfile, UserProfileDraft } from '@/hooks/useUserProfile';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -57,6 +57,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
   const [name, setName] = useState(initialProfile?.name ?? status.firstName ?? '');
   const [contactType, setContactType] = useState<ContactType>(initialProfile?.contactType ?? 'email');
   const [contact, setContact] = useState(initialProfile?.contact ?? '');
+  const [gender, setGender] = useState<Gender | null>(initialProfile?.gender ?? null);
   const [mode, setMode] = useState<LearningMode>(initialProfile?.learningMode ?? 'guided');
   const [verifiedEmail, setVerifiedEmail] = useState(
     initialProfile?.contactType === 'email' && initialProfile.contactVerified ? normalizeEmail(initialProfile.contact) : '',
@@ -80,7 +81,8 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
     if (telegramVerified) return true;
     return contactType === 'email' ? validEmail(contact) : validTelegram(contact);
   }, [contact, contactType, telegramVerified]);
-  const profileValid = name.trim().length >= 2 && contactValid;
+  const genderRequired = !initialProfile;
+  const profileValid = name.trim().length >= 2 && contactValid && (!genderRequired || gender !== null);
   const otpValue = otpDigits.join('');
 
   useEffect(() => {
@@ -251,6 +253,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
       contact: normalizedEmail,
       contactVerified: false,
       authStatus: 'guest',
+      gender: gender ?? initialProfile?.gender,
       learningMode: mode,
     });
   };
@@ -268,6 +271,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
           : contactValue,
       contactVerified: contactType === 'email' ? emailVerified : telegramVerified,
       authStatus: contactType === 'email' ? (emailVerified ? 'verified' : 'guest') : (telegramVerified ? 'verified' : 'guest'),
+      gender: gender ?? initialProfile?.gender,
       learningMode: mode,
     });
   };
@@ -321,6 +325,14 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 </label>
 
                 <fieldset className="mt-5">
+                  <legend className="text-sm font-bold text-[var(--otto-ink)]">Ваш пол</legend>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setGender('female')} aria-pressed={gender === 'female'} className={cn('min-h-12 rounded-xl border px-3 font-bold', gender === 'female' ? 'border-[var(--otto-petrol)] bg-[var(--otto-petrol-soft)] text-[var(--otto-petrol-dark)]' : 'border-[var(--otto-line)] bg-[var(--otto-surface)] text-[var(--otto-muted)]')}>Женский</button>
+                    <button type="button" onClick={() => setGender('male')} aria-pressed={gender === 'male'} className={cn('min-h-12 rounded-xl border px-3 font-bold', gender === 'male' ? 'border-[var(--otto-petrol)] bg-[var(--otto-petrol-soft)] text-[var(--otto-petrol-dark)]' : 'border-[var(--otto-line)] bg-[var(--otto-surface)] text-[var(--otto-muted)]')}>Мужской</button>
+                  </div>
+                </fieldset>
+
+                <fieldset className="mt-5">
                   <legend className="text-sm font-bold text-[var(--otto-ink)]">Контакт</legend>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <button type="button" onClick={() => { setContactType('email'); setOtpError(null); }} aria-pressed={contactType === 'email'} className={cn('min-h-12 rounded-xl border px-3 font-bold', contactType === 'email' ? 'border-[var(--otto-petrol)] bg-[var(--otto-petrol-soft)] text-[var(--otto-petrol-dark)]' : 'border-[var(--otto-line)] bg-[var(--otto-surface)] text-[var(--otto-muted)]')}><Mail className="mr-2 inline h-4 w-4" />Email</button>
@@ -337,7 +349,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 )}
 
                 <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Email нужно подтвердить кодом из письма. До подтверждения главный экран OTTO не откроется.' : 'Telegram считается подтверждённым только когда OTTO открыт как Mini App и сервер успешно проверил Telegram initData.'}</p>
-                {!profileValid && (name.trim() || contact.trim()) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя и выбранный контакт.</p>}
+                {!profileValid && (name.trim() || contact.trim() || gender !== null) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя, пол и выбранный контакт.</p>}
                 {otpError && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]" role="alert">{otpError}</p>}
                 {sendFailed && contactType === 'email' ? (
                   <div className="mt-4 space-y-2">

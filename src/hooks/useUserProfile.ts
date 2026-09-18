@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 export type ContactType = 'email' | 'telegram';
 export type LearningMode = 'guided' | 'direct';
 export type AuthStatus = 'guest' | 'verified';
+export type Gender = 'female' | 'male';
 
 export interface UserProfile {
   name: string;
@@ -10,6 +11,7 @@ export interface UserProfile {
   contact: string;
   contactVerified: boolean;
   authStatus: AuthStatus;
+  gender?: Gender;
   learningMode: LearningMode;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +23,7 @@ export interface UserProfileDraft {
   contact: string;
   contactVerified: boolean;
   authStatus?: AuthStatus;
+  gender?: Gender;
   learningMode: LearningMode;
 }
 
@@ -49,12 +52,14 @@ function normalizeProfile(value: unknown): UserProfile | null {
   const updatedAt = typeof candidate.updatedAt === 'string' && candidate.updatedAt ? candidate.updatedAt : createdAt;
   const contactVerified = candidate.contactVerified === true;
   const authStatus: AuthStatus = contactVerified ? 'verified' : 'guest';
+  const gender: Gender | undefined = candidate.gender === 'female' || candidate.gender === 'male' ? candidate.gender : undefined;
   return {
     name,
     contactType,
     contact,
     contactVerified,
     authStatus,
+    gender,
     learningMode,
     createdAt,
     updatedAt,
@@ -100,6 +105,7 @@ export function useUserProfile() {
         contact: draft.contact.trim(),
         contactVerified: draft.contactVerified,
         authStatus: draft.contactVerified ? 'verified' : 'guest',
+        gender: draft.gender ?? previous?.gender,
         learningMode: draft.learningMode,
         createdAt: previous?.createdAt ?? now,
         updatedAt: now,
@@ -113,6 +119,15 @@ export function useUserProfile() {
     setCompleted(true);
   }, []);
 
+  const setGender = useCallback((gender: Gender) => {
+    setProfile((previous) => {
+      if (!previous) return previous;
+      const next = { ...previous, gender, updatedAt: new Date().toISOString() };
+      safeSet(PROFILE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const setLearningMode = useCallback((mode: LearningMode) => {
     setModePreference(mode);
     safeSet(MODE_KEY, mode);
@@ -124,5 +139,5 @@ export function useUserProfile() {
     });
   }, []);
 
-  return { profile, completed, legacyUser, learningMode, saveProfile, setLearningMode };
+  return { profile, completed, legacyUser, learningMode, saveProfile, setGender, setLearningMode };
 }

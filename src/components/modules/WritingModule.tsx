@@ -18,6 +18,7 @@ import { schreibenTeil2Tasks } from '@/data/schreiben/teil2';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { recordWritingLearning } from '@/lib/learningProfile';
+import { loadUserProfile, type Gender } from '@/hooks/useUserProfile';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -82,6 +83,12 @@ function setPathStage(value: 1 | 2 | 3) {
   try { localStorage.setItem('otto-schreiben-path-stage', String(value)); } catch { /* ignore */ }
 }
 
+function byGender(gender: Gender | undefined, female: string, male: string, neutral: string) {
+  if (gender === 'female') return female;
+  if (gender === 'male') return male;
+  return neutral;
+}
+
 const MODE_META: Record<WritingMode, { step: string; title: string; description: string }> = {
   guided: {
     step: 'Этап 1',
@@ -95,12 +102,13 @@ const MODE_META: Record<WritingMode, { step: string; title: string; description:
   },
   solo: {
     step: 'Этап 3',
-    title: 'Пишу сам',
+    title: 'Пишу самостоятельно',
     description: 'Без готового примера и подсказок: только задание, ваш текст и проверка после завершения.',
   },
 };
 
 export function WritingModule({ onBack, onComplete }: Props) {
+  const gender = loadUserProfile()?.gender;
   const [screen, setScreen] = useState<Screen>('home');
   const [pathStage, setStage] = useState(getPathStage);
 
@@ -113,7 +121,7 @@ export function WritingModule({ onBack, onComplete }: Props) {
   };
 
   if (screen === 'home') {
-    return <Home onBack={onBack} onOpen={setScreen} pathStage={pathStage} />;
+    return <Home onBack={onBack} onOpen={setScreen} pathStage={pathStage} gender={gender} />;
   }
   if (screen === 'teil1') {
     return <Teil1 onBack={() => setScreen('home')} onComplete={onComplete} />;
@@ -124,6 +132,7 @@ export function WritingModule({ onBack, onComplete }: Props) {
       onBack={() => setScreen('home')}
       onComplete={onComplete}
       onStageDone={() => finishStage(screen)}
+      gender={gender}
     />
   );
 }
@@ -132,13 +141,16 @@ function Home({
   onBack,
   onOpen,
   pathStage,
+  gender,
 }: {
   onBack: () => void;
   onOpen: (screen: Screen) => void;
   pathStage: number;
+  gender?: Gender;
 }) {
   const recommended: WritingMode = pathStage === 1 ? 'guided' : pathStage === 2 ? 'coach' : 'solo';
-  const meta = MODE_META[recommended];
+  const modeMeta = (mode: WritingMode) => mode === 'solo' ? { ...MODE_META[mode], title: byGender(gender, 'Пишу сама', 'Пишу сам', 'Пишу самостоятельно') } : MODE_META[mode];
+  const meta = modeMeta(recommended);
 
   return (
     <div className="animate-fade-in pb-8">
@@ -164,7 +176,7 @@ function Home({
         <h2 className="text-xl font-black text-slate-950">Путь Schreiben</h2>
         <div className="mt-3 space-y-3">
           {(['guided', 'coach', 'solo'] as WritingMode[]).map((mode, index) => {
-            const item = MODE_META[mode];
+            const item = modeMeta(mode);
             const unlocked = index + 1 <= pathStage;
             return (
               <button
@@ -317,11 +329,13 @@ function Teil2({
   onBack,
   onComplete,
   onStageDone,
+  gender,
 }: {
   mode: WritingMode;
   onBack: () => void;
   onComplete: (score: number, total: number) => void;
   onStageDone: () => void;
+  gender?: Gender;
 }) {
   const [index, setIndex] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -337,7 +351,7 @@ function Teil2({
   const fileRef = useRef<HTMLInputElement>(null);
   const task = schreibenTeil2Tasks[index];
   const text = drafts[task.id] || '';
-  const meta = MODE_META[mode];
+  const meta = mode === 'solo' ? { ...MODE_META[mode], title: byGender(gender, 'Пишу сама', 'Пишу сам', 'Пишу самостоятельно') } : MODE_META[mode];
   const example = examples[task.id] || null;
 
   const setText = (value: string) => {
@@ -441,13 +455,13 @@ function Teil2({
           {!example ? (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               <button type="button" onClick={loadExample} disabled={exampleLoading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-800 px-4 font-bold text-white disabled:opacity-50">{exampleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{exampleLoading ? 'Отто готовит пример…' : 'Показать пример'}</button>
-              <button type="button" onClick={() => setExampleClosed(true)} className="min-h-11 rounded-xl border border-sky-300 bg-white px-4 font-bold text-sky-900">Сразу попробовать самой</button>
+              <button type="button" onClick={() => setExampleClosed(true)} className="min-h-11 rounded-xl border border-sky-300 bg-white px-4 font-bold text-sky-900">{byGender(gender, 'Сразу попробовать самой', 'Сразу попробовать самому', 'Сразу попробовать самостоятельно')}</button>
             </div>
           ) : (
             <div className="mt-4">
               <div className="whitespace-pre-wrap rounded-2xl bg-white p-4 text-[15px] leading-7 text-slate-900 shadow-sm"><HoverTranslateText text={example.example} /></div>
               {example.noteRu && <p className="mt-2 text-xs leading-5 text-sky-900">💡 {example.noteRu}</p>}
-              <button type="button" onClick={() => setExampleClosed(true)} className="mt-3 min-h-11 w-full rounded-xl bg-slate-950 px-4 font-black text-white">Закрыть пример и написать самой</button>
+              <button type="button" onClick={() => setExampleClosed(true)} className="mt-3 min-h-11 w-full rounded-xl bg-slate-950 px-4 font-black text-white">{byGender(gender, 'Закрыть пример и написать самой', 'Закрыть пример и написать самому', 'Закрыть пример и написать самостоятельно')}</button>
             </div>
           )}
         </section>
@@ -476,13 +490,13 @@ function Teil2({
       {error && <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
       {canWrite && !feedback && <div className="mt-5 flex justify-end"><button type="button" onClick={check} disabled={loading || (!text.trim() && !image)} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{loading ? 'Отто проверяет…' : 'Проверить с Отто'}</button></div>}
 
-      {feedback && <Feedback data={feedback} />}
+      {feedback && <Feedback data={feedback} gender={gender} />}
       {feedback && <div className="mt-5 flex justify-end"><button onClick={next} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-teal-700 px-6 font-bold text-white">{index === schreibenTeil2Tasks.length - 1 ? 'Завершить' : 'Следующее письмо'}<ArrowRight className="h-4 w-4" /></button></div>}
     </div>
   );
 }
 
-function Feedback({ data }: { data: AiFeedback }) {
+function Feedback({ data, gender }: { data: AiFeedback; gender?: Gender }) {
   const [fixing, setFixing] = useState(false);
   const [fixes, setFixes] = useState<Record<number, string>>({});
   const [fixChecked, setFixChecked] = useState(false);
@@ -519,7 +533,7 @@ function Feedback({ data }: { data: AiFeedback }) {
               {fixChecked && <div className="mt-2"><p className={cn('text-xs font-bold', matches(fixes[index] || '', correction.corrected) ? 'text-emerald-700' : 'text-amber-800')}>{matches(fixes[index] || '', correction.corrected) ? '✓ Получилось' : 'Вариант Отто:'}</p><p className="mt-1 text-sm font-semibold text-emerald-700">{correction.corrected}</p></div>}
             </div>
           ))}
-          {!fixing && <button type="button" onClick={() => setFixing(true)} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white">Попробовать исправить самой</button>}
+          {!fixing && <button type="button" onClick={() => setFixing(true)} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white">{byGender(gender, 'Попробовать исправить самой', 'Попробовать исправить самому', 'Попробовать исправить самостоятельно')}</button>}
           {fixing && !fixChecked && <button type="button" onClick={() => setFixChecked(true)} disabled={data.corrections.some((_, index) => !(fixes[index] || '').trim())} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white disabled:opacity-40">Проверить мои исправления</button>}
         </div>
       )}
