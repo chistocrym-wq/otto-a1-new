@@ -167,6 +167,13 @@ export async function activateChallenge(email, challengeId, previousChallengeId 
   }
 }
 
+export async function releaseOtpCooldown(email) {
+  const now = Date.now();
+  const key = emailRateKey(email);
+  const rate = await readRate(key, now);
+  await store().setJSON(key, { ...rate, nextAllowedAt: 0, updatedAt: now });
+}
+
 export async function discardChallenge(challengeId) {
   if (challengeId) await store().delete(challengeKey(challengeId));
 }
@@ -262,9 +269,6 @@ export async function sendOtpEmail({ email, code, challengeId, apiKey, fromEmail
         subject: 'Код подтверждения OTTO',
         from_email: fromEmail,
         from_name: 'OTTO',
-        skip_unsubscribe: 1,
-        global_language: 'ru',
-        template_engine: 'none',
         idempotence_key: challengeId,
       },
     }),
