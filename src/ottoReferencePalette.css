@@ -250,6 +250,8 @@ body,
 .otto-skin button[class~="bg-teal-600"],
 .otto-skin button[class~="bg-teal-700"],
 .otto-skin button[class~="bg-teal-800"],
+.otto-skin button[class~="bg-amber-900"],
+.otto-skin button[class~="bg-rose-600"],
 .otto-skin [class*="from-[#28ADF7]"],
 .otto-skin [class*="bg-[#9E543C]"] {
   color: #FFFFFF !important;
@@ -264,6 +266,8 @@ body,
 .otto-skin button[class~="bg-teal-600"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-700"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-800"]:not(:disabled):hover,
+.otto-skin button[class~="bg-amber-900"]:not(:disabled):hover,
+.otto-skin button[class~="bg-rose-600"]:not(:disabled):hover,
 .otto-skin [class*="from-[#28ADF7]"]:not(:disabled):hover {
   background: linear-gradient(135deg, var(--otto-ref-cta-end) 0%, var(--otto-ref-cta-start) 100%) !important;
 }
@@ -311,13 +315,15 @@ body,
 }
 
 /* Neutral utilities become quiet product surfaces, not decorative blue fills. */
-.otto-skin [class~="bg-slate-50"],
-.otto-skin [class~="bg-slate-100"] {
+.otto-skin [class~="bg-slate-50"] {
   background: var(--otto-ref-app-bg) !important;
 }
+.otto-skin [class~="bg-slate-100"],
 .otto-skin [class~="bg-slate-200"],
 .otto-skin [class~="bg-teal-50"],
-.otto-skin [class~="bg-sky-50"] {
+.otto-skin [class~="bg-sky-50"],
+.otto-skin [class~="bg-amber-50"],
+.otto-skin [class~="bg-amber-100"] {
   background: var(--otto-ref-secondary) !important;
 }
 .otto-skin [class~="border-slate-200"],
@@ -472,8 +478,20 @@ body,
   box-shadow: 0 8px 24px rgba(11,47,96,.10) !important;
 }
 
+/* Decorative legacy amber becomes brand blue; semantic warning cards are restored below. */
+.otto-skin [class~="text-amber-300"],
+.otto-skin [class~="text-amber-700"],
+.otto-skin [class~="text-amber-800"],
+.otto-skin [class~="text-amber-900"] {
+  color: var(--otto-ref-cta-start) !important;
+}
+.otto-skin [class~="border-amber-200"] {
+  border-color: rgba(53,184,238,.34) !important;
+}
+
 /* Exercise feedback keeps semantic meaning. These colors are not decorative. */
 .otto-skin .otto-inner-screen [class~="bg-emerald-50"],
+
 .otto-skin .otto-inner-screen [class~="bg-emerald-100"] {
   background: #ECFDF5 !important;
 }
@@ -495,15 +513,18 @@ body,
 .otto-skin .otto-inner-screen [class~="border-rose-200"] {
   border-color: #FECDD3 !important;
 }
-.otto-skin .otto-inner-screen [class~="bg-amber-50"],
-.otto-skin .otto-inner-screen [class~="bg-amber-100"] {
+.otto-skin .otto-inner-screen [class~="bg-amber-50"][class~="border-amber-200"],
+.otto-skin .otto-inner-screen [class~="bg-amber-100"][class~="border-amber-200"],
+.otto-skin .otto-inner-screen [class~="border-amber-200"][class~="bg-amber-50"],
+.otto-skin .otto-inner-screen [class~="border-amber-200"][class~="bg-amber-100"] {
   background: #FFFBEB !important;
-}
-.otto-skin .otto-inner-screen [class~="text-amber-700"],
-.otto-skin .otto-inner-screen [class~="text-amber-800"],
-.otto-skin .otto-inner-screen [class~="text-amber-900"] {
-  color: #B45309 !important;
-}
-.otto-skin .otto-inner-screen [class~="border-amber-200"] {
   border-color: #FDE68A !important;
+}
+.otto-skin .otto-inner-screen [class~="bg-amber-50"][class~="border-amber-200"] [class~="text-amber-700"],
+.otto-skin .otto-inner-screen [class~="bg-amber-50"][class~="border-amber-200"] [class~="text-amber-800"],
+.otto-skin .otto-inner-screen [class~="bg-amber-50"][class~="border-amber-200"] [class~="text-amber-900"],
+.otto-skin .otto-inner-screen [class~="bg-amber-100"][class~="border-amber-200"] [class~="text-amber-700"],
+.otto-skin .otto-inner-screen [class~="bg-amber-100"][class~="border-amber-200"] [class~="text-amber-800"],
+.otto-skin .otto-inner-screen [class~="bg-amber-100"][class~="border-amber-200"] [class~="text-amber-900"] {
+  color: #B45309 !important;
 }
