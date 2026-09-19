@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -93,6 +94,31 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
     void load();
   };
 
+  const translationContent = (
+    <>
+      {loading && <p>Перевожу…</p>}
+      {error && <p className="break-words text-rose-700 [overflow-wrap:anywhere]">{error}</p>}
+      {translations?.map((t, i) => <p key={`${key}-${i}`} className={cn('break-words [overflow-wrap:anywhere]', i ? 'mt-1' : '')}>{t}</p>)}
+    </>
+  );
+
+  const mobilePanel = open && typeof document !== 'undefined'
+    ? createPortal(
+        <div className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[80] hidden max-h-[34dvh] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-6 text-slate-600 shadow-xl max-sm:flex" data-translation-ui>
+          <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
+            <span className="min-w-0 break-words text-xs font-black uppercase tracking-wider text-slate-500 [overflow-wrap:anywhere]">{title}</span>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть перевод" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain pr-1">
+            {translationContent}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
     <div className={cn('min-w-0 shrink-0 text-right', className)} data-translation-ui>
       <button
@@ -109,21 +135,12 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
       </button>
 
       {open && (
-        <div className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[80] flex max-h-[34dvh] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-6 text-slate-600 shadow-xl sm:static sm:mt-2 sm:block sm:max-h-none sm:w-[300px] sm:max-w-[min(300px,calc(100vw-2rem))] sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-          <div className="mb-2 flex shrink-0 items-center justify-between gap-3 sm:hidden">
-            <span className="min-w-0 break-words text-xs font-black uppercase tracking-wider text-slate-500 [overflow-wrap:anywhere]">{title}</span>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть перевод" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain pr-1 sm:overflow-visible sm:pr-0">
-            <span className="sr-only">{title}</span>
-            {loading && <p>Перевожу…</p>}
-            {error && <p className="break-words text-rose-700 [overflow-wrap:anywhere]">{error}</p>}
-            {translations?.map((t, i) => <p key={`${key}-${i}`} className={cn('break-words [overflow-wrap:anywhere]', i ? 'mt-1' : '')}>{t}</p>)}
-          </div>
+        <div className="mt-2 hidden w-[300px] max-w-[min(300px,calc(100vw-2rem))] text-left text-sm leading-6 text-slate-600 sm:block">
+          <span className="sr-only">{title}</span>
+          {translationContent}
         </div>
       )}
+      {mobilePanel}
     </div>
   );
 }
