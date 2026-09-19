@@ -14,8 +14,8 @@
   --otto-line-premium: #7ACEF4;
   --otto-danger: #9f4c4c;
   --otto-danger-soft: #fbefee;
-  --otto-shadow-premium: 0 16px 42px rgba(12,53,105,.10);
-  --otto-shadow-soft: 0 7px 22px rgba(12,53,105,.07);
+  --otto-shadow-premium: 0 16px 42px rgba(9,47,104,.10);
+  --otto-shadow-soft: 0 7px 22px rgba(9,47,104,.07);
 
   /* Backwards-compatible project tokens */
   --otto-bg: #A2DDF7;
@@ -32,8 +32,8 @@
   --otto-terracotta: #55C0F1;
   --otto-terracotta-dark: #0A71D7;
   --otto-sand: #A7E0F9;
-  --otto-line: rgba(12,53,105,.13);
-  --otto-line-strong: rgba(12,53,105,.22);
+  --otto-line: rgba(9,47,104,.13);
+  --otto-line-strong: rgba(9,47,104,.22);
 
   /* Legacy UI aliases kept intact; only their values change. */
   --otto-ui-bg: #A2DDF7;
@@ -45,7 +45,7 @@
   --otto-ui-teal-dark: #0A71D7;
   --otto-ui-soft: #A2DDF7;
   --otto-ui-border: #7ACEF4;
-  --otto-ui-shadow: 0 10px 28px rgba(12,53,105,.07);
+  --otto-ui-shadow: 0 10px 28px rgba(9,47,104,.07);
 }
 
 html,
@@ -211,9 +211,9 @@ body {
 .otto-skin button[class~="bg-teal-600"],
 .otto-skin button[class~="bg-teal-700"] {
   color: #fff !important;
-  background: var(--otto-cta) !important;
-  border-color: var(--otto-cta) !important;
-  box-shadow: 0 10px 26px rgba(10,113,215,.28) !important;
+  background: linear-gradient(135deg, #1E9FF4, #0A71D7) !important;
+  border-color: #0A71D7 !important;
+  box-shadow: 0 10px 26px rgba(10,113,215,.30) !important;
 }
 
 .otto-skin .otto-exam-button:hover,
@@ -231,7 +231,7 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-600"],
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
   background: linear-gradient(135deg, #1E9FF4, #0A71D7) !important;
   border-color: #0A71D7 !important;
-  box-shadow: 0 10px 24px rgba(12,53,105,.20) !important;
+  box-shadow: 0 10px 24px rgba(9,47,104,.20) !important;
 }
 
 /* Progress is deliberately petrol/sage rather than CTA-colored. */
@@ -257,9 +257,9 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 }
 
 .otto-skin .otto-bottom-nav-inner {
-  border-color: #B9DFF3 !important;
+  border-color: #7ACEF4 !important;
   background: rgba(255,255,255,.985) !important;
-  box-shadow: 0 -10px 30px rgba(12,53,105,.09) !important;
+  box-shadow: 0 -10px 30px rgba(9,47,104,.09) !important;
 }
 
 .otto-skin .otto-bottom-nav-item { color: #6c7781 !important; }
@@ -268,7 +268,7 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 .otto-skin .otto-companion {
   border-color: rgba(255,255,255,.96) !important;
   background: #A7E0F9 !important;
-  box-shadow: 0 9px 28px rgba(12,53,105,.13) !important;
+  box-shadow: 0 9px 28px rgba(9,47,104,.13) !important;
 }
 
 /* Form controls */
@@ -343,23 +343,23 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 
 /* Task #8 — late color-only compatibility for legacy hardcoded brand styles. */
 .otto-skin [class~="bg-slate-50"],.otto-skin [class~="bg-slate-100"]{background-color:#A2DDF7!important}
-.otto-skin [class~="bg-slate-950"],.otto-skin .otto-readiness-hero{background:linear-gradient(145deg,#092F68,#0A71D7)!important;border-color:rgba(161,218,243,.24)!important;box-shadow:0 18px 42px rgba(12,53,105,.16)!important}
+.otto-skin [class~="bg-slate-950"],.otto-skin .otto-readiness-hero{background:linear-gradient(145deg,#092F68,#0A71D7)!important;border-color:rgba(162,221,247,.24)!important;box-shadow:0 18px 42px rgba(9,47,104,.16)!important}
 .otto-skin .otto-readiness-hero>div:first-child>svg{color:#A7E0F9!important}.otto-skin [class~="bg-teal-400"]{background:#25AFEF!important}.otto-skin [class~="text-teal-300"]{color:#A7E0F9!important}
 .otto-skin [class~="text-teal-600"],.otto-skin [class~="text-teal-700"],.otto-skin [class~="text-sky-600"],.otto-skin [class~="text-sky-700"]{color:#0A71D7!important}
 .otto-skin [class~="text-teal-800"],.otto-skin [class~="text-teal-900"],.otto-skin [class~="text-sky-800"],.otto-skin [class~="text-sky-900"]{color:#092F68!important}
-.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:#0A71D7!important;border-color:#0A71D7!important;color:#fff!important;box-shadow:0 10px 24px rgba(10,113,215,.28)!important}
+.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg,#1E9FF4,#0A71D7)!important;border-color:#0A71D7!important;color:#fff!important;box-shadow:0 10px 24px rgba(10,113,215,.30)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(1),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(3){background:linear-gradient(135deg,#A7E0F9,#A2DDF7)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(2),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(4){background:linear-gradient(135deg,#A2DDF7,#7ACEF4)!important}
-.telegram-app.otto-skin .otto-account-stat{border-color:rgba(17,113,202,.10)!important;background:linear-gradient(145deg,#A7E0F9,#A2DDF7)!important}
+.telegram-app.otto-skin .otto-account-stat{border-color:rgba(10,113,215,.10)!important;background:linear-gradient(145deg,#A7E0F9,#A2DDF7)!important}
 .telegram-app.otto-skin .otto-account-stat>span,.telegram-app.otto-skin .otto-news-icon,.telegram-app.otto-skin .otto-setting-icon{background:#A2DDF7!important;color:#0A71D7!important}
-.telegram-app.otto-skin .otto-setting-row.is-open{border-color:rgba(17,113,202,.22)!important;background:linear-gradient(135deg,#A7E0F9,#7ACEF4)!important}
+.telegram-app.otto-skin .otto-setting-row.is-open{border-color:rgba(10,113,215,.22)!important;background:linear-gradient(135deg,#A7E0F9,#7ACEF4)!important}
 .telegram-app.otto-skin .otto-support-intro{border-color:#7ACEF4!important;background:linear-gradient(135deg,#A7E0F9,#7ACEF4)!important}.telegram-app.otto-skin .otto-support-badge,.telegram-app.otto-skin .otto-support-card>svg{color:#0A71D7!important}.telegram-app.otto-skin .otto-support-copy{background:linear-gradient(135deg,#1E9FF4,#0A71D7)!important;color:#fff!important;box-shadow:0 8px 20px rgba(10,113,215,.28)!important}
 .telegram-app.otto-skin [class*="border-[#0F7D74]"]{border-color:#0A71D7!important}.telegram-app.otto-skin [class*="bg-[#EAF4F0]"]{background:#A2DDF7!important}.telegram-app.otto-skin [class*="text-[#285C59]"],.telegram-app.otto-skin [class*="text-[#0F7D74]"]{color:#092F68!important}
 .telegram-app.otto-skin [class*="bg-[#F4F7F2]"]{background:#A2DDF7!important}.telegram-app.otto-skin [class*="border-[#d9e7e2]"]{border-color:#7ACEF4!important}.telegram-app.otto-skin [class*="bg-[#f7f4ee]"]{background:rgba(167,224,249,.95)!important}
-.otto-skin .otto-voice-mode{border-color:#7ACEF4!important;background:#A7E0F9!important}.otto-skin .otto-voice-mode button.is-active{background:#fff!important;color:#092F68!important;box-shadow:0 3px 10px rgba(12,53,105,.08)!important}
-.otto-skin .otto-roadmap-training-picker,.otto-skin .otto-roadmap-plan-card,.otto-skin .otto-roadmap-info-card{border-color:rgba(12,53,105,.11)!important;background:#fff!important;box-shadow:0 8px 22px rgba(12,53,105,.07)!important}
+.otto-skin .otto-voice-mode{border-color:#7ACEF4!important;background:#A7E0F9!important}.otto-skin .otto-voice-mode button.is-active{background:#fff!important;color:#092F68!important;box-shadow:0 3px 10px rgba(9,47,104,.08)!important}
+.otto-skin .otto-roadmap-training-picker,.otto-skin .otto-roadmap-plan-card,.otto-skin .otto-roadmap-info-card{border-color:rgba(9,47,104,.11)!important;background:#fff!important;box-shadow:0 8px 22px rgba(9,47,104,.07)!important}
 .otto-skin .otto-roadmap-page,.otto-skin .otto-roadmap-page-header h1,.otto-skin .otto-roadmap-training-picker-head h2{color:#092F68!important}
 .otto-skin .otto-roadmap-kicker,.otto-skin .otto-roadmap-training-picker-head>svg,.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span,.otto-skin .otto-roadmap-time-guide svg,.otto-skin .otto-roadmap-change-time,.otto-skin .otto-roadmap-back{color:#0A71D7!important}
-.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span{background:#A2DDF7!important}.otto-skin .otto-roadmap-duration button{border-color:rgba(12,53,105,.12)!important;background:#A2DDF7!important;color:#5E718C!important}.otto-skin .otto-roadmap-duration button.is-active{border-color:rgba(17,113,202,.28)!important;background:#fff!important;color:#092F68!important}
-.otto-skin .otto-roadmap-howto-link{border-color:rgba(12,53,105,.10)!important;background:linear-gradient(90deg,#A7E0F9,#A2DDF7)!important;color:#092F68!important}.otto-skin .otto-roadmap-back,.otto-skin .otto-roadmap-time-badge,.otto-skin .otto-roadmap-plan-list li{border-color:rgba(12,53,105,.12)!important;background:#fff!important}.otto-skin .otto-roadmap-plan-index{background:#A7E0F9!important;color:#5E718C!important}
+.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span{background:#A2DDF7!important}.otto-skin .otto-roadmap-duration button{border-color:rgba(9,47,104,.12)!important;background:#A2DDF7!important;color:#5E718C!important}.otto-skin .otto-roadmap-duration button.is-active{border-color:rgba(10,113,215,.28)!important;background:#fff!important;color:#092F68!important}
+.otto-skin .otto-roadmap-howto-link{border-color:rgba(9,47,104,.10)!important;background:linear-gradient(90deg,#A7E0F9,#A2DDF7)!important;color:#092F68!important}.otto-skin .otto-roadmap-back,.otto-skin .otto-roadmap-time-badge,.otto-skin .otto-roadmap-plan-list li{border-color:rgba(9,47,104,.12)!important;background:#fff!important}.otto-skin .otto-roadmap-plan-index{background:#A7E0F9!important;color:#5E718C!important}
 
