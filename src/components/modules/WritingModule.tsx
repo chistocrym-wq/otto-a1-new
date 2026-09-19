@@ -20,6 +20,7 @@ import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { recordWritingLearning } from '@/lib/learningProfile';
 import { loadUserProfile, type Gender } from '@/hooks/useUserProfile';
 import { cn } from '@/lib/utils';
+import { readTrainingResume, saveTrainingResume } from '@/lib/trainingResume';
 
 interface Props {
   onBack: () => void;
@@ -254,7 +255,7 @@ function StepNumber({ children }: { children: ReactNode }) {
 }
 
 function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score: number, total: number) => void }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.min(readTrainingResume().schreibenTeil1, Math.max(0, schreibenTeil1Tasks.length - 1)));
   const [draft, setDraft] = useState<Record<number, string>>({});
   const [result, setResult] = useState<Record<number, boolean> | null>(null);
   const task = schreibenTeil1Tasks[index];
@@ -272,9 +273,12 @@ function Teil1({ onBack, onComplete }: { onBack: () => void; onComplete: (score:
     const score = resultScore ?? 0;
     onComplete(score, total);
     if (index === schreibenTeil1Tasks.length - 1) {
+      saveTrainingResume({ schreibenTeil1: 0 });
       setIndex(0); setDraft({}); setResult(null); onBack(); return;
     }
-    setIndex((value) => value + 1);
+    const nextIndex = index + 1;
+    saveTrainingResume({ schreibenTeil1: nextIndex });
+    setIndex(nextIndex);
     setDraft({});
     setResult(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -354,7 +358,7 @@ function Teil2({
   onStageDone: () => void;
   gender?: Gender;
 }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.min(readTrainingResume().schreibenTeil2, Math.max(0, schreibenTeil2Tasks.length - 1)));
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [hint, setHint] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -437,8 +441,10 @@ function Teil2({
     if (!feedback) return;
     onComplete(feedback.earned, feedback.max);
     onStageDone();
-    if (index === schreibenTeil2Tasks.length - 1) { onBack(); return; }
-    setIndex((value) => value + 1);
+    if (index === schreibenTeil2Tasks.length - 1) { saveTrainingResume({ schreibenTeil2: 0 }); onBack(); return; }
+    const nextIndex = index + 1;
+    saveTrainingResume({ schreibenTeil2: nextIndex });
+    setIndex(nextIndex);
     setHint(false);
     setFeedback(null);
     setError('');
