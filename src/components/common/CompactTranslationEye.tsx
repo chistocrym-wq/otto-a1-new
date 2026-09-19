@@ -109,7 +109,7 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
       </button>
 
       {open && (
-        <div className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[80] flex max-h-[calc(100dvh-7rem-env(safe-area-inset-bottom))] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-6 text-slate-600 shadow-xl sm:static sm:mt-2 sm:block sm:max-h-none sm:w-[300px] sm:max-w-[min(300px,calc(100vw-2rem))] sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+        <div className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[80] flex max-h-[34dvh] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-6 text-slate-600 shadow-xl sm:static sm:mt-2 sm:block sm:max-h-none sm:w-[300px] sm:max-w-[min(300px,calc(100vw-2rem))] sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           <div className="mb-2 flex shrink-0 items-center justify-between gap-3 sm:hidden">
             <span className="min-w-0 break-words text-xs font-black uppercase tracking-wider text-slate-500 [overflow-wrap:anywhere]">{title}</span>
             <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть перевод" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
