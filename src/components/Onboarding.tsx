@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
-import { ArrowLeft, ArrowRight, AtSign, CheckCircle2, Mail, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Mail, Send, Sparkles } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import { useAccess } from '@/hooks/useAccess';
 import type { ContactType, Gender, LearningMode, UserProfile, UserProfileDraft } from '@/hooks/useUserProfile';
@@ -17,21 +17,28 @@ type BusyState = 'request' | 'verify' | null;
 const serifFont={fontFamily:'Georgia, "Times New Roman", serif'};
 const sansFont={fontFamily:'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'};
 
+const TELEGRAM_BOT_USERNAME = 'ottoA1_bot';
+const TELEGRAM_MINI_APP_URL = String(import.meta.env.VITE_TELEGRAM_MINI_APP_URL || '').trim();
+
+function getTelegramMiniAppUrl() {
+  if (!TELEGRAM_MINI_APP_URL) return '';
+  try {
+    const url = new URL(TELEGRAM_MINI_APP_URL);
+    if (url.protocol !== 'https:' || url.hostname.toLowerCase() !== 't.me') return '';
+    if (url.pathname.toLowerCase() !== `/${TELEGRAM_BOT_USERNAME.toLowerCase()}`) return '';
+    if (!url.searchParams.has('startapp')) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
 function validEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(value.trim());
 }
 
-function validTelegram(value: string) {
-  return /^@?[A-Za-z0-9_]{5,32}$/u.test(value.trim());
-}
-
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
-}
-
-function normalizeTelegram(value: string) {
-  const trimmed = value.trim();
-  return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
 }
 
 function maskEmail(value: string) {
@@ -72,14 +79,16 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
   const emailInputRef = useRef<HTMLInputElement | null>(null);
 
-  const telegramVerified = contactType === 'telegram' && status.authenticated && Boolean(status.telegramUserId);
+  const telegramUserIdPresent = typeof status.telegramUserId === 'number' && Number.isFinite(status.telegramUserId);
+  const telegramVerified = contactType === 'telegram' && status.authenticated === true && telegramUserIdPresent;
+  const telegramMiniAppUrl = getTelegramMiniAppUrl();
+  const telegramInitDataPresent = Boolean(window.Telegram?.WebApp?.initData);
   const normalizedEmail = normalizeEmail(contact);
   const emailVerified = contactType === 'email' && Boolean(verifiedEmail) && verifiedEmail === normalizedEmail;
 
-  const contactValue = telegramVerified ? String(status.telegramUserId) : contact.trim();
   const contactValid = useMemo(() => {
-    if (telegramVerified) return true;
-    return contactType === 'email' ? validEmail(contact) : validTelegram(contact);
+    if (contactType === 'email') return validEmail(contact);
+    return telegramVerified;
   }, [contact, contactType, telegramVerified]);
   const genderRequired = !initialProfile;
   const profileValid = name.trim().length >= 2 && contactValid && (!genderRequired || gender !== null);
@@ -150,7 +159,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
       }
       return;
     }
-    setStep('mode');
+    if (telegramVerified) setStep('mode');
   };
 
   const verifyOtp = async () => {
@@ -273,16 +282,13 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
   const save = () => {
     if (!profileValid) return;
     if (contactType === 'email' && !emailVerified) return;
+    if (contactType === 'telegram' && !telegramVerified) return;
     onComplete({
       name: name.trim(),
       contactType,
-      contact: contactType === 'email'
-        ? normalizedEmail
-        : contactType === 'telegram' && !telegramVerified
-          ? normalizeTelegram(contactValue)
-          : contactValue,
-      contactVerified: contactType === 'email' ? emailVerified : telegramVerified,
-      authStatus: contactType === 'email' ? (emailVerified ? 'verified' : 'guest') : (telegramVerified ? 'verified' : 'guest'),
+      contact: contactType === 'email' ? normalizedEmail : String(status.telegramUserId),
+      contactVerified: contactType === 'email' ? emailVerified : true,
+      authStatus: 'verified',
       gender: gender ?? initialProfile?.gender,
       learningMode: mode,
     });
@@ -359,13 +365,31 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 {contactType === 'email' ? (
                   <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Email<input ref={emailInputRef} value={contact} onChange={(event) => { setContact(event.target.value); setOtpError(null); setSendFailed(false); }} inputMode="email" autoComplete="email" placeholder="name@example.com" className="mt-2 min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] px-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></label>
                 ) : telegramVerified ? (
-                  <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-sage-soft)] p-4 text-sm text-[var(--otto-petrol-dark)]"><div className="flex items-center gap-2 font-[850]"><CheckCircle2 className="h-5 w-5" />Telegram подтверждён</div><p className="mt-1 leading-6">Telegram подтверждён{status.firstName ? `: ${status.firstName}` : ''}. Повторно вводить логин не нужно.</p></div>
+                  <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-sage-soft)] p-4 text-sm text-[var(--otto-petrol-dark)]"><div className="flex items-center gap-2 font-[850]"><CheckCircle2 className="h-5 w-5" />✓ Telegram подтверждён</div><p className="mt-1 leading-6">Telegram подтверждён{status.firstName ? `: ${status.firstName}` : ''}.</p></div>
                 ) : (
-                  <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Telegram username<div className="relative mt-2"><AtSign className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--otto-muted)]" /><input value={contact.replace(/^@/u, '')} onChange={(event) => setContact(event.target.value)} autoCapitalize="none" autoCorrect="off" placeholder="username" className="min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] pl-10 pr-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></div></label>
+                  <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-petrol-soft)] p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--otto-surface)] text-[var(--otto-petrol-dark)]"><Send className="h-5 w-5" /></span>
+                      <div className="min-w-0">
+                        <strong className="block text-base text-[var(--otto-ink)]">Подтверждение через Telegram</strong>
+                        <p className="mt-1 text-sm leading-6 text-[var(--otto-muted)]">{status.loading && telegramInitDataPresent ? 'Проверяем ваш Telegram-аккаунт…' : `Откройте OTTO в Telegram через @${TELEGRAM_BOT_USERNAME}. Мы автоматически подтвердим ваш Telegram-аккаунт — вводить код не нужно.`}</p>
+                      </div>
+                    </div>
+                    {!status.loading && !telegramVerified && (
+                      <>
+                        <button type="button" disabled={!telegramMiniAppUrl} onClick={() => { if (telegramMiniAppUrl) window.location.assign(telegramMiniAppUrl); }} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-40">
+                          Продолжить в Telegram <ArrowRight className="h-4 w-4" />
+                        </button>
+                        {!telegramMiniAppUrl && <p className="mt-2 text-xs font-semibold leading-5 text-[var(--otto-danger)]">BLOCKED: Mini App URL not configured</p>}
+                        <button type="button" onClick={() => { setContactType('email'); setOtpError(null); }} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-petrol-dark)]">Выбрать Email вместо Telegram</button>
+                      </>
+                    )}
+                  </div>
                 )}
 
-                <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Подтвердите email кодом из письма. После этого откроется главный экран OTTO.' : 'Telegram подтверждается автоматически, когда OTTO открыт внутри Telegram.'}</p>
-                {!profileValid && (name.trim() || contact.trim() || gender !== null) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя, пол и выбранный контакт.</p>}
+                <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Подтвердите email кодом из письма. После этого откроется главный экран OTTO.' : 'Telegram считается подтверждённым только после автоматической проверки внутри Telegram.'}</p>
+                {!profileValid && contactType === 'email' && (name.trim() || contact.trim() || gender !== null) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя, пол и выбранный контакт.</p>}
+                {!profileValid && contactType === 'telegram' && telegramVerified && (name.trim() || gender !== null) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя и пол.</p>}
                 {otpError && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]" role="alert">{otpError}</p>}
                 {sendFailed && contactType === 'email' ? (
                   <div className="mt-4 space-y-2">
@@ -374,11 +398,11 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                     <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы подтвердить профиль и использовать этот адрес для входа.</p>
                     <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
                   </div>
-                ) : (
+                ) : contactType === 'email' || telegramVerified ? (
                   <button type="button" disabled={!profileValid || busy !== null} onClick={continueProfile} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-35">
                     {busy === 'request' ? 'Отправляем код…' : contactType === 'email' && !emailVerified ? 'Получить код' : 'Продолжить'} <ArrowRight className="h-4 w-4" />
                   </button>
-                )}
+                ) : null}
               </div>
             )}
 
