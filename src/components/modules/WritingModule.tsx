@@ -89,6 +89,23 @@ function byGender(gender: Gender | undefined, female: string, male: string, neut
   return neutral;
 }
 
+const SCHREIBEN_PROMPT_HELPERS: Readonly<Record<string, string>> = {
+  'schreiben-teil2-1:0': 'Почему вы пишете в спортивный клуб?',
+  'schreiben-teil2-3:1': 'Почему дочь не будет в школе?',
+  'schreiben-teil2-7:1': 'Почему вы завтра придёте позже?',
+  'schreiben-teil2-22:0': 'Почему сын не придёт в школу?',
+  'schreiben-teil2-24:1': 'Когда будет вечеринка?',
+  'schreiben-teil2-34:0': 'Когда будет пикник?',
+  'schreiben-teil2-34:1': 'Где будет пикник?',
+  'schreiben-teil2-37:1': 'Почему вы сегодня придёте позже?',
+  'schreiben-teil2-43:1': 'Почему дочь не будет в школе?',
+  'schreiben-teil2-44:0': 'Почему вы пишете в языковую школу?',
+  'schreiben-teil2-47:1': 'Почему вы завтра не сможете прийти?',
+  'schreiben-teil2-59:0': 'Почему сын не придёт в школу?',
+  'schreiben-teil2-62:1': 'Почему вы сегодня придёте позже?',
+  'schreiben-teil2-67:2': 'Когда вы хотите выпить кофе вместе?',
+};
+
 const MODE_META: Record<WritingMode, { step: string; title: string; description: string }> = {
   guided: {
     step: 'Этап 1',
@@ -445,7 +462,10 @@ function Teil2({
         </div>
         <div className="mt-4 rounded-xl border border-amber-200/70 bg-white/60 p-3">
           <p className="text-xs font-black uppercase tracking-wider text-amber-800">Обязательно ответить на все 3 пункта</p>
-          <ul className="mt-2 space-y-2">{task.points.map((point, pointIndex) => <li key={point} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-800"><HoverTranslateText text={`${pointIndex + 1}. ${point}`} /></li>)}</ul>
+          <ul className="mt-2 space-y-2">{task.points.map((point, pointIndex) => {
+            const helper = mode === 'solo' ? undefined : SCHREIBEN_PROMPT_HELPERS[`${task.id}:${pointIndex}`];
+            return <li key={point} className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-800"><HoverTranslateText text={`${pointIndex + 1}. ${point}`} />{helper && <p className="mt-1 pl-5 text-xs font-medium leading-5 text-slate-500">{helper}</p>}</li>;
+          })}</ul>
         </div>
       </section>
 
