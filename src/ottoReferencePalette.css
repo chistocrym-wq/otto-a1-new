@@ -269,7 +269,7 @@ body,
 .otto-skin button[class~="bg-amber-900"]:not(:disabled):hover,
 .otto-skin button[class~="bg-rose-600"]:not(:disabled):hover,
 .otto-skin [class*="from-[#28ADF7]"]:not(:disabled):hover {
-  background: linear-gradient(135deg, var(--otto-ref-cta-end) 0%, var(--otto-ref-cta-start) 100%) !important;
+  background: linear-gradient(135deg, var(--otto-ref-cta-end) 0%, var(--otto-ref-cta-end) 100%) !important;
 }
 
 /* Secondary actions deliberately do not look like primary CTA. */

@@ -211,8 +211,8 @@ body {
 .otto-skin button[class~="bg-teal-600"],
 .otto-skin button[class~="bg-teal-700"] {
   color: #fff !important;
-  background: linear-gradient(135deg, #A95737 0%, #A95737 52%, #315759 100%) !important;
-  border-color: #315759 !important;
+  background: linear-gradient(135deg, #A95737 0%, #A95737 52%, #91482F 100%) !important;
+  border-color: #91482F !important;
   box-shadow: 0 10px 26px rgba(65,111,113,.30) !important;
 }
 
@@ -221,7 +221,7 @@ body {
 .otto-skin button[class~="bg-slate-900"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-600"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-700"]:not(:disabled):hover {
-  background: linear-gradient(135deg, #A95737, #315759) !important;
+  background: linear-gradient(135deg, #91482F, #91482F) !important;
 }
 
 html[data-otto-cta-variant="B"] .otto-skin .otto-exam-button,
@@ -229,8 +229,8 @@ html[data-otto-cta-variant="B"] .otto-skin .otto-primary-button,
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-slate-900"],
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-600"],
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
-  background: linear-gradient(135deg, #A95737 0%, #A95737 52%, #315759 100%) !important;
-  border-color: #315759 !important;
+  background: linear-gradient(135deg, #A95737 0%, #A95737 52%, #91482F 100%) !important;
+  border-color: #91482F !important;
   box-shadow: 0 10px 24px rgba(38,54,74,.20) !important;
 }
 
@@ -347,13 +347,13 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 .otto-skin .otto-readiness-hero>div:first-child>svg{color:#EDF3EE!important}.otto-skin [class~="bg-teal-400"]{background:#416F71!important}.otto-skin [class~="text-teal-300"]{color:#EDF3EE!important}
 .otto-skin [class~="text-teal-600"],.otto-skin [class~="text-teal-700"],.otto-skin [class~="text-sky-600"],.otto-skin [class~="text-sky-700"]{color:#315759!important}
 .otto-skin [class~="text-teal-800"],.otto-skin [class~="text-teal-900"],.otto-skin [class~="text-sky-800"],.otto-skin [class~="text-sky-900"]{color:#26364A!important}
-.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg, #A95737 0%, #A95737 52%, #315759 100%)!important;border-color:#315759!important;color:#fff!important;box-shadow:0 10px 24px rgba(65,111,113,.30)!important}
+.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg, #A95737 0%, #A95737 52%, #91482F 100%)!important;border-color:#315759!important;color:#fff!important;box-shadow:0 10px 24px rgba(65,111,113,.30)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(1),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(3){background:linear-gradient(135deg,#EDF3EE,#E3EEEE)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(2),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(4){background:linear-gradient(135deg,#E3EEEE,#A8BEAF)!important}
 .telegram-app.otto-skin .otto-account-stat{border-color:rgba(65,111,113,.10)!important;background:linear-gradient(145deg,#EDF3EE,#E3EEEE)!important}
 .telegram-app.otto-skin .otto-account-stat>span,.telegram-app.otto-skin .otto-news-icon,.telegram-app.otto-skin .otto-setting-icon{background:#E3EEEE!important;color:#315759!important}
 .telegram-app.otto-skin .otto-setting-row.is-open{border-color:rgba(65,111,113,.22)!important;background:linear-gradient(135deg,#EDF3EE,#A8BEAF)!important}
-.telegram-app.otto-skin .otto-support-intro{border-color: #DFE4DF!important;background:linear-gradient(135deg,#EDF3EE,#A8BEAF)!important}.telegram-app.otto-skin .otto-support-badge,.telegram-app.otto-skin .otto-support-card>svg{color:#315759!important}.telegram-app.otto-skin .otto-support-copy{background:linear-gradient(135deg, #A95737 0%, #A95737 52%, #315759 100%)!important;color:#fff!important;box-shadow:0 8px 20px rgba(65,111,113,.28)!important}
+.telegram-app.otto-skin .otto-support-intro{border-color: #DFE4DF!important;background:linear-gradient(135deg,#EDF3EE,#A8BEAF)!important}.telegram-app.otto-skin .otto-support-badge,.telegram-app.otto-skin .otto-support-card>svg{color:#315759!important}.telegram-app.otto-skin .otto-support-copy{background:linear-gradient(135deg, #A95737 0%, #A95737 52%, #91482F 100%)!important;color:#fff!important;box-shadow:0 8px 20px rgba(65,111,113,.28)!important}
 .telegram-app.otto-skin [class*="border-[#0F7D74]"]{border-color:#315759!important}.telegram-app.otto-skin [class*="bg-[#EAF4F0]"]{background:#E3EEEE!important}.telegram-app.otto-skin [class*="text-[#285C59]"],.telegram-app.otto-skin [class*="text-[#0F7D74]"]{color:#26364A!important}
 .telegram-app.otto-skin [class*="bg-[#F4F7F2]"]{background:#E3EEEE!important}.telegram-app.otto-skin [class*="border-[#d9e7e2]"]{border-color: #DFE4DF!important}.telegram-app.otto-skin [class*="bg-[#f7f4ee]"]{background:rgba(237,243,238,.95)!important}
 .otto-skin .otto-voice-mode{border-color: #DFE4DF!important;background:#EDF3EE!important}.otto-skin .otto-voice-mode button.is-active{background:#fff!important;color:#26364A!important;box-shadow:0 3px 10px rgba(38,54,74,.08)!important}
