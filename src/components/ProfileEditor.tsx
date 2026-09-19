@@ -48,7 +48,8 @@ export function ProfileEditor({ profile, onSave, onCancel }: Props) {
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const normalizedEmail = normalizeEmail(contact);
-  const telegramVerified = contactType === 'telegram' && status.authenticated && Boolean(status.telegramUserId);
+  const existingTelegramVerified = profile.contactType === 'telegram' && profile.contactVerified && contactType === 'telegram' && contact.trim() === profile.contact;
+  const telegramVerified = existingTelegramVerified || (contactType === 'telegram' && status.authenticated && Boolean(status.telegramUserId));
   const emailVerified = contactType === 'email' && Boolean(verifiedEmail) && verifiedEmail === normalizedEmail;
   const contactValid = useMemo(() => contactType === 'email' ? validEmail(contact) : telegramVerified || validTelegram(contact), [contact, contactType, telegramVerified]);
   const baseValid = name.trim().length >= 2 && contactValid;
@@ -100,7 +101,7 @@ export function ProfileEditor({ profile, onSave, onCancel }: Props) {
   const save = () => {
     if (!canSave) return;
     const verified = contactType === 'email' ? emailVerified : telegramVerified;
-    const contactValue = contactType === 'email' ? normalizedEmail : telegramVerified ? String(status.telegramUserId) : normalizeTelegram(contact);
+    const contactValue = contactType === 'email' ? normalizedEmail : existingTelegramVerified ? profile.contact : telegramVerified ? String(status.telegramUserId) : normalizeTelegram(contact);
     onSave({
       name: name.trim(),
       contactType,
