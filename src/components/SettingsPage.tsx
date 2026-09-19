@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Bell, BookOpenCheck, Globe2, LifeBuoy, Play, Share2, Smartphone, UserRound, Volume1, Volume2 } from 'lucide-react';
+import { Bell, BookOpenCheck, Globe2, LifeBuoy, Play, Share2, Smartphone, Type, UserRound, Volume1, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
+import { useTextSizePreference } from '@/hooks/useTextSizePreference';
 import type { Gender, LearningMode, UserProfile } from '@/hooks/useUserProfile';
 import { UI_LANGUAGES, useUiLanguage } from '@/lib/i18n';
 import { notificationCapability, readReminder, requestNotifications, saveReminder, type ReminderSettings } from '@/lib/reminders';
@@ -23,6 +24,7 @@ const DAY_KEYS=['sunday','monday','tuesday','wednesday','thursday','friday','sat
 
 export function SettingsPage({onOpenSupport,onShare,profile,learningMode,onLearningModeChange,onGenderChange,onEditProfile,onOpenAccount}:Props){
   const{lang,setLanguage,t}=useUiLanguage();
+  const{textSize,setTextSize}=useTextSizePreference();
   const[voiceMode,setVoiceMode]=useState<SpeechMode>(()=>{try{return localStorage.getItem('ottoSpeechModeV1')==='slow'?'slow':'normal'}catch{return'normal'}});
   const[reminder,setReminder]=useState<ReminderSettings>(readReminder);
   const[permission,setPermission]=useState(()=>notificationCapability());
@@ -47,6 +49,15 @@ export function SettingsPage({onOpenSupport,onShare,profile,learningMode,onLearn
       <div className="flex items-start gap-3"><span className="otto-setting-icon"><UserRound/></span><div className="min-w-0 flex-1"><p className="otto-kicker">Профиль</p><h2 className="text-xl font-black text-slate-950">{profile?.name || 'Профиль пользователя'}</h2><p className="mt-1 break-words text-sm leading-6 text-slate-600">{profile ? `${profile.contactType==='email'?'Email':'Telegram'}: ${profile.contact}${profile.contactVerified?' · подтверждён':profile.authStatus==='guest'?' · гостевой режим':''}` : 'Существующий прогресс сохранён. Профиль можно заполнить в любое время.'}</p></div></div>
       {profile&&<fieldset className="mt-4"><legend className="text-sm font-bold text-slate-700">Ваш пол</legend><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={()=>onGenderChange('female')} aria-pressed={profile.gender==='female'} className={`min-h-12 rounded-xl border px-4 font-bold ${profile.gender==='female'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}>Женский</button><button type="button" onClick={()=>onGenderChange('male')} aria-pressed={profile.gender==='male'} className={`min-h-12 rounded-xl border px-4 font-bold ${profile.gender==='male'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}>Мужской</button></div>{!profile.gender&&<p className="mt-2 text-xs leading-5 text-slate-500">Пол не указан. Интерфейс использует нейтральные формулировки.</p>}</fieldset>}
       <div className="mt-4 grid gap-2 sm:grid-cols-2"><button type="button" onClick={onEditProfile} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">{profile?'Изменить профиль':'Создать профиль'}</button><button type="button" onClick={onOpenAccount} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700">Мой прогресс</button>{profile?.contactType==='email'&&!profile.contactVerified&&<button type="button" onClick={onEditProfile} className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700 sm:col-span-2">Подтвердить email</button>}</div>
+    </section>
+
+    <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,.08)] sm:p-5">
+      <div className="flex items-start gap-3"><span className="otto-setting-icon"><Type/></span><div><p className="otto-kicker">Интерфейс</p><h2 className="text-xl font-black text-slate-950">Размер текста</h2></div></div>
+      <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="Размер текста">
+        <button type="button" onClick={()=>setTextSize('small')} aria-pressed={textSize==='small'} className={`min-h-12 rounded-xl border px-3 font-bold ${textSize==='small'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}>Мелкий</button>
+        <button type="button" onClick={()=>setTextSize('medium')} aria-pressed={textSize==='medium'} className={`min-h-12 rounded-xl border px-3 font-bold ${textSize==='medium'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}>Средний</button>
+        <button type="button" onClick={()=>setTextSize('large')} aria-pressed={textSize==='large'} className={`min-h-12 rounded-xl border px-3 font-bold ${textSize==='large'?'border-[#0F7D74] bg-[#EAF4F0] text-[#285C59]':'border-slate-200 bg-white text-slate-600'}`}>Крупный</button>
+      </div>
     </section>
 
     <section className="mt-4 rounded-[24px] border border-white/90 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,.08)] sm:p-5">
