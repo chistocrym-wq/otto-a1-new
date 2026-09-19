@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import './ottoPremiumSystem.css';
 import './ottoPremiumVoice.css';
+import './ottoReferencePalette.css';
 import { installGermanSpeechPolicy } from './lib/germanSpeechPolicy';
 import { initPwaInstall } from './lib/pwaInstall';
 import { installTextSizePreference } from './lib/textSizePreference';
