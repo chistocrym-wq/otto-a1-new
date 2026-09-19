@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, BookOpen, Clock3, Headphones, Lightbulb, MessageCircleMore, PenLine, Share2, Trophy } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Clock3, Headphones, Lightbulb, MessageCircleMore, PenLine, Share2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import { getReadiness, getTodayActivity, MODULE_META } from '@/lib/preparation';
@@ -58,8 +58,7 @@ export function Dashboard(props:DashboardProps){
      <div className="mt-4 grid grid-cols-2 gap-3">{moduleOrder.map(id=>{const Icon=moduleIcons[id];const module=readiness.modules[id];return <button key={id} type="button" onClick={()=>props.onSelectModule(id)} className="min-h-[118px] rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-bg-soft)] p-4 text-left transition hover:border-[var(--otto-petrol)]"><span className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--otto-surface)] text-[var(--otto-petrol-dark)]"><Icon className="h-5 w-5"/></span><b className="text-sm text-[var(--otto-muted)]">{module.dataSufficient?`${module.score}%`:'—'}</b></span><strong className="mt-3 block text-base text-[var(--otto-ink)]">{MODULE_META[id].title}</strong><span className="mt-1 block text-xs text-[var(--otto-muted)]">{MODULE_META[id].label}</span></button>})}</div>
    </section>
 
-   <div className="grid gap-2 sm:grid-cols-3">
-     <button type="button" onClick={props.onOpenMockExam} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><Trophy className="h-4 w-4 text-[var(--otto-terracotta)]"/>Пробный экзамен</button>
+   <div className="grid gap-2 sm:grid-cols-2">
      <button type="button" onClick={props.onOpenNews} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><BookOpen className="h-4 w-4"/>Новости A1</button>
      <button type="button" onClick={props.onShare} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><Share2 className="h-4 w-4"/>Поделиться</button>
    </div>
