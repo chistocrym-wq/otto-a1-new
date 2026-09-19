@@ -37,7 +37,7 @@ export function Dashboard(props:DashboardProps){
  const chooseMinutes=(value:Minutes)=>{setMinutes(value);try{localStorage.setItem('otto-a1-session-minutes',String(value))}catch{/* ignore */}props.onOpenDailyTraining(value)};
 
  return <div className="animate-fade-in h-full space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain pb-5 text-[var(--otto-ink)] [scrollbar-width:none]" style={sansFont}>
-   <section className="relative overflow-hidden rounded-[28px] border border-[var(--otto-line)] bg-[var(--otto-petrol-soft)] px-5 py-4 shadow-[0_14px_36px_rgba(43,54,54,.07)] sm:px-6">
+   <section className="otto-dashboard-hero relative overflow-hidden rounded-[28px] border border-[var(--otto-line)] bg-[var(--otto-petrol-soft)] px-5 py-4 shadow-[0_14px_36px_rgba(43,54,54,.07)] sm:px-6">
      <div className="relative z-10 max-w-[72%]"><p className="text-[11px] font-[850] uppercase tracking-[.16em] text-[var(--otto-petrol-dark)]">OTTO A1</p><h1 className="mt-1 text-2xl font-bold leading-[1.05] text-[var(--otto-ink)] sm:text-3xl" style={serifFont}>{lang==='de'?'Heute weiter zum A1':'Сегодня — ещё шаг к A1'}</h1><p className="mt-1 text-sm leading-6 text-[var(--otto-muted)]">{lang==='de'?'Wählen Sie eine kurze Trainingseinheit oder einen Bereich.':'Выберите короткую тренировку или нужный навык.'}</p></div>
      <OttoScene scene="home" className="absolute -bottom-16 -right-7 h-48 w-auto max-w-none sm:-bottom-20 sm:right-0 sm:h-56" />
    </section>
