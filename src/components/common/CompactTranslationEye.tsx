@@ -70,15 +70,15 @@ export function CompactTranslationEye({ parts, translations: preset, className, 
         signal: controller.signal,
       });
       const p = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(p.error || 'Перевод недоступен');
+      if (!r.ok) throw new Error(p.error || 'Не удалось открыть перевод. Попробуйте ещё раз.');
       const t = Array.isArray(p.translations) ? p.translations.map(String) : [];
-      if (t.length !== requestParts.length) throw new Error('Перевод пришёл не полностью');
+      if (t.length !== requestParts.length) throw new Error('Не удалось загрузить перевод полностью. Попробуйте ещё раз.');
       if (controller.signal.aborted || sourceKeyRef.current !== requestKey) return;
       setTranslations(t);
       try { localStorage.setItem(requestKey, JSON.stringify(t)); } catch { /* ignore */ }
     } catch (e) {
       if (controller.signal.aborted || sourceKeyRef.current !== requestKey) return;
-      setError(e instanceof Error ? e.message : 'Перевод недоступен');
+      setError(e instanceof Error ? e.message : 'Не удалось открыть перевод. Попробуйте ещё раз.');
     } finally {
       if (!controller.signal.aborted && sourceKeyRef.current === requestKey) setLoading(false);
       if (requestRef.current === controller) requestRef.current = null;

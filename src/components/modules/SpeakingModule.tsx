@@ -25,7 +25,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
 
   if(screen==='home')return <div className="animate-fade-in">
     <Header onBack={onBack} subtitle="Sprechen A1" translation="Говорение"/>
-    <div className="mx-auto mb-6 max-w-2xl text-center"><p className="text-sm leading-6 text-slate-600">Trainieren Sie Sich vorstellen, Fragen stellen und Bitten formulieren. Deutsche Wörter können Sie antippen oder anklicken: перевод появится сразу после загрузки, а произношение запустится по вашему нажатию.</p></div>
+    <div className="mx-auto mb-6 max-w-2xl text-center"><p className="text-sm leading-6 text-slate-600">Тренируйте представление, вопросы и просьбы. Нажмите на немецкое слово, чтобы увидеть перевод; произношение запускается отдельно.</p></div>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <PartCard badge="Teil 1" title="Sich vorstellen" description="Представьтесь по опорным словам." onClick={()=>openPart(1)}/>
       <PartCard badge="Teil 2" title="Informationen" description="Тема + слово: задайте простой вопрос." meta={`${speakingTeil2Cards.length} карточек`} onClick={()=>openPart(2)}/>
@@ -102,15 +102,15 @@ function ExtraSpeakingPractice({onBack,onEvaluated}:{onBack:()=>void;onEvaluated
     </div>
     <div className="mb-5 rounded-3xl border bg-white p-5 shadow-sm">
       <label className="font-black" htmlFor="otto-own-speaking-answer">Мой вариант</label>
-      <p className="mt-1 text-sm leading-5 text-slate-500">Вариант A: напишите по-русски. Вариант B: нажмите микрофон и скажите по-русски — распознанный текст появится в этом же поле.</p>
+      <p className="mt-1 text-sm leading-5 text-slate-500">Можно написать ответ по-русски или нажать микрофон и сказать его вслух. Распознанный текст появится в этом поле.</p>
       <textarea id="otto-own-speaking-answer" value={input} onChange={e=>setInput(e.target.value)} rows={3} placeholder="Например: Я работаю бухгалтером и живу в Санкт-Петербурге." className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-teal-500"/>
       <RussianVoiceInput onText={setInput}/>
-      <button type="button" onClick={askOtto} disabled={!input.trim()||loading} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{loading?'Отто формулирует…':'Сформулировать по-немецки A1'}</button>
+      <button type="button" onClick={askOtto} disabled={!input.trim()||loading} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{loading?'Отто готовит вариант…':'Сформулировать по-немецки A1'}</button>
       {error&&<p className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-      {help&&<div className="mt-4 space-y-2 rounded-2xl border border-teal-200 bg-teal-50 p-4"><p className="text-xs font-black uppercase tracking-wider text-teal-700">Ваш вариант на немецком A1</p><p className="font-bold">{help.german}</p><p className="text-sm text-slate-600">{help.russian}</p>{help.tip&&<p className="text-sm text-teal-800">{help.tip}</p>}<button type="button" onClick={()=>speakGerman(help.german)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-teal-200 bg-white px-3 text-sm font-bold text-teal-900"><Volume2 className="h-4 w-4"/>Прослушать</button></div>}
+      {help&&<div className="mt-4 space-y-2 rounded-2xl border border-teal-200 bg-teal-50 p-4"><p className="text-xs font-black uppercase tracking-wider text-teal-700">Ваш вариант на немецком</p><p className="font-bold">{help.german}</p><p className="text-sm text-slate-600">{help.russian}</p>{help.tip&&<p className="text-sm text-teal-800">{help.tip}</p>}<button type="button" onClick={()=>speakGerman(help.german)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-teal-200 bg-white px-3 text-sm font-bold text-teal-900"><Volume2 className="h-4 w-4"/>Прослушать</button></div>}
     </div>
     <VoiceRecorder evaluation={{mode:'free',title:prompt.question,expectedPoints:[prompt.guide]}} onPracticed={()=>{}} onEvaluated={onEvaluated} hint="Теперь попробуйте произнести готовый немецкий вариант вслух."/>
-    <div className="grid grid-cols-2 gap-3"><button type="button" onClick={()=>move(index-1)} className="min-h-12 rounded-xl border bg-white px-4 font-bold">Назад</button><button type="button" onClick={()=>move(index+1)} className="min-h-12 rounded-xl bg-slate-900 px-4 font-bold text-white">Следующий</button></div>
+    <div className="grid grid-cols-2 gap-3"><button type="button" onClick={()=>move(index-1)} className="min-h-12 rounded-xl border bg-white px-4 font-bold">Назад</button><button type="button" onClick={()=>move(index+1)} className="min-h-12 rounded-xl bg-slate-900 px-4 font-bold text-white">Следующее задание</button></div>
   </div>;
 }
 

@@ -160,7 +160,7 @@ function Home({
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-teal-700"><Sparkles className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-black uppercase tracking-[.14em] text-teal-700">Отто рекомендует продолжить</p>
+            <p className="text-xs font-black uppercase tracking-[.14em] text-teal-700">Рекомендуемый следующий шаг</p>
             <h2 className="mt-1 text-xl font-black text-slate-950">{meta.title}</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{meta.description}</p>
           </div>
@@ -173,7 +173,7 @@ function Home({
       <LetterFormula />
 
       <section className="mt-6">
-        <h2 className="text-xl font-black text-slate-950">Путь Schreiben</h2>
+        <h2 className="text-xl font-black text-slate-950">Тренировка Schreiben</h2>
         <div className="mt-3 space-y-3">
           {(['guided', 'coach', 'solo'] as WritingMode[]).map((mode, index) => {
             const item = modeMeta(mode);
@@ -198,11 +198,11 @@ function Home({
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-slate-500">Этапы не блокируются: при желании можно сразу перейти к самостоятельному режиму.</p>
+        <p className="mt-2 text-xs text-slate-500">Можно выбрать любой этап и сразу перейти к самостоятельной работе.</p>
       </section>
 
       <section className="mt-6">
-        <h2 className="text-xl font-black text-slate-950">Экзаменационная часть</h2>
+        <h2 className="text-xl font-black text-slate-950">Формат экзамена</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <PartCard icon={FileText} title="Teil 1 · Formular" text="Прочитайте ситуацию и заполните 5 недостающих данных." onClick={() => onOpen('teil1')} />
           <PartCard icon={PenLine} title="Teil 2 · Brief" text="Письмо по трём обязательным пунктам. Отто оценивает его по шкале Goethe 10 баллов." onClick={() => onOpen(recommended)} />
@@ -318,7 +318,7 @@ function FormResult({ score, total }: { score: number; total: number }) {
 
   return (
     <section className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-      <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-teal-700">Результат Formular</p><strong className="mt-1 block text-3xl font-black text-slate-950">{score}/{total}</strong></div><CheckCircle2 className="h-8 w-8 text-teal-700" /></div>
+      <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-teal-700">Результат Teil 1</p><strong className="mt-1 block text-3xl font-black text-slate-950">{score}/{total}</strong></div><CheckCircle2 className="h-8 w-8 text-teal-700" /></div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{reaction}</p>
     </section>
   );
@@ -384,7 +384,7 @@ function Teil2({
 
   const chooseImage = async (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) { setError('Выберите фото письма.'); return; }
+    if (!file.type.startsWith('image/')) { setError('Выберите изображение письма.'); return; }
     if (file.size > 6 * 1024 * 1024) { setError('Фото слишком большое. Максимум 6 МБ.'); return; }
     const reader = new FileReader();
     reader.onload = () => { setImage(String(reader.result || '')); setImageName(file.name); setFeedback(null); setError(''); };
@@ -451,7 +451,7 @@ function Teil2({
 
       {mode === 'guided' && !exampleClosed && (
         <section className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
-          <div className="flex items-start gap-3"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" /><div><p className="text-xs font-black uppercase tracking-wider text-sky-800">Пример именно к этому заданию</p><h2 className="mt-1 text-lg font-black text-slate-950">Сначала разберите хороший пример</h2><p className="mt-1 text-sm leading-6 text-slate-600">После просмотра закройте его и напишите свой вариант.</p></div></div>
+          <div className="flex items-start gap-3"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-sky-700" /><div><p className="text-xs font-black uppercase tracking-wider text-sky-800">Пример для этого задания</p><h2 className="mt-1 text-lg font-black text-slate-950">Сначала разберите пример</h2><p className="mt-1 text-sm leading-6 text-slate-600">После просмотра закройте его и напишите свой вариант.</p></div></div>
           {!example ? (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               <button type="button" onClick={loadExample} disabled={exampleLoading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-800 px-4 font-bold text-white disabled:opacity-50">{exampleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{exampleLoading ? 'Отто готовит пример…' : 'Показать пример'}</button>
@@ -469,8 +469,8 @@ function Teil2({
 
       {mode === 'coach' && (
         <>
-          <button type="button" onClick={() => setHint((value) => !value)} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900"><Lightbulb className="h-4 w-4" />{hint ? 'Скрыть подсказку' : 'Нужна маленькая подсказка'}</button>
-          {hint && <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="mb-2 text-xs font-black uppercase tracking-wider text-amber-800">Отто подсказывает только нужную конструкцию</p>{task.points.map((point, pointIndex) => <p key={point} className="mt-1 text-sm leading-6 text-slate-700">{pointIndex + 1}. <HoverTranslateText text={hintFor(point)} /></p>)}</div>}
+          <button type="button" onClick={() => setHint((value) => !value)} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900"><Lightbulb className="h-4 w-4" />{hint ? 'Скрыть подсказку' : 'Нужна подсказка'}</button>
+          {hint && <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="mb-2 text-xs font-black uppercase tracking-wider text-amber-800">Короткая подсказка от Отто</p>{task.points.map((point, pointIndex) => <p key={point} className="mt-1 text-sm leading-6 text-slate-700">{pointIndex + 1}. <HoverTranslateText text={hintFor(point)} /></p>)}</div>}
         </>
       )}
 
@@ -482,7 +482,7 @@ function Teil2({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} />
           </div>
           {imageName && <div className="mb-3 flex items-center justify-between rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800"><span className="truncate">Фото: {imageName}</span><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Удалить фото"><X className="h-4 w-4" /></button></div>}
-          <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={mode === 'solo' ? 'Напишите письмо без подсказок…' : 'Теперь попробуйте написать письмо сами…'} className="min-h-[210px] w-full resize-y rounded-xl border border-slate-300 p-4 text-base leading-7 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
+          <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={mode === 'solo' ? 'Напишите письмо без подсказок…' : 'Напишите письмо самостоятельно…'} className="min-h-[210px] w-full resize-y rounded-xl border border-slate-300 p-4 text-base leading-7 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
           <p className="mt-2 text-xs leading-5 text-slate-500">Отто проверит каждый из трёх пунктов по шкале 3 / 1,5 / 0 и оформление письма по шкале 1 / 0,5 / 0.</p>
         </section>
       )}
@@ -524,7 +524,7 @@ function Feedback({ data, gender }: { data: AiFeedback; gender?: Gender }) {
 
       {data.corrections?.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <h4 className="flex items-center gap-2 font-black text-amber-900"><CircleAlert className="h-4 w-4" />Реальные языковые ошибки</h4>
+          <h4 className="flex items-center gap-2 font-black text-amber-900"><CircleAlert className="h-4 w-4" />Языковые ошибки</h4>
           {data.corrections.map((correction, index) => (
             <div key={`${correction.original}-${index}`} className="mt-3 rounded-xl bg-white p-3">
               <p className="text-sm"><span className="text-rose-700 line-through">{correction.original}</span></p>
@@ -534,11 +534,11 @@ function Feedback({ data, gender }: { data: AiFeedback; gender?: Gender }) {
             </div>
           ))}
           {!fixing && <button type="button" onClick={() => setFixing(true)} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white">{byGender(gender, 'Попробовать исправить самой', 'Попробовать исправить самому', 'Попробовать исправить самостоятельно')}</button>}
-          {fixing && !fixChecked && <button type="button" onClick={() => setFixChecked(true)} disabled={data.corrections.some((_, index) => !(fixes[index] || '').trim())} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white disabled:opacity-40">Проверить мои исправления</button>}
+          {fixing && !fixChecked && <button type="button" onClick={() => setFixChecked(true)} disabled={data.corrections.some((_, index) => !(fixes[index] || '').trim())} className="mt-3 min-h-10 w-full rounded-xl bg-amber-900 px-4 text-sm font-black text-white disabled:opacity-40">Проверить исправления</button>}
         </div>
       )}
 
-      <div className="rounded-xl bg-white p-3 text-sm leading-6 text-slate-700"><b>Коротко от Отто:</b> {data.feedbackRu}</div>
+      <div className="rounded-xl bg-white p-3 text-sm leading-6 text-slate-700"><b>Комментарий Отто:</b> {data.feedbackRu}</div>
       {data.feedbackDe && <p className="text-sm leading-6 text-teal-900"><b>Полезная фраза:</b> <HoverTranslateText text={data.feedbackDe} /></p>}
     </section>
   );

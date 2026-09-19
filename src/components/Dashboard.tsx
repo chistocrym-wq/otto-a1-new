@@ -48,9 +48,9 @@ export function Dashboard(props:DashboardProps){
 
    <section className="rounded-[24px] border border-[var(--otto-line)] bg-[var(--otto-surface)] p-4 shadow-[0_12px_30px_rgba(43,54,54,.07)] sm:p-5">
      <div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-[850] uppercase tracking-[.14em] text-[var(--otto-petrol-dark)]">{t('today')}</p><h2 className="text-xl font-bold leading-[1.08] text-[var(--otto-ink)]" style={serifFont}>{lang==='de'?'Training':'Тренировка'}</h2></div><Clock3 className="h-5 w-5 text-[var(--otto-muted)]"/></div>
-     <p className="mt-1 text-sm text-[var(--otto-muted)]">{lang==='de'?'Wie viel Zeit haben Sie?':'Сколько времени есть сейчас?'}</p>
+     <p className="mt-1 text-sm text-[var(--otto-muted)]">{lang==='de'?'Wie viel Zeit haben Sie?':'Сколько времени есть на тренировку?'}</p>
      <div className="mt-4 grid grid-cols-3 gap-2">{([5,15,30] as Minutes[]).map(value=><button key={value} type="button" onClick={()=>chooseMinutes(value)} aria-pressed={minutes===value} className={`min-h-16 rounded-2xl border px-2 transition ${minutes===value?'border-[var(--otto-petrol)] bg-[var(--otto-petrol-soft)] text-[var(--otto-petrol-dark)]':'border-[var(--otto-line)] bg-[var(--otto-bg-soft)] text-[var(--otto-muted)]'}`}><strong className="block text-xl">{value}</strong><span className="text-xs font-bold">{t('minutes')}</span></button>)}</div>
-     {today.attempts>0&&<p className="mt-3 text-xs font-semibold text-[var(--otto-muted)]">Сегодня: {today.attempts} попыток{today.minutes?` · ${today.minutes} мин`:''}</p>}
+     {today.attempts>0&&<p className="mt-3 text-xs font-semibold text-[var(--otto-muted)]">Попытки сегодня: {today.attempts}{today.minutes?` · ${today.minutes} мин`:''}</p>}
    </section>
 
    <section className="rounded-[24px] border border-[var(--otto-line)] bg-[var(--otto-surface)] p-4 shadow-[0_12px_30px_rgba(43,54,54,.07)] sm:p-5">

@@ -343,19 +343,19 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 {contactType === 'email' ? (
                   <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Email<input ref={emailInputRef} value={contact} onChange={(event) => { setContact(event.target.value); setOtpError(null); setSendFailed(false); }} inputMode="email" autoComplete="email" placeholder="name@example.com" className="mt-2 min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] px-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></label>
                 ) : telegramVerified ? (
-                  <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-sage-soft)] p-4 text-sm text-[var(--otto-petrol-dark)]"><div className="flex items-center gap-2 font-[850]"><CheckCircle2 className="h-5 w-5" />Telegram подтверждён</div><p className="mt-1 leading-6">Mini App подтвердил Telegram-пользователя{status.firstName ? `: ${status.firstName}` : ''}. Мы не просим вводить логин повторно.</p></div>
+                  <div className="mt-4 rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-sage-soft)] p-4 text-sm text-[var(--otto-petrol-dark)]"><div className="flex items-center gap-2 font-[850]"><CheckCircle2 className="h-5 w-5" />Telegram подтверждён</div><p className="mt-1 leading-6">Telegram подтверждён{status.firstName ? `: ${status.firstName}` : ''}. Повторно вводить логин не нужно.</p></div>
                 ) : (
                   <label className="mt-4 block text-sm font-bold text-[var(--otto-ink)]">Telegram username<div className="relative mt-2"><AtSign className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--otto-muted)]" /><input value={contact.replace(/^@/u, '')} onChange={(event) => setContact(event.target.value)} autoCapitalize="none" autoCorrect="off" placeholder="username" className="min-h-12 w-full rounded-xl border border-[var(--otto-line-strong)] bg-[var(--otto-surface-strong)] pl-10 pr-4 text-base text-[var(--otto-ink)] outline-none focus:border-[var(--otto-petrol)] focus:ring-2 focus:ring-[var(--otto-petrol)]/15" /></div></label>
                 )}
 
-                <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Email нужно подтвердить кодом из письма. До подтверждения главный экран OTTO не откроется.' : 'Telegram считается подтверждённым только когда OTTO открыт как Mini App и сервер успешно проверил Telegram initData.'}</p>
+                <p className="mt-3 text-xs leading-5 text-[var(--otto-muted)]">{contactType === 'email' ? 'Подтвердите email кодом из письма. После этого откроется главный экран OTTO.' : 'Telegram подтверждается автоматически, когда OTTO открыт внутри Telegram.'}</p>
                 {!profileValid && (name.trim() || contact.trim() || gender !== null) && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]">Проверьте имя, пол и выбранный контакт.</p>}
                 {otpError && <p className="mt-2 text-sm font-semibold text-[var(--otto-danger)]" role="alert">{otpError}</p>}
                 {sendFailed && contactType === 'email' ? (
                   <div className="mt-4 space-y-2">
                     <button type="button" disabled={busy !== null} onClick={() => void requestOtp()} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:opacity-45">Попробовать ещё раз</button>
                     <button type="button" disabled={busy !== null} onClick={() => { setSendFailed(false); setOtpError(null); emailInputRef.current?.focus(); }} className="min-h-11 w-full rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-petrol-dark)] disabled:opacity-45">Изменить email</button>
-                    <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Без подтверждения email восстановить доступ и прогресс на другом устройстве не получится.</p>
+                    <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы восстановить доступ и прогресс на другом устройстве.</p>
                     <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
                   </div>
                 ) : (
@@ -401,7 +401,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                   {resendSeconds > 0 ? `Отправить код ещё раз через ${resendSeconds} сек.` : busy === 'request' ? 'Отправляем код…' : 'Отправить код ещё раз'}
                 </button>
                 <button type="button" disabled={busy !== null} onClick={() => void changeEmail()} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Изменить email</button>
-                <p className="mt-3 px-1 text-xs leading-5 text-[var(--otto-muted)]">Без подтверждения email восстановить доступ и прогресс на другом устройстве не получится.</p>
+                <p className="mt-3 px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы восстановить доступ и прогресс на другом устройстве.</p>
                 <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="mt-1 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
               </div>
             )}
@@ -412,7 +412,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 <h2 className="mt-1 text-2xl font-bold leading-[1.08] text-[var(--otto-ink)]" style={serifFont}>Выберите режим обучения</h2>
                 <div className="mt-5 space-y-3">
                   <ModeCard active={mode === 'guided'} title="Начинаю с нуля" description="Отто будет объяснять новые типы заданий и давать короткую подготовку перед тренировкой." onClick={() => setMode('guided')} />
-                  <ModeCard active={mode === 'direct'} title="Я уже немного знаю немецкий" description="Сразу к тренировкам — максимально близко к нынешнему режиму OTTO." onClick={() => setMode('direct')} />
+                  <ModeCard active={mode === 'direct'} title="Я уже немного знаю немецкий" description="Сразу к тренировкам без дополнительных объяснений." onClick={() => setMode('direct')} />
                 </div>
                 <button type="button" onClick={save} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-terracotta)] px-5 font-[850] text-white"><CheckCircle2 className="h-5 w-5" />{initialProfile ? 'Сохранить профиль' : 'Начать заниматься'}</button>
               </div>
