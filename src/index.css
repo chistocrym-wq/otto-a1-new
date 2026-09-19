@@ -240,8 +240,13 @@ button[aria-label="Секреты успешной сдачи"]::after {
   line-height: 1.1;
 }
 
+html[data-otto-text-size="small"] button[aria-label="Секреты успешной сдачи"]::after { font-size: 9.9px; }
+html[data-otto-text-size="large"] button[aria-label="Секреты успешной сдачи"]::after { font-size: 13px; }
+
 @media (min-width: 480px) {
   button[aria-label="Секреты успешной сдачи"]::after { content: 'Секреты успешной сдачи'; font-size: 12px; }
+  html[data-otto-text-size="small"] button[aria-label="Секреты успешной сдачи"]::after { font-size: 10.8px; }
+  html[data-otto-text-size="large"] button[aria-label="Секреты успешной сдачи"]::after { font-size: 14.16px; }
 }
 
 @media (max-width: 640px) {
