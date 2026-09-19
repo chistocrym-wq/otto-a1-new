@@ -14,6 +14,10 @@ import { cn } from '@/lib/utils';
 interface Props { onBack:()=>void; onComplete:(score:number,total:number)=>void }
 type Screen='home'|'teil1'|'teil2'|'teil3'|'free'|'extra';
 
+const SPEAKING_PROMPT_HELPERS: Readonly<Record<string, string>> = {
+  'free-freizeit:2': 'С кем вы обычно это делаете?',
+};
+
 export function SpeakingModule({onBack,onComplete}:Props){
   const[screen,setScreen]=useState<Screen>('home');
   const[t2,setT2]=useState(0);const[free,setFree]=useState(0);
@@ -80,7 +84,10 @@ export function SpeakingModule({onBack,onComplete}:Props){
     <InstructionBox german="Sprechen Sie frei über das Thema. Nutzen Sie die Fragen nur als Hilfe." russian="Коротко расскажите по теме своими словами. Вопросы — только опора."/>
     <div className="mb-5 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
       <div className="flex items-start justify-between gap-3 bg-amber-100 px-5 py-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wider text-amber-800">Zusatztraining</p><h3 className="mt-1 text-xl font-black"><HoverTranslateText text={topic.title}/></h3></div><CompactTranslationEye parts={[topic.title]} translations={[topic.titleRu]} title="Перевод темы"/></div>
-      <div className="p-5"><div className="space-y-3">{topic.questions.map((q,i)=><div key={q} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="font-black text-amber-700">{i+1}.</span><HoverTranslateText text={q}/></div>)}</div><button onClick={()=>setShowGuide(v=>!v)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 font-bold text-amber-900"><Lightbulb className="h-4 w-4"/>{showGuide?'Скрыть конструктор':'Конструктор рассказа'}</button>{showGuide&&<div className="mt-4 rounded-xl border bg-white p-4">{topic.guide.map(line=><p key={line} className="border-b border-dashed py-2"><HoverTranslateText text={line}/></p>)}</div>}</div>
+      <div className="p-5"><div className="space-y-3">{topic.questions.map((q,i)=>{
+        const helper=SPEAKING_PROMPT_HELPERS[`${topic.id}:${i}`];
+        return <div key={q} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="font-black text-amber-700">{i+1}.</span><div className="min-w-0"><HoverTranslateText text={q}/>{helper&&<p className="mt-1 text-xs font-medium leading-5 text-slate-500">{helper}</p>}</div></div>;
+      })}</div><button onClick={()=>setShowGuide(v=>!v)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 font-bold text-amber-900"><Lightbulb className="h-4 w-4"/>{showGuide?'Скрыть конструктор':'Конструктор рассказа'}</button>{showGuide&&<div className="mt-4 rounded-xl border bg-white p-4">{topic.guide.map(line=><p key={line} className="border-b border-dashed py-2"><HoverTranslateText text={line}/></p>)}</div>}</div>
     </div>
     <VoiceRecorder evaluation={{mode:'free',title:topic.title,expectedPoints:topic.questions}} onPracticed={()=>setPracticed(true)} onEvaluated={recordEvaluation} hint="Говорите примерно 45–120 секунд."/>
     <SampleBox show={showSample} onToggle={()=>setShowSample(v=>!v)} title="Beispiel"><SampleAudioLine text={topic.sample}/></SampleBox>
