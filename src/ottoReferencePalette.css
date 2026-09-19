@@ -269,3 +269,77 @@ body,
 .otto-skin [class~="border-rose-200"] {
   /* intentionally left to the existing semantic error palette */
 }
+
+
+/* Main dashboard hierarchy: reference colors only, geometry untouched. */
+.otto-view-home .otto-dashboard-time-option {
+  color: #FFFFFF !important;
+  border-color: #092F68 !important;
+  background: #092F68 !important;
+  box-shadow: 0 7px 18px rgba(9,47,104,.16);
+}
+.otto-view-home .otto-dashboard-time-option strong,
+.otto-view-home .otto-dashboard-time-option span {
+  color: #FFFFFF !important;
+}
+.otto-view-home .otto-dashboard-time-option:hover {
+  border-color: #076CD4 !important;
+  background: linear-gradient(135deg, #092F68 0%, #076CD4 100%) !important;
+}
+.otto-view-home .otto-dashboard-time-option.is-selected,
+.otto-view-home .otto-dashboard-time-option[aria-pressed="true"] {
+  color: #FFFFFF !important;
+  border-color: #076CD4 !important;
+  background: linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%) !important;
+  box-shadow: 0 9px 22px rgba(7,108,212,.24) !important;
+}
+.otto-view-home .otto-dashboard-time-option.is-selected strong,
+.otto-view-home .otto-dashboard-time-option.is-selected span,
+.otto-view-home .otto-dashboard-time-option[aria-pressed="true"] strong,
+.otto-view-home .otto-dashboard-time-option[aria-pressed="true"] span {
+  color: #FFFFFF !important;
+}
+
+.otto-view-home .otto-dashboard-module-card {
+  color: #FFFFFF !important;
+  border-color: #076CD4 !important;
+  background: linear-gradient(145deg, #092F68 0%, #076CD4 100%) !important;
+  box-shadow: 0 10px 24px rgba(9,47,104,.18);
+}
+.otto-view-home .otto-dashboard-module-card strong,
+.otto-view-home .otto-dashboard-module-card b {
+  color: #FFFFFF !important;
+}
+.otto-view-home .otto-dashboard-module-card > span > span {
+  color: #FFFFFF !important;
+  background: rgba(255,255,255,.14) !important;
+}
+.otto-view-home .otto-dashboard-module-card > span > b,
+.otto-view-home .otto-dashboard-module-card > span:last-child {
+  color: #A7E0F9 !important;
+}
+.otto-view-home .otto-dashboard-module-card:hover {
+  border-color: #28ADF7 !important;
+  background: linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%) !important;
+}
+
+/* Remove remaining neutral-grey utility surfaces from active UI without
+   affecting layout or semantic error states. */
+.otto-skin [class~="bg-slate-200"] {
+  background-color: #A7E0F9 !important;
+}
+.otto-skin [class~="border-slate-200"],
+.otto-skin [class~="border-slate-300"] {
+  border-color: #85D3F7 !important;
+}
+.otto-skin [class~="text-slate-900"],
+.otto-skin [class~="text-slate-950"] {
+  color: #092F68 !important;
+}
+.otto-skin [class~="text-amber-300"] {
+  color: #85D3F7 !important;
+}
+.otto-skin :not(button)[class~="bg-slate-900"] {
+  color: #FFFFFF !important;
+  background: #092F68 !important;
+}
