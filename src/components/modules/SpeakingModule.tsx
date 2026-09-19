@@ -10,6 +10,7 @@ import { RussianVoiceInput } from '@/components/sprechen/RussianVoiceInput';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { cn } from '@/lib/utils';
+import { readTrainingResume, saveTrainingResume } from '@/lib/trainingResume';
 
 interface Props { onBack:()=>void; onComplete:(score:number,total:number)=>void }
 type Screen='home'|'teil1'|'teil2'|'teil3'|'free'|'extra';
@@ -20,7 +21,7 @@ const SPEAKING_PROMPT_HELPERS: Readonly<Record<string, string>> = {
 
 export function SpeakingModule({onBack,onComplete}:Props){
   const[screen,setScreen]=useState<Screen>('home');
-  const[t2,setT2]=useState(0);const[free,setFree]=useState(0);
+  const[t2,setT2]=useState(()=>Math.min(readTrainingResume().sprechenTeil2,Math.max(0,speakingTeil2Cards.length-1)));const[free,setFree]=useState(()=>Math.min(readTrainingResume().sprechenFree,Math.max(0,freeSpeakingTopics.length-1)));
   const[showSample,setShowSample]=useState(false);const[showGuide,setShowGuide]=useState(false);const[showTip,setShowTip]=useState(false);const[practiced,setPracticed]=useState(false);
   const reset=()=>{setShowSample(false);setShowGuide(false);setShowTip(false);setPracticed(false)};
   const openPart=(p:SpeakingPart)=>{reset();setScreen(`teil${p}` as Screen)};
@@ -66,7 +67,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
         <SampleAudioLine label="Frage" text={card.sampleQuestion}/>
         <SampleAudioLine label="Antwort" text={card.sampleAnswer}/>
       </SampleBox>
-      <BottomActions disabled={!practiced} onNext={()=>{setT2(v=>(v+1)%speakingTeil2Cards.length);reset()}} onShuffle={()=>{setT2(v=>nextRandomIndex(v,speakingTeil2Cards.length));reset()}} nextLabel="Следующая карточка" shuffleLabel="Случайная карточка"/>
+      <BottomActions disabled={!practiced} onNext={()=>{setT2(v=>{const next=(v+1)%speakingTeil2Cards.length;saveTrainingResume({sprechenTeil2:next});return next});reset()}} onShuffle={()=>{setT2(v=>{const next=nextRandomIndex(v,speakingTeil2Cards.length);saveTrainingResume({sprechenTeil2:next});return next});reset()}} nextLabel="Следующая карточка" shuffleLabel="Случайная карточка"/>
     </div>;
   }
 
@@ -91,7 +92,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
     </div>
     <VoiceRecorder evaluation={{mode:'free',title:topic.title,expectedPoints:topic.questions}} onPracticed={()=>setPracticed(true)} onEvaluated={recordEvaluation} hint="Говорите примерно 45–120 секунд."/>
     <SampleBox show={showSample} onToggle={()=>setShowSample(v=>!v)} title="Beispiel"><SampleAudioLine text={topic.sample}/></SampleBox>
-    <BottomActions disabled={!practiced} onNext={()=>{setFree(v=>(v+1)%freeSpeakingTopics.length);reset()}} onShuffle={()=>{setFree(v=>nextRandomIndex(v,freeSpeakingTopics.length));reset()}} nextLabel="Следующая тема"/>
+    <BottomActions disabled={!practiced} onNext={()=>{setFree(v=>{const next=(v+1)%freeSpeakingTopics.length;saveTrainingResume({sprechenFree:next});return next});reset()}} onShuffle={()=>{setFree(v=>{const next=nextRandomIndex(v,freeSpeakingTopics.length);saveTrainingResume({sprechenFree:next});return next});reset()}} nextLabel="Следующая тема"/>
   </div>;
 }
 
