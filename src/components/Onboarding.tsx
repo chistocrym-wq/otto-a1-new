@@ -17,13 +17,15 @@ type BusyState = 'request' | 'verify' | null;
 const serifFont={fontFamily:'Georgia, "Times New Roman", serif'};
 const sansFont={fontFamily:'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'};
 
+const TELEGRAM_BOT_USERNAME = 'ottoA1_bot';
 const TELEGRAM_MINI_APP_URL = String(import.meta.env.VITE_TELEGRAM_MINI_APP_URL || '').trim();
 
 function getTelegramMiniAppUrl() {
   if (!TELEGRAM_MINI_APP_URL) return '';
   try {
     const url = new URL(TELEGRAM_MINI_APP_URL);
-    if (url.protocol !== 'https:' || url.hostname !== 't.me') return '';
+    if (url.protocol !== 'https:' || url.hostname.toLowerCase() !== 't.me') return '';
+    if (url.pathname.toLowerCase() !== `/${TELEGRAM_BOT_USERNAME.toLowerCase()}`) return '';
     if (!url.searchParams.has('startapp')) return '';
     return url.toString();
   } catch {
@@ -370,7 +372,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--otto-surface)] text-[var(--otto-petrol-dark)]"><Send className="h-5 w-5" /></span>
                       <div className="min-w-0">
                         <strong className="block text-base text-[var(--otto-ink)]">Подтверждение через Telegram</strong>
-                        <p className="mt-1 text-sm leading-6 text-[var(--otto-muted)]">{status.loading && telegramInitDataPresent ? 'Проверяем ваш Telegram-аккаунт…' : 'Откройте OTTO в Telegram. Мы автоматически подтвердим ваш Telegram-аккаунт — вводить код не нужно.'}</p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--otto-muted)]">{status.loading && telegramInitDataPresent ? 'Проверяем ваш Telegram-аккаунт…' : `Откройте OTTO в Telegram через @${TELEGRAM_BOT_USERNAME}. Мы автоматически подтвердим ваш Telegram-аккаунт — вводить код не нужно.`}</p>
                       </div>
                     </div>
                     {!status.loading && !telegramVerified && (
@@ -378,7 +380,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                         <button type="button" disabled={!telegramMiniAppUrl} onClick={() => { if (telegramMiniAppUrl) window.location.assign(telegramMiniAppUrl); }} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:cursor-not-allowed disabled:opacity-40">
                           Продолжить в Telegram <ArrowRight className="h-4 w-4" />
                         </button>
-                        {!telegramMiniAppUrl && <p className="mt-2 text-xs leading-5 text-[var(--otto-muted)]">Ссылка на Mini App ещё не настроена.</p>}
+                        {!telegramMiniAppUrl && <p className="mt-2 text-xs font-semibold leading-5 text-[var(--otto-danger)]">BLOCKED: Mini App URL not configured</p>}
                         <button type="button" onClick={() => { setContactType('email'); setOtpError(null); }} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-petrol-dark)]">Выбрать Email вместо Telegram</button>
                       </>
                     )}
