@@ -195,6 +195,7 @@ export function installTextSizePreference() {
   });
 
   window.addEventListener('resize', scheduleApply);
+  window.visualViewport?.addEventListener('resize', scheduleApply);
   window.addEventListener('storage', (event) => {
     if (event.key !== STORAGE_KEY || !isPreference(event.newValue) || event.newValue === current) return;
     current = event.newValue;
