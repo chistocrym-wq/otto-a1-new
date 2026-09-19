@@ -1,25 +1,25 @@
 :root {
-  --otto-navy: #0C3569;
-  --otto-petrol: #1171CA;
-  --otto-petrol-dark: #0C3569;
-  --otto-petrol-soft: #EAF7FD;
-  --otto-cream: #F6FBFF;
+  --otto-navy: #092F68;
+  --otto-petrol: #52C2F4;
+  --otto-petrol-dark: #076CD4;
+  --otto-petrol-soft: #A2DDF7;
+  --otto-cream: #A7E0F9;
   --otto-surface: #FFFFFF;
-  --otto-sage: #6DCBF4;
-  --otto-sage-soft: #EAF7FD;
-  --otto-cta: #1171CA;
-  --otto-cta-hover: #0C3569;
-  --otto-amber: #8f641f;
-  --otto-muted-premium: #5E718C;
-  --otto-line-premium: #D8EAF7;
+  --otto-sage: #85D3F7;
+  --otto-sage-soft: #A7E0F9;
+  --otto-cta: #28ADF7;
+  --otto-cta-hover: #076CD4;
+  --otto-amber: #092F68;
+  --otto-muted-premium: rgba(9,47,104,.72);
+  --otto-line-premium: #85D3F7;
   --otto-danger: #9f4c4c;
   --otto-danger-soft: #fbefee;
-  --otto-shadow-premium: 0 16px 42px rgba(12,53,105,.10);
-  --otto-shadow-soft: 0 7px 22px rgba(12,53,105,.07);
+  --otto-shadow-premium: 0 16px 42px rgba(9,47,104,.10);
+  --otto-shadow-soft: 0 7px 22px rgba(9,47,104,.07);
 
   /* Backwards-compatible project tokens */
-  --otto-bg: #F4FAFE;
-  --otto-bg-soft: #F8FCFF;
+  --otto-bg: #A2DDF7;
+  --otto-bg-soft: #A7E0F9;
   --otto-surface-strong: #FFFFFF;
   --otto-teal: var(--otto-petrol);
   --otto-teal-dark: var(--otto-petrol-dark);
@@ -29,23 +29,23 @@
   --otto-brand-soft: var(--otto-petrol-soft);
   --otto-ink: var(--otto-navy);
   --otto-muted: var(--otto-muted-premium);
-  --otto-terracotta: #1171CA;
-  --otto-terracotta-dark: #0C3569;
-  --otto-sand: #DDEFF9;
-  --otto-line: rgba(12,53,105,.13);
-  --otto-line-strong: rgba(12,53,105,.22);
+  --otto-terracotta: #52C2F4;
+  --otto-terracotta-dark: #076CD4;
+  --otto-sand: #A7E0F9;
+  --otto-line: rgba(9,47,104,.13);
+  --otto-line-strong: rgba(9,47,104,.22);
 
   /* Legacy UI aliases kept intact; only their values change. */
-  --otto-ui-bg: #F4FAFE;
-  --otto-ui-bg-2: #FBFDFF;
-  --otto-ui-ink: #0C3569;
-  --otto-ui-muted: #5E718C;
-  --otto-ui-teal: #1171CA;
-  --otto-ui-teal-bright: #31AFF0;
-  --otto-ui-teal-dark: #0C3569;
-  --otto-ui-soft: #EAF7FD;
-  --otto-ui-border: #D8EAF7;
-  --otto-ui-shadow: 0 10px 28px rgba(12,53,105,.07);
+  --otto-ui-bg: #A2DDF7;
+  --otto-ui-bg-2: #A7E0F9;
+  --otto-ui-ink: #092F68;
+  --otto-ui-muted: rgba(9,47,104,.72);
+  --otto-ui-teal: #52C2F4;
+  --otto-ui-teal-bright: #23AEF1;
+  --otto-ui-teal-dark: #076CD4;
+  --otto-ui-soft: #A2DDF7;
+  --otto-ui-border: #85D3F7;
+  --otto-ui-shadow: 0 10px 28px rgba(9,47,104,.07);
 }
 
 html,
@@ -62,13 +62,13 @@ body {
 .telegram-app.otto-skin {
   color: var(--otto-navy);
   background:
-    radial-gradient(circle at 10% 0%, rgba(49,175,240,.10), transparent 30%),
-    radial-gradient(circle at 96% 20%, rgba(109,203,244,.12), transparent 28%),
-    linear-gradient(180deg, #FBFDFF 0%, var(--otto-bg) 55%, #EDF7FD 100%) !important;
+    radial-gradient(circle at 10% 0%, rgba(35,174,241,.42), transparent 32%),
+    radial-gradient(circle at 96% 20%, rgba(82,194,244,.34), transparent 30%),
+    linear-gradient(180deg, #23AEF1 0%, #52C2F4 36%, #6ECDF7 68%, #85D3F7 100%) !important;
 }
 
-.otto-skin .otto-glow-a { background: rgba(49,175,240,.10) !important; }
-.otto-skin .otto-glow-b { background: rgba(109,203,244,.12) !important; }
+.otto-skin .otto-glow-a { background: rgba(35,174,241,.42) !important; }
+.otto-skin .otto-glow-b { background: rgba(82,194,244,.34) !important; }
 .otto-skin .otto-line-art { opacity: .12 !important; }
 
 .otto-skin h1,
@@ -104,10 +104,10 @@ body {
 
 .otto-skin .otto-home-hero {
   min-height: 400px;
-  border-color: rgba(17,113,202,.16) !important;
+  border-color: rgba(9,47,104,.18) !important;
   background:
-    radial-gradient(circle at 86% 18%, rgba(161,218,243,.34), transparent 31%),
-    linear-gradient(145deg, #fff 0 47%, #F2FAFE 72%, #EAF7FD 100%) !important;
+    radial-gradient(circle at 86% 18%, rgba(35,174,241,.54), transparent 33%),
+    linear-gradient(145deg, #A7E0F9 0%, #A2DDF7 38%, #85D3F7 70%, #52C2F4 100%) !important;
   box-shadow: var(--otto-shadow-premium) !important;
 }
 
@@ -155,8 +155,8 @@ body {
 .otto-skin .otto-home-module-icon,
 .otto-skin .otto-module-row-icon {
   color: #fff;
-  background: linear-gradient(145deg, #31AFF0, var(--otto-petrol)) !important;
-  box-shadow: 0 8px 18px rgba(17,113,202,.18) !important;
+  background: linear-gradient(145deg, #23AEF1, #076CD4) !important;
+  box-shadow: 0 8px 20px rgba(7,108,212,.28) !important;
 }
 
 .otto-skin .otto-material-icon,
@@ -181,13 +181,13 @@ body {
 .otto-skin [class~="border-teal-600"],
 .otto-skin [class~="border-sky-200"],
 .otto-skin [class~="border-sky-500"] {
-  border-color: rgba(17,113,202,.28) !important;
+  border-color: rgba(7,108,212,.38) !important;
 }
 
 /* Success and feedback stay semantic, but quieter. */
-.otto-skin [class~="bg-emerald-50"] { background: #EDF7F0 !important; }
-.otto-skin [class~="text-emerald-700"] { color: #2F6A4C !important; }
-.otto-skin [class~="border-emerald-200"] { border-color: #CBE4D3 !important; }
+.otto-skin [class~="bg-emerald-50"] { background: #A7E0F9 !important; }
+.otto-skin [class~="text-emerald-700"] { color: #092F68 !important; }
+.otto-skin [class~="border-emerald-200"] { border-color: #85D3F7 !important; }
 .otto-skin [class~="bg-rose-50"] { background: var(--otto-danger-soft) !important; }
 .otto-skin [class~="text-rose-700"] { color: var(--otto-danger) !important; }
 .otto-skin [class~="border-rose-200"] { border-color: #e7c9c6 !important; }
@@ -195,14 +195,14 @@ body {
 /* Warm blocks are supporting accents, not competing CTAs. */
 .otto-skin [class~="bg-amber-50"],
 .otto-skin [class~="bg-amber-100"] {
-  background: #f8f1e4 !important;
+  background: #A7E0F9 !important;
 }
 .otto-skin [class~="text-amber-700"],
 .otto-skin [class~="text-amber-800"],
 .otto-skin [class~="text-amber-900"] {
-  color: #755523 !important;
+  color: #092F68 !important;
 }
-.otto-skin [class~="border-amber-200"] { border-color: #e6d5b8 !important; }
+.otto-skin [class~="border-amber-200"] { border-color: #85D3F7 !important; }
 
 /* One visually dominant action per screen. */
 .otto-skin .otto-exam-button,
@@ -211,9 +211,9 @@ body {
 .otto-skin button[class~="bg-teal-600"],
 .otto-skin button[class~="bg-teal-700"] {
   color: #fff !important;
-  background: var(--otto-cta) !important;
-  border-color: var(--otto-cta) !important;
-  box-shadow: 0 10px 24px rgba(17,113,202,.18) !important;
+  background: linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%) !important;
+  border-color: #076CD4 !important;
+  box-shadow: 0 10px 26px rgba(7,108,212,.30) !important;
 }
 
 .otto-skin .otto-exam-button:hover,
@@ -221,7 +221,7 @@ body {
 .otto-skin button[class~="bg-slate-900"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-600"]:not(:disabled):hover,
 .otto-skin button[class~="bg-teal-700"]:not(:disabled):hover {
-  background: var(--otto-cta-hover) !important;
+  background: linear-gradient(135deg, #1289E8, #076CD4) !important;
 }
 
 html[data-otto-cta-variant="B"] .otto-skin .otto-exam-button,
@@ -229,14 +229,14 @@ html[data-otto-cta-variant="B"] .otto-skin .otto-primary-button,
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-slate-900"],
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-600"],
 html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
-  background: var(--otto-petrol-dark) !important;
-  border-color: var(--otto-petrol-dark) !important;
-  box-shadow: 0 10px 24px rgba(12,53,105,.20) !important;
+  background: linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%) !important;
+  border-color: #076CD4 !important;
+  box-shadow: 0 10px 24px rgba(9,47,104,.20) !important;
 }
 
 /* Progress is deliberately petrol/sage rather than CTA-colored. */
 .otto-skin .otto-progress-ring {
-  background: conic-gradient(var(--otto-petrol) var(--progress), #DDEFF9 0) !important;
+  background: conic-gradient(var(--otto-petrol) var(--progress), #A7E0F9 0) !important;
 }
 .otto-skin .otto-progress-bars i,
 .otto-skin div[class~="bg-sky-600"],
@@ -245,30 +245,30 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 }
 
 .otto-skin .otto-exam-cta {
-  border-color: rgba(17,113,202,.16) !important;
-  background: linear-gradient(120deg, #fff, #EDF8FE) !important;
+  border-color: rgba(7,108,212,.28) !important;
+  background: linear-gradient(120deg, #A7E0F9, #85D3F7) !important;
   box-shadow: var(--otto-shadow-soft) !important;
 }
 
 .otto-skin .otto-page-hero {
   border-color: var(--otto-line-premium) !important;
-  background: linear-gradient(135deg, #fff 0 58%, #EDF8FE 100%) !important;
+  background: linear-gradient(135deg, #A7E0F9 0 54%, #85D3F7 100%) !important;
   box-shadow: var(--otto-shadow-soft) !important;
 }
 
 .otto-skin .otto-bottom-nav-inner {
-  border-color: #D8EAF7 !important;
+  border-color: #85D3F7 !important;
   background: rgba(255,255,255,.985) !important;
-  box-shadow: 0 -10px 30px rgba(12,53,105,.09) !important;
+  box-shadow: 0 -10px 30px rgba(9,47,104,.09) !important;
 }
 
-.otto-skin .otto-bottom-nav-item { color: #6c7781 !important; }
+.otto-skin .otto-bottom-nav-item { color: rgba(9,47,104,.70) !important; }
 .otto-skin .otto-bottom-nav-item.is-active { color: var(--otto-petrol) !important; }
 
 .otto-skin .otto-companion {
   border-color: rgba(255,255,255,.96) !important;
-  background: #F2F9FE !important;
-  box-shadow: 0 9px 28px rgba(12,53,105,.13) !important;
+  background: #A7E0F9 !important;
+  box-shadow: 0 9px 28px rgba(9,47,104,.13) !important;
 }
 
 /* Form controls */
@@ -277,10 +277,10 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 .otto-skin select {
   color: var(--otto-navy) !important;
   background: #fff !important;
-  border-color: #C9DDEA !important;
+  border-color: #85D3F7 !important;
 }
 .otto-skin input::placeholder,
-.otto-skin textarea::placeholder { color: #5E718C !important; opacity: 1; }
+.otto-skin textarea::placeholder { color: rgba(9,47,104,.72) !important; opacity: 1; }
 
 .otto-skin button,
 .otto-skin a,
@@ -294,7 +294,7 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 .otto-skin input:focus-visible,
 .otto-skin textarea:focus-visible,
 .otto-skin select:focus-visible {
-  outline: 3px solid rgba(49,175,240,.30) !important;
+  outline: 3px solid rgba(35,174,241,.46) !important;
   outline-offset: 2px;
 }
 
@@ -342,24 +342,24 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 }
 
 /* Task #8 — late color-only compatibility for legacy hardcoded brand styles. */
-.otto-skin [class~="bg-slate-50"],.otto-skin [class~="bg-slate-100"]{background-color:#F4FAFE!important}
-.otto-skin [class~="bg-slate-950"],.otto-skin .otto-readiness-hero{background:linear-gradient(145deg,#0C3569,#1171CA)!important;border-color:rgba(161,218,243,.24)!important;box-shadow:0 18px 42px rgba(12,53,105,.16)!important}
-.otto-skin .otto-readiness-hero>div:first-child>svg{color:#A1DAF3!important}.otto-skin [class~="bg-teal-400"]{background:#31AFF0!important}.otto-skin [class~="text-teal-300"]{color:#A1DAF3!important}
-.otto-skin [class~="text-teal-600"],.otto-skin [class~="text-teal-700"],.otto-skin [class~="text-sky-600"],.otto-skin [class~="text-sky-700"]{color:#1171CA!important}
-.otto-skin [class~="text-teal-800"],.otto-skin [class~="text-teal-900"],.otto-skin [class~="text-sky-800"],.otto-skin [class~="text-sky-900"]{color:#0C3569!important}
-.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:#1171CA!important;border-color:#1171CA!important;color:#fff!important;box-shadow:0 10px 24px rgba(17,113,202,.18)!important}
-.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(1),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(3){background:linear-gradient(135deg,#fff,#F4FAFE)!important}
-.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(2),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(4){background:linear-gradient(135deg,#fff,#EAF7FD)!important}
-.telegram-app.otto-skin .otto-account-stat{border-color:rgba(17,113,202,.10)!important;background:linear-gradient(145deg,#F8FCFF,#EAF7FD)!important}
-.telegram-app.otto-skin .otto-account-stat>span,.telegram-app.otto-skin .otto-news-icon,.telegram-app.otto-skin .otto-setting-icon{background:#EAF7FD!important;color:#1171CA!important}
-.telegram-app.otto-skin .otto-setting-row.is-open{border-color:rgba(17,113,202,.22)!important;background:linear-gradient(135deg,#fff,#EDF8FE)!important}
-.telegram-app.otto-skin .otto-support-intro{border-color:#D8EAF7!important;background:linear-gradient(135deg,#F1FAFE,#EAF7FD)!important}.telegram-app.otto-skin .otto-support-badge,.telegram-app.otto-skin .otto-support-card>svg{color:#1171CA!important}.telegram-app.otto-skin .otto-support-copy{background:#1171CA!important;color:#fff!important;box-shadow:0 8px 20px rgba(17,113,202,.16)!important}
-.telegram-app.otto-skin [class*="border-[#0F7D74]"]{border-color:#1171CA!important}.telegram-app.otto-skin [class*="bg-[#EAF4F0]"]{background:#EAF7FD!important}.telegram-app.otto-skin [class*="text-[#285C59]"],.telegram-app.otto-skin [class*="text-[#0F7D74]"]{color:#0C3569!important}
-.telegram-app.otto-skin [class*="bg-[#F4F7F2]"]{background:#F4FAFE!important}.telegram-app.otto-skin [class*="border-[#d9e7e2]"]{border-color:#D8EAF7!important}.telegram-app.otto-skin [class*="bg-[#f7f4ee]"]{background:rgba(246,251,255,.95)!important}
-.otto-skin .otto-voice-mode{border-color:#D8EAF7!important;background:#F1F8FD!important}.otto-skin .otto-voice-mode button.is-active{background:#fff!important;color:#0C3569!important;box-shadow:0 3px 10px rgba(12,53,105,.08)!important}
-.otto-skin .otto-roadmap-training-picker,.otto-skin .otto-roadmap-plan-card,.otto-skin .otto-roadmap-info-card{border-color:rgba(12,53,105,.11)!important;background:#fff!important;box-shadow:0 8px 22px rgba(12,53,105,.07)!important}
-.otto-skin .otto-roadmap-page,.otto-skin .otto-roadmap-page-header h1,.otto-skin .otto-roadmap-training-picker-head h2{color:#0C3569!important}
-.otto-skin .otto-roadmap-kicker,.otto-skin .otto-roadmap-training-picker-head>svg,.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span,.otto-skin .otto-roadmap-time-guide svg,.otto-skin .otto-roadmap-change-time,.otto-skin .otto-roadmap-back{color:#1171CA!important}
-.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span{background:#EAF7FD!important}.otto-skin .otto-roadmap-duration button{border-color:rgba(12,53,105,.12)!important;background:#F4FAFE!important;color:#5E718C!important}.otto-skin .otto-roadmap-duration button.is-active{border-color:rgba(17,113,202,.28)!important;background:#fff!important;color:#0C3569!important}
-.otto-skin .otto-roadmap-howto-link{border-color:rgba(12,53,105,.10)!important;background:linear-gradient(90deg,#F8FCFF,#EAF7FD)!important;color:#0C3569!important}.otto-skin .otto-roadmap-back,.otto-skin .otto-roadmap-time-badge,.otto-skin .otto-roadmap-plan-list li{border-color:rgba(12,53,105,.12)!important;background:#fff!important}.otto-skin .otto-roadmap-plan-index{background:#EDF6FC!important;color:#5E718C!important}
+.otto-skin [class~="bg-slate-50"],.otto-skin [class~="bg-slate-100"]{background-color:#A2DDF7!important}
+.otto-skin [class~="bg-slate-950"],.otto-skin .otto-readiness-hero{background:linear-gradient(145deg,#092F68,#076CD4)!important;border-color:rgba(162,221,247,.24)!important;box-shadow:0 18px 42px rgba(9,47,104,.16)!important}
+.otto-skin .otto-readiness-hero>div:first-child>svg{color:#A7E0F9!important}.otto-skin [class~="bg-teal-400"]{background:#23AEF1!important}.otto-skin [class~="text-teal-300"]{color:#A7E0F9!important}
+.otto-skin [class~="text-teal-600"],.otto-skin [class~="text-teal-700"],.otto-skin [class~="text-sky-600"],.otto-skin [class~="text-sky-700"]{color:#076CD4!important}
+.otto-skin [class~="text-teal-800"],.otto-skin [class~="text-teal-900"],.otto-skin [class~="text-sky-800"],.otto-skin [class~="text-sky-900"]{color:#092F68!important}
+.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%)!important;border-color:#076CD4!important;color:#fff!important;box-shadow:0 10px 24px rgba(7,108,212,.30)!important}
+.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(1),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(3){background:linear-gradient(135deg,#A7E0F9,#A2DDF7)!important}
+.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(2),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(4){background:linear-gradient(135deg,#A2DDF7,#85D3F7)!important}
+.telegram-app.otto-skin .otto-account-stat{border-color:rgba(7,108,212,.10)!important;background:linear-gradient(145deg,#A7E0F9,#A2DDF7)!important}
+.telegram-app.otto-skin .otto-account-stat>span,.telegram-app.otto-skin .otto-news-icon,.telegram-app.otto-skin .otto-setting-icon{background:#A2DDF7!important;color:#076CD4!important}
+.telegram-app.otto-skin .otto-setting-row.is-open{border-color:rgba(7,108,212,.22)!important;background:linear-gradient(135deg,#A7E0F9,#85D3F7)!important}
+.telegram-app.otto-skin .otto-support-intro{border-color:#85D3F7!important;background:linear-gradient(135deg,#A7E0F9,#85D3F7)!important}.telegram-app.otto-skin .otto-support-badge,.telegram-app.otto-skin .otto-support-card>svg{color:#076CD4!important}.telegram-app.otto-skin .otto-support-copy{background:linear-gradient(135deg, #28ADF7 0%, #1289E8 52%, #076CD4 100%)!important;color:#fff!important;box-shadow:0 8px 20px rgba(7,108,212,.28)!important}
+.telegram-app.otto-skin [class*="border-[#0F7D74]"]{border-color:#076CD4!important}.telegram-app.otto-skin [class*="bg-[#EAF4F0]"]{background:#A2DDF7!important}.telegram-app.otto-skin [class*="text-[#285C59]"],.telegram-app.otto-skin [class*="text-[#0F7D74]"]{color:#092F68!important}
+.telegram-app.otto-skin [class*="bg-[#F4F7F2]"]{background:#A2DDF7!important}.telegram-app.otto-skin [class*="border-[#d9e7e2]"]{border-color:#85D3F7!important}.telegram-app.otto-skin [class*="bg-[#f7f4ee]"]{background:rgba(167,224,249,.95)!important}
+.otto-skin .otto-voice-mode{border-color:#85D3F7!important;background:#A7E0F9!important}.otto-skin .otto-voice-mode button.is-active{background:#fff!important;color:#092F68!important;box-shadow:0 3px 10px rgba(9,47,104,.08)!important}
+.otto-skin .otto-roadmap-training-picker,.otto-skin .otto-roadmap-plan-card,.otto-skin .otto-roadmap-info-card{border-color:rgba(9,47,104,.11)!important;background:#fff!important;box-shadow:0 8px 22px rgba(9,47,104,.07)!important}
+.otto-skin .otto-roadmap-page,.otto-skin .otto-roadmap-page-header h1,.otto-skin .otto-roadmap-training-picker-head h2{color:#092F68!important}
+.otto-skin .otto-roadmap-kicker,.otto-skin .otto-roadmap-training-picker-head>svg,.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span,.otto-skin .otto-roadmap-time-guide svg,.otto-skin .otto-roadmap-change-time,.otto-skin .otto-roadmap-back{color:#076CD4!important}
+.otto-skin .otto-roadmap-howto-icon,.otto-skin .otto-roadmap-plan-icon,.otto-skin .otto-roadmap-info-row>span{background:#A2DDF7!important}.otto-skin .otto-roadmap-duration button{border-color:rgba(9,47,104,.12)!important;background:#A2DDF7!important;color:rgba(9,47,104,.72)!important}.otto-skin .otto-roadmap-duration button.is-active{border-color:rgba(7,108,212,.28)!important;background:#fff!important;color:#092F68!important}
+.otto-skin .otto-roadmap-howto-link{border-color:rgba(9,47,104,.10)!important;background:linear-gradient(90deg,#A7E0F9,#A2DDF7)!important;color:#092F68!important}.otto-skin .otto-roadmap-back,.otto-skin .otto-roadmap-time-badge,.otto-skin .otto-roadmap-plan-list li{border-color:rgba(9,47,104,.12)!important;background:#fff!important}.otto-skin .otto-roadmap-plan-index{background:#A7E0F9!important;color:rgba(9,47,104,.72)!important}
 

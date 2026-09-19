@@ -12,7 +12,7 @@ export function ProgressBar({ value, max, className }: ProgressBarProps) {
     <div className={cn('h-2.5 w-full overflow-hidden rounded-full bg-slate-200/90', className)}>
       <div
         className="h-full rounded-full transition-all duration-500 ease-out"
-        style={{ width: `${percent}%`, background: 'linear-gradient(90deg, #0F7D74, #159A8D)' }}
+        style={{ width: `${percent}%`, background: 'linear-gradient(90deg, #23AEF1 0%, #1289E8 55%, #076CD4 100%)' }}
       />
     </div>
   );

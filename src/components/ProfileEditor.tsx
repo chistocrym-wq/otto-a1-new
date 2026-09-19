@@ -136,7 +136,7 @@ export function ProfileEditor({ profile, onSave, onCancel }: Props) {
   return <main className="h-[100dvh] overflow-x-hidden overflow-y-auto overscroll-contain bg-[var(--otto-bg)] px-4 py-5 text-[var(--otto-ink)] sm:px-6 sm:py-8">
     <div className="mx-auto w-full max-w-xl pb-[max(1rem,env(safe-area-inset-bottom))]">
       <button type="button" onClick={onCancel} className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--otto-line)] bg-white px-4 text-sm font-bold"><ArrowLeft className="h-4 w-4"/>Назад</button>
-      <section className="rounded-[28px] border border-[var(--otto-line)] bg-white p-5 shadow-[0_18px_55px_rgba(12,53,105,.10)] sm:p-7">
+      <section className="rounded-[28px] border border-[var(--otto-line)] bg-white p-5 shadow-[0_18px_55px_rgba(9,47,104,.10)] sm:p-7">
         <p className="text-xs font-black uppercase tracking-[.14em] text-[var(--otto-petrol)]">Профиль</p>
         <h1 className="mt-1 text-2xl font-black">Редактирование профиля</h1>
         <p className="mt-2 text-sm leading-6 text-[var(--otto-muted)]">Измените только нужные данные. Режим обучения настраивается отдельно.</p>
