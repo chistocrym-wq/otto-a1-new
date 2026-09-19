@@ -256,6 +256,51 @@ export async function verifyChallenge({ challengeId, email, code, apiKey }) {
   return { ok: true };
 }
 
+function maskEmailForLog(value) {
+  const email = String(value || '');
+  const at = email.indexOf('@');
+  if (at <= 0) return '[redacted-email]';
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}${'*'.repeat(Math.max(3, local.length - visible))}@${domain}`;
+}
+
+function sanitizeUniSenderLogValue(value, secrets = [], depth = 0) {
+  if (value == null || typeof value === 'boolean' || typeof value === 'number') return value;
+
+  if (typeof value === 'string') {
+    let safe = value;
+    for (const secret of secrets) {
+      if (secret) safe = safe.split(secret).join('[redacted-secret]');
+    }
+    safe = safe.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/giu, (match) => maskEmailForLog(match));
+    safe = safe.replace(/\b\d{6}\b/gu, '[redacted-6-digit]');
+    return safe;
+  }
+
+  if (depth >= 5) return '[truncated]';
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 25).map((item) => sanitizeUniSenderLogValue(item, secrets, depth + 1));
+  }
+
+  if (typeof value === 'object') {
+    const safeObject = {};
+    for (const [key, item] of Object.entries(value).slice(0, 40)) {
+      const safeKey = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(key) ? maskEmailForLog(key) : key;
+      if (/^(?:x-api-key|authorization|password|secret|token|otp|otp_code|code)$/iu.test(key) || /api[_-]?key/iu.test(key)) {
+        safeObject[safeKey] = '[redacted]';
+      } else {
+        safeObject[safeKey] = sanitizeUniSenderLogValue(item, secrets, depth + 1);
+      }
+    }
+    return safeObject;
+  }
+
+  return String(value);
+}
+
 export async function sendOtpEmail({ email, code, challengeId, apiKey, fromEmail }) {
   const endpoint = 'https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json';
   const safeCode = String(code);
@@ -298,6 +343,26 @@ export async function sendOtpEmail({ email, code, challengeId, apiKey, fromEmail
   const payload = await response.json().catch(() => null);
   const failed = payload?.failed_emails && Object.prototype.hasOwnProperty.call(payload.failed_emails, email);
   if (!response.ok || payload?.status !== 'success' || failed) {
+    const hasKnownDiagnosticFields = payload && typeof payload === 'object'
+      ? ['status', 'message', 'error', 'errors', 'failed_emails', 'job_id']
+          .some((key) => Object.prototype.hasOwnProperty.call(payload, key))
+      : false;
+
+    const diagnostic = {
+      httpStatus: response.status,
+      responseOk: response.ok,
+      uniStatus: payload?.status ?? null,
+      message: sanitizeUniSenderLogValue(payload?.message ?? payload?.error ?? null, [apiKey]),
+      errors: sanitizeUniSenderLogValue(payload?.errors ?? null, [apiKey]),
+      failedEmails: sanitizeUniSenderLogValue(payload?.failed_emails ?? null, [apiKey]),
+      jobId: sanitizeUniSenderLogValue(payload?.job_id ?? null, [apiKey]),
+    };
+
+    if (!hasKnownDiagnosticFields) {
+      diagnostic.payload = sanitizeUniSenderLogValue(payload, [apiKey]);
+    }
+
+    console.error('UniSender OTP send failed', diagnostic);
     return { ok: false };
   }
   return { ok: true, jobId: typeof payload.job_id === 'string' ? payload.job_id : null };
