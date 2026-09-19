@@ -60,7 +60,7 @@ export function PhraseSpeakingPractice({ onBack, onOpenWriting, onComplete }: Pr
         <Header onBack={onBack} />
         <section className="rounded-[24px] border border-teal-100 bg-white p-5 text-center shadow-sm">
           <BookOpen className="mx-auto h-10 w-10 text-teal-700" />
-          <h2 className="mt-3 text-xl font-black text-slate-950">Сначала появятся ваши фразы</h2>
+          <h2 className="mt-3 text-xl font-black text-slate-950">Здесь появятся ваши фразы</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">Напишите и проверьте хотя бы одно письмо. Отто возьмёт полезные конструкции из вашей реальной практики и перенесёт их сюда.</p>
           <button type="button" onClick={onOpenWriting} className="mt-4 min-h-11 rounded-xl bg-slate-950 px-5 font-black text-white">Перейти в Schreiben</button>
         </section>
@@ -74,7 +74,7 @@ export function PhraseSpeakingPractice({ onBack, onOpenWriting, onComplete }: Pr
       <section className="rounded-[24px] border border-teal-100 bg-teal-50/70 p-4 sm:p-5">
         <p className="text-xs font-black uppercase tracking-[.14em] text-teal-700">Schreiben → Sprechen</p>
         <h2 className="mt-1 text-xl font-black text-slate-950">Фраза {index + 1} из {phrases.length}</h2>
-        <p className="mt-1 text-sm leading-6 text-slate-600">Эту конструкцию вы уже встречали в собственной письменной практике. Теперь задача — научиться говорить её без опоры.</p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">Эта конструкция уже встречалась в вашей письменной практике. Теперь попробуйте произнести её без подсказки.</p>
       </section>
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
@@ -98,7 +98,7 @@ export function PhraseSpeakingPractice({ onBack, onOpenWriting, onComplete }: Pr
         <VoiceRecorder evaluation={{ mode: 'phrase', expectedText: phrase }} onPracticed={() => setPracticed(true)} onEvaluated={evaluated} hint={level === 4 ? 'Скажите фразу после прослушивания, не открывая текст.' : 'Скажите фразу вслух. Отто проверит смысл по распознанной речи.'} />
       </div>
 
-      <button type="button" onClick={next} disabled={!practiced} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-black text-white disabled:opacity-40">Следующая моя фраза <ArrowRight className="h-4 w-4" /></button>
+      <button type="button" onClick={next} disabled={!practiced} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-black text-white disabled:opacity-40">Следующая фраза <ArrowRight className="h-4 w-4" /></button>
     </div>
   );
 }

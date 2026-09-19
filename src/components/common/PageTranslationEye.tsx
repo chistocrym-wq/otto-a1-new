@@ -135,7 +135,7 @@ export function PageTranslationEye({ scopeId }: PageTranslationEyeProps) {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Не удалось открыть перевод.');
       const result = Array.isArray(payload.translations) ? payload.translations.map(String) : [];
-      if (result.length !== parts.length) throw new Error('Перевод пришёл не полностью.');
+      if (result.length !== parts.length) throw new Error('Не удалось загрузить перевод полностью. Попробуйте ещё раз.');
       if (controller.signal.aborted || lastFingerprint.current !== requestFingerprint) return;
       setTranslations(result);
       try { window.localStorage.setItem(key, JSON.stringify(result)); } catch { /* ignore */ }

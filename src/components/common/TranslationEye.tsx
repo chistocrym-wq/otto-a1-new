@@ -77,7 +77,7 @@ export function TranslationEye({ parts, title = 'Перевод задания',
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Не удалось получить перевод.');
       const result = Array.isArray(payload.translations) ? payload.translations.map(String) : [];
-      if (result.length !== requestParts.length) throw new Error('Перевод пришёл не полностью.');
+      if (result.length !== requestParts.length) throw new Error('Не удалось загрузить перевод полностью. Попробуйте ещё раз.');
       if (controller.signal.aborted || sourceKeyRef.current !== requestKey) return;
       setTranslations(result);
       try { window.localStorage.setItem(requestKey, JSON.stringify(result)); } catch { /* ignore */ }

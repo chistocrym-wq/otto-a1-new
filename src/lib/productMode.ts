@@ -6,5 +6,5 @@ export function getOttoProductMode(): OttoProductMode {
 
 export const PRODUCT_MODE_DESCRIPTIONS = {
   basic: 'Самостоятельная тренировка по четырём экзаменационным разделам.',
-  full: 'Персональный маршрут, рекомендации, AI-разбор и готовность к экзамену.',
+  full: 'Персональный маршрут, рекомендации, проверка с Отто и оценка готовности к экзамену.',
 } as const;

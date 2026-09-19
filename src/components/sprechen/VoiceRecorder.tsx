@@ -166,7 +166,7 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
       const r=await fetch('/api/check-sprechen',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({...evaluation,audioBase64,mimeType:normalizeAudioMime(audioBlob.type||'audio/webm')})});
       const p=await r.json().catch(()=>null);
       if(controller.signal.aborted||checkControllerRef.current!==controller)return;
-      if(!r.ok)throw new Error(p?.error||`Проверка недоступна (${r.status}).`);
+      if(!r.ok)throw new Error(p?.error||`Проверка временно недоступна.`);
       const data=parseEvaluationResult(p);
       setResult(data);setAiAvailable(true);
       if(!resultReportedRef.current&&Number.isFinite(data.score)){resultReportedRef.current=true;onEvaluated?.(Math.max(0,Math.min(100,data.score)))}
@@ -185,7 +185,7 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     {!audioUrl&&!isRecording&&<div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={start} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white"><Mic className="h-5 w-5"/>Записать ответ</button><button type="button" onClick={()=>fileRef.current?.click()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700"><Upload className="h-5 w-5"/>Добавить аудио</button><input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={handleFile}/></div>}
     {isRecording&&<button type="button" onClick={stop} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white"><Square className="h-5 w-5"/>Остановить запись</button>}
     {audioUrl&&<div className="space-y-3"><audio src={audioUrl} controls className="w-full"/><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div></div>}
-    {aiAvailable===false&&<p className="mt-3 text-sm text-amber-700">AI-проверка временно недоступна, но запись можно прослушать.</p>}
+    {aiAvailable===false&&<p className="mt-3 text-sm text-amber-700">Проверка с Отто временно недоступна, но запись можно прослушать.</p>}
     {error&&<p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
     {result&&<EvaluationResultCard result={result}/>} 
   </div>;
@@ -194,10 +194,10 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
 function EvaluationResultCard({result}:{result:EvaluationResult}){
   const label=result.officialLevel==='full'?'Задание выполнено':result.officialLevel==='partial'?'Задание выполнено частично':'Задание не выполнено';
   return <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2 font-black text-teal-900"><CheckCircle2 className="h-5 w-5"/>Проверка Отто</span><span className={cn('rounded-full px-3 py-1 text-sm font-black',result.officialLevel==='full'?'bg-emerald-100 text-emerald-800':result.officialLevel==='partial'?'bg-amber-100 text-amber-900':'bg-rose-100 text-rose-800')}>{label}</span></div>
-    {result.transcript&&<div className="mt-3 rounded-xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Распознано</p><p className="mt-1 text-sm leading-6 text-slate-700">{result.transcript}</p></div>}
+    <div className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2 font-black text-teal-900"><CheckCircle2 className="h-5 w-5"/>Проверка с Отто</span><span className={cn('rounded-full px-3 py-1 text-sm font-black',result.officialLevel==='full'?'bg-emerald-100 text-emerald-800':result.officialLevel==='partial'?'bg-amber-100 text-amber-900':'bg-rose-100 text-rose-800')}>{label}</span></div>
+    {result.transcript&&<div className="mt-3 rounded-xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Распознанный текст</p><p className="mt-1 text-sm leading-6 text-slate-700">{result.transcript}</p></div>}
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <div className="rounded-xl bg-white p-3"><h4 className="font-black text-emerald-800">Что получилось</h4>{result.strengths?.length?<ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">{result.strengths.map(item=><li key={item}>• {item}</li>)}</ul>:<p className="mt-2 text-sm text-slate-500">Пока нет выполненной части, которую можно засчитать.</p>}</div>
+      <div className="rounded-xl bg-white p-3"><h4 className="font-black text-emerald-800">Что получилось</h4>{result.strengths?.length?<ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">{result.strengths.map(item=><li key={item}>• {item}</li>)}</ul>:<p className="mt-2 text-sm text-slate-500">Пока в ответе нет части, которую можно засчитать.</p>}</div>
       <div className="rounded-xl bg-white p-3"><h4 className="font-black text-amber-800">Что нужно потренировать</h4>{result.practice?.length?<ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">{result.practice.map(item=><li key={item}>• {item}</li>)}</ul>:<p className="mt-2 text-sm text-slate-500">Существенных замечаний по этому ответу нет.</p>}</div>
     </div>
     {result.pronunciationRu&&<div className="mt-3 rounded-xl bg-white p-3"><h4 className="text-sm font-black text-slate-800">Произношение и понятность</h4><p className="mt-1 text-sm leading-5 text-slate-600">{result.pronunciationRu}</p></div>}

@@ -36,7 +36,7 @@ export function DailyTrainingPage({ minutes, progress, onBack, onSelectModule }:
       </header>
 
       <section className="otto-roadmap-plan-card" aria-label="План тренировки">
-        <p className="otto-roadmap-plan-intro">Отто собрал короткий план из тех навыков, которым сейчас полезнее всего уделить внимание.</p>
+        <p className="otto-roadmap-plan-intro">Отто собрал короткий план с упором на навыки, которым сейчас стоит уделить больше внимания.</p>
         <ol className="otto-roadmap-plan-list">
           {plan.map((item, index) => {
             const Icon = moduleIcons[item.module];
@@ -60,7 +60,7 @@ export function DailyTrainingPage({ minutes, progress, onBack, onSelectModule }:
           onClick={() => firstTask && onSelectModule(firstTask.module)}
           disabled={!firstTask}
         >
-          <span>НАЧАТЬ ТРЕНИРОВКУ</span>
+          <span>Начать тренировку</span>
           <ArrowRight />
         </button>
       </section>
