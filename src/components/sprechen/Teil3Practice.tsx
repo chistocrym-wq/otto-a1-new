@@ -6,6 +6,7 @@ import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { Teil3ArchiveImage } from '@/components/sprechen/Teil3ArchiveImage';
 import { VoiceRecorder } from '@/components/sprechen/VoiceRecorder';
 import { cn } from '@/lib/utils';
+import { readTrainingResume, saveTrainingResume } from '@/lib/trainingResume';
 
 interface Props {
   onEvaluated: (score: number) => void;
@@ -15,7 +16,7 @@ const instruction = 'Bitten Sie Ihren Partner um etwas. Reagieren Sie kurz auf d
 const instructionRu = 'Попросите партнёра о чём-то по картинке и коротко отреагируйте на его просьбу.';
 
 export function Teil3Practice({ onEvaluated }: Props) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.min(readTrainingResume().sprechenTeil3, Math.max(0, speakingTeil3ArchiveCards.length - 1)));
   const [showSample, setShowSample] = useState(false);
   const [practiced, setPracticed] = useState(false);
   const card = speakingTeil3ArchiveCards[index];
@@ -26,7 +27,11 @@ export function Teil3Practice({ onEvaluated }: Props) {
   };
 
   const next = () => {
-    setIndex((current) => (current + 1) % speakingTeil3ArchiveCards.length);
+    setIndex((current) => {
+      const nextIndex = (current + 1) % speakingTeil3ArchiveCards.length;
+      saveTrainingResume({ sprechenTeil3: nextIndex });
+      return nextIndex;
+    });
     resetCardState();
   };
 
@@ -35,6 +40,7 @@ export function Teil3Practice({ onEvaluated }: Props) {
     setIndex((current) => {
       let nextIndex = current;
       while (nextIndex === current) nextIndex = Math.floor(Math.random() * speakingTeil3ArchiveCards.length);
+      saveTrainingResume({ sprechenTeil3: nextIndex });
       return nextIndex;
     });
     resetCardState();
