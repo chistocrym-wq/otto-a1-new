@@ -1,0 +1,97 @@
+/*
+ * Desktop-only layout stabilization.
+ * Keep every mobile/TMA layout rule untouched: this file starts at 1024 CSS px,
+ * including the requested 1366px viewport at 125% browser zoom.
+ */
+
+@media (min-width: 1024px) {
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .telegram-app.otto-skin {
+    overflow-x: clip;
+  }
+
+  /* The approved mobile stylesheet intentionally caps home at 430px.
+     On desktop restore a composed application canvas without stretching it
+     across the full monitor. */
+  .otto-view-home .otto-app-content {
+    width: min(calc(100% - 48px), 980px) !important;
+    max-width: 980px !important;
+    margin-inline: auto !important;
+    padding: 14px 20px 8px !important;
+    background: transparent !important;
+  }
+
+  .otto-view-home .otto-home-screen {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+  }
+
+  .otto-view-home .otto-home-screen > .animate-fade-in {
+    width: 100%;
+    max-width: 940px;
+    margin-inline: auto;
+  }
+
+  /* Inner screens already have the correct visual system; keep them bounded,
+     centered and safely inside the viewport on wide monitors. */
+  .telegram-app:not(.otto-view-home) .otto-app-content {
+    width: min(calc(100% - 48px), 1040px) !important;
+    max-width: 1040px !important;
+    margin-inline: auto !important;
+    padding-right: 24px !important;
+    padding-left: 24px !important;
+  }
+
+  .telegram-app:not(.otto-view-home) .otto-inner-screen,
+  .telegram-app:not(.otto-view-home) .otto-inner-screen > .animate-fade-in {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Late approved-mobile rules also cap the global nav at 406px.
+     Restore the original desktop-sized navigation only on desktop. */
+  .otto-bottom-nav {
+    padding-right: max(24px, env(safe-area-inset-right)) !important;
+    padding-left: max(24px, env(safe-area-inset-left)) !important;
+  }
+
+  .otto-bottom-nav-inner {
+    width: min(100%, 920px) !important;
+    max-width: 920px !important;
+    margin-inline: auto !important;
+  }
+
+  .otto-bottom-nav-item {
+    min-width: 0 !important;
+  }
+
+  /* Keep the companion visually attached to the centered desktop canvas
+     instead of floating at the far edge of very wide monitors. */
+  .telegram-app:not(.otto-view-home) .otto-companion {
+    right: max(24px, calc((100vw - 1040px) / 2 + 6px)) !important;
+  }
+
+  .otto-action-toast {
+    max-width: min(560px, calc(100vw - 64px));
+  }
+}
+
+/* Short laptop viewports: preserve useful vertical space without changing
+   card geometry, text sizes or mobile behavior. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .otto-view-home .otto-app-content {
+    padding-top: 8px !important;
+  }
+
+  .telegram-app:not(.otto-view-home) .otto-app-content {
+    padding-top: 10px !important;
+  }
+}
