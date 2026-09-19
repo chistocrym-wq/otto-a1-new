@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowLeft, BookOpenCheck, ChevronRight, CircleHelp, Download, GraduationCap, Languages, Newspaper, Route, Search, UserRound, Volume2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import {
@@ -221,6 +221,12 @@ function searchableText(id:ReferencePageId){
 export function ReferenceHub({onOpenInstructions,onOpenExamGuide,onOpenHowTo,onOpenAccount,onOpenNews}:Props){
   const[page,setPage]=useState<ReferencePageId|null>(null);
   const[query,setQuery]=useState('');
+
+  useLayoutEffect(()=>{
+    if(!page)return;
+    const scrollContainer=document.querySelector<HTMLElement>('.otto-view-reference .otto-inner-screen');
+    if(scrollContainer)scrollContainer.scrollTop=0;
+  },[page]);
   const allCategories=[...BASE_CATEGORIES,...MODULE_CATEGORIES];
   const filtered=useMemo(()=>{
     const q=query.trim().toLocaleLowerCase('ru-RU');
