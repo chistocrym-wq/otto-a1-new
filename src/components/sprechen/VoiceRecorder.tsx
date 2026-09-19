@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { CheckCircle2, Mic, RefreshCw, Sparkles, Square, Upload } from 'lucide-react';
+import { CheckCircle2, Mic, Pause, Play, RefreshCw, Sparkles, Square, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SpeakingEvaluation =
@@ -52,16 +52,23 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
   const[checking,setChecking]=useState(false);
   const[result,setResult]=useState<EvaluationResult|null>(null);
   const[aiAvailable,setAiAvailable]=useState<boolean|null>(null);
+  const[playbackTime,setPlaybackTime]=useState(0);
+  const[playbackDuration,setPlaybackDuration]=useState(0);
+  const[isPlaying,setIsPlaying]=useState(false);
   const recorderRef=useRef<MediaRecorder|null>(null);
   const chunksRef=useRef<Blob[]>([]);
   const timerRef=useRef<ReturnType<typeof setInterval>|null>(null);
   const urlRef=useRef<string|null>(null);
   const fileRef=useRef<HTMLInputElement|null>(null);
+  const audioRef=useRef<HTMLAudioElement|null>(null);
+  const recordingStartedAtRef=useRef<number|null>(null);
+  const recordedDurationRef=useRef<number|null>(null);
+  const mediaStartRef=useRef(0);
+  const freshPlaybackRef=useRef(false);
   const resultReportedRef=useRef(false);
   const checkControllerRef=useRef<AbortController|null>(null);
   const evaluationKey=JSON.stringify(evaluation);
   const previousEvaluationKeyRef=useRef(evaluationKey);
-
   const clearTimer=useCallback(()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null}},[]);
   const stopAndDiscardRecorder=useCallback(()=>{
     const recorder=recorderRef.current;
@@ -88,6 +95,13 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     stopAndDiscardRecorder();
     if(urlRef.current)URL.revokeObjectURL(urlRef.current);
     urlRef.current=null;
+    recordingStartedAtRef.current=null;
+    recordedDurationRef.current=null;
+    mediaStartRef.current=0;
+    freshPlaybackRef.current=false;
+    setPlaybackTime(0);
+    setPlaybackDuration(0);
+    setIsPlaying(false);
     setAudioUrl(null);
     setAudioBlob(null);
     setElapsed(0);
@@ -114,11 +128,64 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     reset();
   },[evaluationKey,reset]);
 
-  const acceptBlob=useCallback((blob:Blob)=>{
+  const syncFreshPlayback=useCallback(()=>{
+    const audio=audioRef.current;
+    if(!audio||!freshPlaybackRef.current)return;
+    const seekStart=audio.seekable.length>0&&Number.isFinite(audio.seekable.start(0))?audio.seekable.start(0):0;
+    mediaStartRef.current=seekStart;
+    try{audio.currentTime=seekStart}catch{/* media may not be seekable until canplay */}
+    setPlaybackTime(0);
+    if(recordedDurationRef.current===null&&Number.isFinite(audio.duration)&&audio.duration>0)setPlaybackDuration(audio.duration);
+  },[]);
+
+  const finalizeFreshPlayback=useCallback(()=>{
+    syncFreshPlayback();
+    freshPlaybackRef.current=false;
+  },[syncFreshPlayback]);
+
+  const togglePlayback=useCallback(async()=>{
+    const audio=audioRef.current;
+    if(!audio)return;
+    if(!audio.paused){audio.pause();return}
+    const logicalCurrent=Math.max(0,audio.currentTime-mediaStartRef.current);
+    if(audio.ended||(playbackDuration>0&&logicalCurrent>=playbackDuration-0.05)){
+      try{audio.currentTime=mediaStartRef.current}catch{/* ignore */}
+      setPlaybackTime(0);
+    }
+    try{await audio.play()}catch{/* native playback failure leaves the control paused */}
+  },[playbackDuration]);
+
+  const seekPlayback=useCallback((event:ChangeEvent<HTMLInputElement>)=>{
+    const audio=audioRef.current;
+    const next=Number(event.target.value);
+    if(!audio||!Number.isFinite(next))return;
+    try{audio.currentTime=mediaStartRef.current+next}catch{/* ignore unavailable seek */}
+    setPlaybackTime(next);
+  },[]);
+
+  const handlePlaybackTimeUpdate=useCallback(()=>{
+    const audio=audioRef.current;
+    if(!audio)return;
+    const logical=Math.max(0,audio.currentTime-mediaStartRef.current);
+    setPlaybackTime(playbackDuration>0?Math.min(logical,playbackDuration):logical);
+  },[playbackDuration]);
+
+  const handlePlaybackEnded=useCallback(()=>{
+    const audio=audioRef.current;
+    if(audio)try{audio.currentTime=mediaStartRef.current}catch{/* ignore */}
+    setPlaybackTime(0);
+    setIsPlaying(false);
+  },[]);
+
+  const acceptBlob=useCallback((blob:Blob,recorderMime='')=>{
     clearTimer();muteSharedMic();setIsRecording(false);recorderRef.current=null;
+    const recordedSeconds=recordingStartedAtRef.current===null?null:(performance.now()-recordingStartedAtRef.current)/1000;
+    recordingStartedAtRef.current=null;
+    recordedDurationRef.current=recorderMime==='uploaded-file'?null:recordedSeconds;
     if(!blob.size){setError('Запись пустая. Проверьте микрофон и попробуйте ещё раз.');return}
     if(blob.size>MAX_CLIENT_AUDIO_BYTES){setError('Запись слишком длинная. Сделайте ответ короче — до 2 минут.');return}
     if(urlRef.current)URL.revokeObjectURL(urlRef.current);
+    mediaStartRef.current=0;freshPlaybackRef.current=true;setPlaybackTime(0);setPlaybackDuration(recordedSeconds??0);setIsPlaying(false);
     const u=URL.createObjectURL(blob);urlRef.current=u;setAudioBlob(blob);setAudioUrl(u);setResult(null);setError(null);resultReportedRef.current=false;onPracticed();
   },[clearTimer,onPracticed]);
 
@@ -138,6 +205,7 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
       recorder.ondataavailable=e=>{if(e.data.size)chunksRef.current.push(e.data)};
       recorder.onstart=()=>{
         let seconds=0;
+        recordingStartedAtRef.current=performance.now();
         setElapsed(0);setIsRecording(true);setError(null);
         timerRef.current=setInterval(()=>{
           seconds+=1;setElapsed(seconds);
@@ -145,13 +213,13 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
         },1000);
       };
       recorder.onerror=()=>{clearTimer();muteSharedMic();setIsRecording(false);setError('Запись прервалась. Попробуйте ещё раз.')};
-      recorder.onstop=()=>{if(recorderRef.current!==recorder)return;acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}))};
+      recorder.onstop=()=>{if(recorderRef.current!==recorder)return;acceptBlob(new Blob(chunksRef.current,{type:recorder.mimeType||mime||'audio/webm'}),recorder.mimeType||mime||'audio/webm')};
       recorder.start(250);
     }catch(e){clearTimer();muteSharedMic();setIsRecording(false);setError(microphoneErrorMessage(e))}
   },[acceptBlob,clearTimer,reset]);
 
   const stop=useCallback(()=>{if(recorderRef.current?.state==='recording')recorderRef.current.stop()},[]);
-  const handleFile=useCallback((e:ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(f)acceptBlob(new Blob([f],{type:f.type||guessAudioMime(f.name)}));e.target.value=''},[acceptBlob]);
+  const handleFile=useCallback((e:ChangeEvent<HTMLInputElement>)=>{const f=e.target.files?.[0];if(f)acceptBlob(new Blob([f],{type:f.type||guessAudioMime(f.name)}),'uploaded-file');e.target.value=''},[acceptBlob]);
 
   const check=useCallback(async()=>{
     if(!audioBlob||checking)return;
@@ -184,7 +252,16 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     <div className="mb-4 flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold text-slate-950">Ответьте вслух</h3><p className="mt-1 text-sm leading-6 text-slate-500">{hint||'Нажмите микрофон, скажите ответ и остановите запись.'}</p></div><div className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-bold tabular-nums',isRecording?'bg-red-50 text-red-700':'bg-slate-50 text-slate-700')}>{formatTime(elapsed)}</div></div>
     {!audioUrl&&!isRecording&&<div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={start} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white"><Mic className="h-5 w-5"/>Записать ответ</button><button type="button" onClick={()=>fileRef.current?.click()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700"><Upload className="h-5 w-5"/>Добавить аудио</button><input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={handleFile}/></div>}
     {isRecording&&<button type="button" onClick={stop} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white"><Square className="h-5 w-5"/>Остановить запись</button>}
-    {audioUrl&&<div className="space-y-3"><audio src={audioUrl} controls className="w-full"/><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div></div>}
+    {audioUrl&&<div className="space-y-3">
+      <audio key={audioUrl} ref={audioRef} src={audioUrl} preload="metadata" onLoadedMetadata={syncFreshPlayback} onDurationChange={syncFreshPlayback} onCanPlay={finalizeFreshPlayback} onPlay={()=>setIsPlaying(true)} onPause={()=>setIsPlaying(false)} onTimeUpdate={handlePlaybackTimeUpdate} onEnded={handlePlaybackEnded} className="hidden"/>
+      <div className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
+        <button type="button" onClick={togglePlayback} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm" aria-label={isPlaying?'Пауза':'Воспроизвести'}>{isPlaying?<Pause className="h-4 w-4"/>:<Play className="h-4 w-4"/>}</button>
+        <span className="w-10 shrink-0 text-sm font-semibold tabular-nums text-slate-700">{formatTime(Math.floor(playbackTime))}</span>
+        <input type="range" min="0" max={Math.max(playbackDuration,0.01)} step="0.01" value={Math.min(playbackTime,Math.max(playbackDuration,0.01))} onChange={seekPlayback} disabled={playbackDuration<=0} aria-label="Позиция воспроизведения" className="min-w-0 flex-1 accent-slate-900"/>
+        <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-500">{formatTime(Math.max(0,Math.ceil(playbackDuration)))}</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div>
+    </div>}
     {aiAvailable===false&&<p className="mt-3 text-sm text-amber-700">AI-проверка временно недоступна, но запись можно прослушать.</p>}
     {error&&<p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
     {result&&<EvaluationResultCard result={result}/>} 
