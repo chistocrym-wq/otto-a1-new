@@ -83,12 +83,12 @@ export function ListeningModule({onBack,onComplete}:Props){
   };
   const restart=()=>{setIndex(0);setSelected(null);setChecked(false);setFinished(false);setTranscriptOpen(false);setWhy(null)};
 
-  if(finished)return <div className="animate-fade-in pb-8"><div className="mb-5 flex items-center gap-3"><Back onClick={onBack}/><h1 className="text-2xl font-black">Hören</h1></div><div className="rounded-3xl border bg-white p-7 text-center"><Headphones className="mx-auto h-12 w-12 text-sky-700"/><h2 className="mt-4 text-2xl font-black">Training abgeschlossen</h2><p className="mt-2 text-slate-500">Результат: {progress.correct}/{progress.completed}. Данные сохранены и будут учтены в готовности.</p><button onClick={restart} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border px-5 font-bold"><RotateCcw className="h-4 w-4"/>Просмотреть с начала</button></div></div>;
+  if(finished)return <div className="animate-fade-in pb-8"><div className="mb-5 flex items-center gap-3"><Back onClick={onBack}/><h1 className="text-2xl font-black">Hören</h1></div><div className="rounded-3xl border bg-white p-7 text-center"><Headphones className="mx-auto h-12 w-12 text-sky-700"/><h2 className="mt-4 text-2xl font-black">Тренировка завершена</h2><p className="mt-2 text-slate-500">Результат: {progress.correct}/{progress.completed}. Данные сохранены и будут учтены в готовности.</p><button onClick={restart} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border px-5 font-bold"><RotateCcw className="h-4 w-4"/>Начать заново</button></div></div>;
 
   return <div className="animate-fade-in pb-8">
     <div className="mb-5 flex items-start gap-3">
       <Back onClick={onBack}/>
-      <div className="min-w-0 flex-1"><h1 className="text-2xl font-black text-slate-950">Hören</h1><p className="mt-1 text-sm text-slate-500">Aufgabe {index+1} von {listeningTasks.length} · выполнено {progress.completed}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-sky-600" style={{width:`${(progress.completed/listeningTasks.length)*100}%`}}/></div></div>
+      <div className="min-w-0 flex-1"><h1 className="text-2xl font-black text-slate-950">Hören</h1><p className="mt-1 text-sm text-slate-500">Задание {index+1} из {listeningTasks.length} · выполнено {progress.completed}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-sky-600" style={{width:`${(progress.completed/listeningTasks.length)*100}%`}}/></div></div>
       <CompactTranslationEye parts={['Hören','Hören Sie den Text und wählen Sie die passende Antwort.']} translations={['Аудирование','Прослушайте текст и выберите подходящий ответ.']} title="Перевод"/>
     </div>
 
@@ -111,8 +111,8 @@ export function ListeningModule({onBack,onComplete}:Props){
       </div>
     </section>
 
-    {checked&&<div className={cn('mt-4 rounded-2xl border p-4',isCorrect?'border-emerald-200 bg-emerald-50':'border-rose-200 bg-rose-50')}><div className="flex items-center gap-2">{isCorrect?<CheckCircle2 className="h-5 w-5 text-emerald-700"/>:<CircleX className="h-5 w-5 text-rose-700"/>}<b>{isCorrect?'Правильно':'Неверно'}</b></div>{!isCorrect&&<div className="mt-3 text-sm leading-6 text-slate-700">{why?<><p><b>Deutsch:</b> {why.de}</p>{why.ru&&<p><b>Русский:</b> {why.ru}</p>}</>:<p className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/>Отто готовит короткое объяснение…</p>}</div>}</div>}
-    <div className="mt-5 flex justify-end">{!checked?<button onClick={check} disabled={selected===null} className="min-h-12 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">Проверить</button>:<button onClick={next} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white">{index===listeningTasks.length-1?'Завершить':'Следующее'}<ArrowRight className="h-4 w-4"/></button>}</div>
+    {checked&&<div className={cn('mt-4 rounded-2xl border p-4',isCorrect?'border-emerald-200 bg-emerald-50':'border-rose-200 bg-rose-50')}><div className="flex items-center gap-2">{isCorrect?<CheckCircle2 className="h-5 w-5 text-emerald-700"/>:<CircleX className="h-5 w-5 text-rose-700"/>}<b>{isCorrect?'Правильно':'Неверно'}</b></div>{!isCorrect&&<div className="mt-3 text-sm leading-6 text-slate-700">{why?<><p><b>Deutsch:</b> {why.de}</p>{why.ru&&<p><b>Русский:</b> {why.ru}</p>}</>:<p className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/>Отто готовит объяснение…</p>}</div>}</div>}
+    <div className="mt-5 flex justify-end">{!checked?<button onClick={check} disabled={selected===null} className="min-h-12 rounded-xl bg-slate-900 px-6 font-bold text-white disabled:opacity-40">Проверить</button>:<button onClick={next} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-900 px-6 font-bold text-white">{index===listeningTasks.length-1?'Завершить':'Следующее задание'}<ArrowRight className="h-4 w-4"/></button>}</div>
   </div>;
 }
 

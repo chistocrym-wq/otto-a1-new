@@ -47,7 +47,7 @@ export function useAccess() {
         body: JSON.stringify(credentials),
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload) throw new Error(payload?.error || 'Не удалось проверить доступ.');
+      if (!response.ok || !payload) throw new Error(payload?.error || 'Не удалось проверить доступ. Попробуйте ещё раз.');
       setStatus({ ...initialStatus, ...payload, loading: false });
     } catch {
       setStatus((previous) => ({ ...previous, loading: false }));
@@ -70,12 +70,12 @@ export function useAccess() {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.invoiceLink) {
-        throw new Error(payload?.error || 'Не удалось открыть оплату.');
+        throw new Error(payload?.error || 'Не удалось открыть оплату. Попробуйте ещё раз.');
       }
 
       const telegram = window.Telegram?.WebApp;
       if (!telegram?.openInvoice) {
-        throw new Error('Подписку нужно оформить внутри Telegram Mini App.');
+        throw new Error('Оформить подписку можно в OTTO внутри Telegram.');
       }
 
       await new Promise<void>((resolve, reject) => {

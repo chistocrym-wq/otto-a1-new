@@ -149,7 +149,7 @@ export function RussianVoiceInput({ onText }: Props) {
       disabled={loading}
       className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700 disabled:opacity-50"
     >
-      {recording ? <><Square className="h-4 w-4" />Закончить запись</> : <><Mic className="h-4 w-4" />{loading ? 'Распознаю…' : 'Сказать по-русски'}</>}
+      {recording ? <><Square className="h-4 w-4" />Закончить запись</> : <><Mic className="h-4 w-4" />{loading ? 'Распознаём…' : 'Сказать по-русски'}</>}
     </button>
     {recording && <p className="mt-2 text-center text-xs font-semibold text-rose-600">Говорите по-русски. Когда закончите — остановите запись.</p>}
     {error && <p className="mt-2 text-sm text-rose-700">{error}</p>}

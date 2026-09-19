@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, BookOpen, Clock3, Headphones, Lightbulb, MessageCircleMore, PenLine, Share2, Trophy } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Clock3, Headphones, Lightbulb, MessageCircleMore, PenLine, Share2 } from 'lucide-react';
 import { OttoScene } from '@/components/OttoScene';
 import type { ActivityEntry, ModuleId, Progress } from '@/types';
 import { getReadiness, getTodayActivity, MODULE_META } from '@/lib/preparation';
@@ -48,9 +48,9 @@ export function Dashboard(props:DashboardProps){
 
    <section className="rounded-[24px] border border-[var(--otto-line)] bg-[var(--otto-surface)] p-4 shadow-[0_12px_30px_rgba(43,54,54,.07)] sm:p-5">
      <div className="flex items-center justify-between gap-3"><div><p className="text-[11px] font-[850] uppercase tracking-[.14em] text-[var(--otto-petrol-dark)]">{t('today')}</p><h2 className="text-xl font-bold leading-[1.08] text-[var(--otto-ink)]" style={serifFont}>{lang==='de'?'Training':'Тренировка'}</h2></div><Clock3 className="h-5 w-5 text-[var(--otto-muted)]"/></div>
-     <p className="mt-1 text-sm text-[var(--otto-muted)]">{lang==='de'?'Wie viel Zeit haben Sie?':'Сколько времени есть сейчас?'}</p>
+     <p className="mt-1 text-sm text-[var(--otto-muted)]">{lang==='de'?'Wie viel Zeit haben Sie?':'Сколько времени есть на тренировку?'}</p>
      <div className="mt-4 grid grid-cols-3 gap-2">{([5,15,30] as Minutes[]).map(value=><button key={value} type="button" onClick={()=>chooseMinutes(value)} aria-pressed={minutes===value} className={`min-h-16 rounded-2xl border px-2 transition ${minutes===value?'border-[var(--otto-petrol)] bg-[var(--otto-petrol-soft)] text-[var(--otto-petrol-dark)]':'border-[var(--otto-line)] bg-[var(--otto-bg-soft)] text-[var(--otto-muted)]'}`}><strong className="block text-xl">{value}</strong><span className="text-xs font-bold">{t('minutes')}</span></button>)}</div>
-     {today.attempts>0&&<p className="mt-3 text-xs font-semibold text-[var(--otto-muted)]">Сегодня: {today.attempts} попыток{today.minutes?` · ${today.minutes} мин`:''}</p>}
+     {today.attempts>0&&<p className="mt-3 text-xs font-semibold text-[var(--otto-muted)]">Попытки сегодня: {today.attempts}{today.minutes?` · ${today.minutes} мин`:''}</p>}
    </section>
 
    <section className="rounded-[24px] border border-[var(--otto-line)] bg-[var(--otto-surface)] p-4 shadow-[0_12px_30px_rgba(43,54,54,.07)] sm:p-5">
@@ -58,8 +58,7 @@ export function Dashboard(props:DashboardProps){
      <div className="mt-4 grid grid-cols-2 gap-3">{moduleOrder.map(id=>{const Icon=moduleIcons[id];const module=readiness.modules[id];return <button key={id} type="button" onClick={()=>props.onSelectModule(id)} className="min-h-[118px] rounded-2xl border border-[var(--otto-line)] bg-[var(--otto-bg-soft)] p-4 text-left transition hover:border-[var(--otto-petrol)]"><span className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--otto-surface)] text-[var(--otto-petrol-dark)]"><Icon className="h-5 w-5"/></span><b className="text-sm text-[var(--otto-muted)]">{module.dataSufficient?`${module.score}%`:'—'}</b></span><strong className="mt-3 block text-base text-[var(--otto-ink)]">{MODULE_META[id].title}</strong><span className="mt-1 block text-xs text-[var(--otto-muted)]">{MODULE_META[id].label}</span></button>})}</div>
    </section>
 
-   <div className="grid gap-2 sm:grid-cols-3">
-     <button type="button" onClick={props.onOpenMockExam} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><Trophy className="h-4 w-4 text-[var(--otto-terracotta)]"/>Пробный экзамен</button>
+   <div className="grid gap-2 sm:grid-cols-2">
      <button type="button" onClick={props.onOpenNews} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><BookOpen className="h-4 w-4"/>Новости A1</button>
      <button type="button" onClick={props.onShare} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]"><Share2 className="h-4 w-4"/>Поделиться</button>
    </div>

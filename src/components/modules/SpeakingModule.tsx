@@ -10,13 +10,18 @@ import { RussianVoiceInput } from '@/components/sprechen/RussianVoiceInput';
 import { CompactTranslationEye } from '@/components/common/CompactTranslationEye';
 import { HoverTranslateText } from '@/components/common/HoverTranslateText';
 import { cn } from '@/lib/utils';
+import { readTrainingResume, saveTrainingResume } from '@/lib/trainingResume';
 
 interface Props { onBack:()=>void; onComplete:(score:number,total:number)=>void }
 type Screen='home'|'teil1'|'teil2'|'teil3'|'free'|'extra';
 
+const SPEAKING_PROMPT_HELPERS: Readonly<Record<string, string>> = {
+  'free-freizeit:2': 'С кем вы обычно это делаете?',
+};
+
 export function SpeakingModule({onBack,onComplete}:Props){
   const[screen,setScreen]=useState<Screen>('home');
-  const[t2,setT2]=useState(0);const[free,setFree]=useState(0);
+  const[t2,setT2]=useState(()=>Math.min(readTrainingResume().sprechenTeil2,Math.max(0,speakingTeil2Cards.length-1)));const[free,setFree]=useState(()=>Math.min(readTrainingResume().sprechenFree,Math.max(0,freeSpeakingTopics.length-1)));
   const[showSample,setShowSample]=useState(false);const[showGuide,setShowGuide]=useState(false);const[showTip,setShowTip]=useState(false);const[practiced,setPracticed]=useState(false);
   const reset=()=>{setShowSample(false);setShowGuide(false);setShowTip(false);setPracticed(false)};
   const openPart=(p:SpeakingPart)=>{reset();setScreen(`teil${p}` as Screen)};
@@ -25,7 +30,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
 
   if(screen==='home')return <div className="animate-fade-in">
     <Header onBack={onBack} subtitle="Sprechen A1" translation="Говорение"/>
-    <div className="mx-auto mb-6 max-w-2xl text-center"><p className="text-sm leading-6 text-slate-600">Trainieren Sie Sich vorstellen, Fragen stellen und Bitten formulieren. Deutsche Wörter können Sie antippen oder anklicken: перевод появится сразу после загрузки, а произношение запустится по вашему нажатию.</p></div>
+    <div className="mx-auto mb-6 max-w-2xl text-center"><p className="text-sm leading-6 text-slate-600">Тренируйте представление, вопросы и просьбы. Нажмите на немецкое слово, чтобы увидеть перевод; произношение запускается отдельно.</p></div>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <PartCard badge="Teil 1" title="Sich vorstellen" description="Представьтесь по опорным словам." onClick={()=>openPart(1)}/>
       <PartCard badge="Teil 2" title="Informationen" description="Тема + слово: задайте простой вопрос." meta={`${speakingTeil2Cards.length} карточек`} onClick={()=>openPart(2)}/>
@@ -62,7 +67,7 @@ export function SpeakingModule({onBack,onComplete}:Props){
         <SampleAudioLine label="Frage" text={card.sampleQuestion}/>
         <SampleAudioLine label="Antwort" text={card.sampleAnswer}/>
       </SampleBox>
-      <BottomActions disabled={!practiced} onNext={()=>{setT2(v=>(v+1)%speakingTeil2Cards.length);reset()}} onShuffle={()=>{setT2(v=>nextRandomIndex(v,speakingTeil2Cards.length));reset()}} nextLabel="Следующая карточка" shuffleLabel="Случайная карточка"/>
+      <BottomActions disabled={!practiced} onNext={()=>{setT2(v=>{const next=(v+1)%speakingTeil2Cards.length;saveTrainingResume({sprechenTeil2:next});return next});reset()}} onShuffle={()=>{setT2(v=>{const next=nextRandomIndex(v,speakingTeil2Cards.length);saveTrainingResume({sprechenTeil2:next});return next});reset()}} nextLabel="Следующая карточка" shuffleLabel="Случайная карточка"/>
     </div>;
   }
 
@@ -80,11 +85,14 @@ export function SpeakingModule({onBack,onComplete}:Props){
     <InstructionBox german="Sprechen Sie frei über das Thema. Nutzen Sie die Fragen nur als Hilfe." russian="Коротко расскажите по теме своими словами. Вопросы — только опора."/>
     <div className="mb-5 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
       <div className="flex items-start justify-between gap-3 bg-amber-100 px-5 py-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wider text-amber-800">Zusatztraining</p><h3 className="mt-1 text-xl font-black"><HoverTranslateText text={topic.title}/></h3></div><CompactTranslationEye parts={[topic.title]} translations={[topic.titleRu]} title="Перевод темы"/></div>
-      <div className="p-5"><div className="space-y-3">{topic.questions.map((q,i)=><div key={q} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="font-black text-amber-700">{i+1}.</span><HoverTranslateText text={q}/></div>)}</div><button onClick={()=>setShowGuide(v=>!v)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 font-bold text-amber-900"><Lightbulb className="h-4 w-4"/>{showGuide?'Скрыть конструктор':'Конструктор рассказа'}</button>{showGuide&&<div className="mt-4 rounded-xl border bg-white p-4">{topic.guide.map(line=><p key={line} className="border-b border-dashed py-2"><HoverTranslateText text={line}/></p>)}</div>}</div>
+      <div className="p-5"><div className="space-y-3">{topic.questions.map((q,i)=>{
+        const helper=SPEAKING_PROMPT_HELPERS[`${topic.id}:${i}`];
+        return <div key={q} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="font-black text-amber-700">{i+1}.</span><div className="min-w-0"><HoverTranslateText text={q}/>{helper&&<p className="mt-1 text-xs font-medium leading-5 text-slate-500">{helper}</p>}</div></div>;
+      })}</div><button onClick={()=>setShowGuide(v=>!v)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 font-bold text-amber-900"><Lightbulb className="h-4 w-4"/>{showGuide?'Скрыть конструктор':'Конструктор рассказа'}</button>{showGuide&&<div className="mt-4 rounded-xl border bg-white p-4">{topic.guide.map(line=><p key={line} className="border-b border-dashed py-2"><HoverTranslateText text={line}/></p>)}</div>}</div>
     </div>
     <VoiceRecorder evaluation={{mode:'free',title:topic.title,expectedPoints:topic.questions}} onPracticed={()=>setPracticed(true)} onEvaluated={recordEvaluation} hint="Говорите примерно 45–120 секунд."/>
     <SampleBox show={showSample} onToggle={()=>setShowSample(v=>!v)} title="Beispiel"><SampleAudioLine text={topic.sample}/></SampleBox>
-    <BottomActions disabled={!practiced} onNext={()=>{setFree(v=>(v+1)%freeSpeakingTopics.length);reset()}} onShuffle={()=>{setFree(v=>nextRandomIndex(v,freeSpeakingTopics.length));reset()}} nextLabel="Следующая тема"/>
+    <BottomActions disabled={!practiced} onNext={()=>{setFree(v=>{const next=(v+1)%freeSpeakingTopics.length;saveTrainingResume({sprechenFree:next});return next});reset()}} onShuffle={()=>{setFree(v=>{const next=nextRandomIndex(v,freeSpeakingTopics.length);saveTrainingResume({sprechenFree:next});return next});reset()}} nextLabel="Следующая тема"/>
   </div>;
 }
 
@@ -102,15 +110,15 @@ function ExtraSpeakingPractice({onBack,onEvaluated}:{onBack:()=>void;onEvaluated
     </div>
     <div className="mb-5 rounded-3xl border bg-white p-5 shadow-sm">
       <label className="font-black" htmlFor="otto-own-speaking-answer">Мой вариант</label>
-      <p className="mt-1 text-sm leading-5 text-slate-500">Вариант A: напишите по-русски. Вариант B: нажмите микрофон и скажите по-русски — распознанный текст появится в этом же поле.</p>
+      <p className="mt-1 text-sm leading-5 text-slate-500">Можно написать ответ по-русски или нажать микрофон и сказать его вслух. Распознанный текст появится в этом поле.</p>
       <textarea id="otto-own-speaking-answer" value={input} onChange={e=>setInput(e.target.value)} rows={3} placeholder="Например: Я работаю бухгалтером и живу в Санкт-Петербурге." className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 outline-none focus:border-teal-500"/>
       <RussianVoiceInput onText={setInput}/>
-      <button type="button" onClick={askOtto} disabled={!input.trim()||loading} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{loading?'Отто формулирует…':'Сформулировать по-немецки A1'}</button>
+      <button type="button" onClick={askOtto} disabled={!input.trim()||loading} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{loading?'Отто готовит вариант…':'Сформулировать по-немецки A1'}</button>
       {error&&<p className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-      {help&&<div className="mt-4 space-y-2 rounded-2xl border border-teal-200 bg-teal-50 p-4"><p className="text-xs font-black uppercase tracking-wider text-teal-700">Ваш вариант на немецком A1</p><p className="font-bold">{help.german}</p><p className="text-sm text-slate-600">{help.russian}</p>{help.tip&&<p className="text-sm text-teal-800">{help.tip}</p>}<button type="button" onClick={()=>speakGerman(help.german)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-teal-200 bg-white px-3 text-sm font-bold text-teal-900"><Volume2 className="h-4 w-4"/>Прослушать</button></div>}
+      {help&&<div className="mt-4 space-y-2 rounded-2xl border border-teal-200 bg-teal-50 p-4"><p className="text-xs font-black uppercase tracking-wider text-teal-700">Ваш вариант на немецком</p><p className="font-bold">{help.german}</p><p className="text-sm text-slate-600">{help.russian}</p>{help.tip&&<p className="text-sm text-teal-800">{help.tip}</p>}<button type="button" onClick={()=>speakGerman(help.german)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-teal-200 bg-white px-3 text-sm font-bold text-teal-900"><Volume2 className="h-4 w-4"/>Прослушать</button></div>}
     </div>
     <VoiceRecorder evaluation={{mode:'free',title:prompt.question,expectedPoints:[prompt.guide]}} onPracticed={()=>{}} onEvaluated={onEvaluated} hint="Теперь попробуйте произнести готовый немецкий вариант вслух."/>
-    <div className="grid grid-cols-2 gap-3"><button type="button" onClick={()=>move(index-1)} className="min-h-12 rounded-xl border bg-white px-4 font-bold">Назад</button><button type="button" onClick={()=>move(index+1)} className="min-h-12 rounded-xl bg-slate-900 px-4 font-bold text-white">Следующий</button></div>
+    <div className="grid grid-cols-2 gap-3"><button type="button" onClick={()=>move(index-1)} className="min-h-12 rounded-xl border bg-white px-4 font-bold">Назад</button><button type="button" onClick={()=>move(index+1)} className="min-h-12 rounded-xl bg-slate-900 px-4 font-bold text-white">Следующее задание</button></div>
   </div>;
 }
 
