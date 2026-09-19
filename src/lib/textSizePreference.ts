@@ -185,9 +185,14 @@ export function installTextSizePreference() {
   document.documentElement.dataset.ottoTextSize = current;
 
   observer = new MutationObserver((records) => {
-    if (records.some((record) => record.type === 'childList')) scheduleApply();
+    if (records.some((record) => record.type === 'childList' || record.attributeName === 'class')) scheduleApply();
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
 
   window.addEventListener('resize', scheduleApply);
   window.addEventListener('storage', (event) => {
