@@ -6,6 +6,7 @@ import './ottoPremiumSystem.css';
 import './ottoPremiumVoice.css';
 import { installGermanSpeechPolicy } from './lib/germanSpeechPolicy';
 import { initPwaInstall } from './lib/pwaInstall';
+import { installTextSizePreference } from './lib/textSizePreference';
 
 const ROUTE_RECOVERY_KEY = 'otto-a1-route-recovery-at';
 const routePreloaders = [
@@ -47,6 +48,7 @@ function installRoutePreloadRecovery() {
 }
 
 installGermanSpeechPolicy();
+installTextSizePreference();
 initPwaInstall();
 installRoutePreloadRecovery();
 
