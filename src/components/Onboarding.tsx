@@ -243,6 +243,18 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
     window.setTimeout(() => emailInputRef.current?.focus(), 0);
   };
 
+  const startGuestFromWelcome = () => {
+    if (busy) return;
+    onComplete({
+      name: '',
+      contactType: 'email',
+      contact: '',
+      contactVerified: false,
+      authStatus: 'guest',
+      learningMode: 'guided',
+    });
+  };
+
   const continueAsGuest = async () => {
     if (busy || contactType !== 'email' || !profileValid) return;
     setBusy('verify');
@@ -279,8 +291,8 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
   const progressStep = step === 'otp' ? 'profile' : step;
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[var(--otto-bg)] px-4 py-5 text-[var(--otto-ink)] sm:px-6 sm:py-8" style={sansFont}>
-      <div className="mx-auto flex min-h-[calc(100dvh-2.5rem)] w-full max-w-xl flex-col justify-center">
+    <main className="h-[100dvh] overflow-x-hidden overflow-y-auto overscroll-contain bg-[var(--otto-bg)] px-4 py-5 text-[var(--otto-ink)] sm:px-6 sm:py-8" style={sansFont}>
+      <div className="mx-auto flex min-h-full w-full max-w-xl flex-col justify-start pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-center">
         {onCancel && (
           <button type="button" onClick={onCancel} className="mb-3 inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-ink)]">
             <ArrowLeft className="h-4 w-4" /> Назад
@@ -312,6 +324,10 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                 <button type="button" onClick={() => setStep('profile')} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white">
                   Настроить мой профиль <ArrowRight className="h-4 w-4" />
                 </button>
+                <button type="button" onClick={startGuestFromWelcome} className="mt-2 min-h-11 w-full rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-petrol-dark)]">
+                  Гостевой режим
+                </button>
+                <p className="mt-2 text-center text-xs leading-5 text-[var(--otto-muted)]">Можно посмотреть OTTO без регистрации. Прогресс сохранится на этом устройстве.</p>
               </div>
             )}
 
@@ -355,7 +371,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                   <div className="mt-4 space-y-2">
                     <button type="button" disabled={busy !== null} onClick={() => void requestOtp()} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--otto-petrol-dark)] px-5 font-[850] text-white disabled:opacity-45">Попробовать ещё раз</button>
                     <button type="button" disabled={busy !== null} onClick={() => { setSendFailed(false); setOtpError(null); emailInputRef.current?.focus(); }} className="min-h-11 w-full rounded-xl border border-[var(--otto-line)] bg-[var(--otto-surface)] px-4 text-sm font-bold text-[var(--otto-petrol-dark)] disabled:opacity-45">Изменить email</button>
-                    <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы восстановить доступ и прогресс на другом устройстве.</p>
+                    <p className="px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы подтвердить профиль и использовать этот адрес для входа.</p>
                     <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
                   </div>
                 ) : (
@@ -401,7 +417,7 @@ export function Onboarding({ onComplete, initialProfile = null, onCancel }: Prop
                   {resendSeconds > 0 ? `Отправить код ещё раз через ${resendSeconds} сек.` : busy === 'request' ? 'Отправляем код…' : 'Отправить код ещё раз'}
                 </button>
                 <button type="button" disabled={busy !== null} onClick={() => void changeEmail()} className="mt-2 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Изменить email</button>
-                <p className="mt-3 px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы восстановить доступ и прогресс на другом устройстве.</p>
+                <p className="mt-3 px-1 text-xs leading-5 text-[var(--otto-muted)]">Подтвердите email, чтобы подтвердить профиль и использовать этот адрес для входа.</p>
                 <button type="button" disabled={busy !== null || !profileValid} onClick={() => void continueAsGuest()} className="mt-1 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[var(--otto-muted)] disabled:opacity-45">Продолжить как гость</button>
               </div>
             )}
