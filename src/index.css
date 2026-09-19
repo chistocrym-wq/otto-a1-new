@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --otto-teal: #0f7d74;
-    --otto-teal-dark: #0a655e;
-    --otto-teal-soft: #e7f4f2;
-    --otto-ink: #172033;
+    --otto-teal: #416F71;
+    --otto-teal-dark: #315759;
+    --otto-teal-soft: #E3EEEE;
+    --otto-ink: #26364A;
   }
 
   body {
@@ -17,8 +17,8 @@
     min-width: 320px;
     min-height: 100vh;
     min-height: var(--tg-viewport-stable-height, 100vh);
-    background: #f7faf9;
-    color: var(--tg-theme-text-color, #0f172a);
+    background: #F7F4EE;
+    color: var(--tg-theme-text-color, #26364A);
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
     font-size: 17px;
@@ -50,9 +50,9 @@
   padding-bottom: max(env(safe-area-inset-bottom), var(--tg-content-safe-area-inset-bottom, 0px));
   padding-left: max(env(safe-area-inset-left), var(--tg-content-safe-area-inset-left, 0px));
   background:
-    radial-gradient(circle at 5% 2%, rgba(15,125,116,.10), transparent 28%),
-    radial-gradient(circle at 96% 18%, rgba(15,125,116,.08), transparent 24%),
-    linear-gradient(180deg, #fbfdfc 0%, #f4f9f8 42%, #f7f8f6 100%);
+    radial-gradient(circle at 5% 2%, rgba(65,111,113,.10), transparent 28%),
+    radial-gradient(circle at 96% 18%, rgba(65,111,113,.08), transparent 24%),
+    linear-gradient(180deg, #F7F4EE 0%, #EDF3EE 42%, #F7F4EE 100%);
 }
 
 .otto-backdrop {
@@ -75,7 +75,7 @@
   height: 260px;
   top: 70px;
   left: -120px;
-  background: rgba(15,125,116,.12);
+  background: rgba(65,111,113,.12);
 }
 
 .otto-glow-b {
@@ -83,7 +83,7 @@
   height: 340px;
   right: -190px;
   top: 280px;
-  background: rgba(15,125,116,.08);
+  background: rgba(65,111,113,.08);
 }
 
 .otto-line-art {
@@ -94,8 +94,8 @@
   height: 170px;
   opacity: .2;
   background:
-    linear-gradient(170deg, transparent 0 52%, rgba(15,125,116,.07) 53% 54%, transparent 55%),
-    linear-gradient(10deg, transparent 0 50%, rgba(15,125,116,.06) 51% 52%, transparent 53%);
+    linear-gradient(170deg, transparent 0 52%, rgba(65,111,113,.07) 53% 54%, transparent 55%),
+    linear-gradient(10deg, transparent 0 50%, rgba(65,111,113,.06) 51% 52%, transparent 53%);
 }
 
 .otto-soft-accent {
@@ -105,8 +105,8 @@
 
 .otto-icon-tile {
   color: var(--otto-teal);
-  background: linear-gradient(145deg, #eff9f7, #dff1ee);
-  box-shadow: inset 0 0 0 1px rgba(15,125,116,.08), 0 7px 16px rgba(15,125,116,.10);
+  background: linear-gradient(145deg, #EDF3EE, #E3EEEE);
+  box-shadow: inset 0 0 0 1px rgba(65,111,113,.08), 0 7px 16px rgba(65,111,113,.10);
 }
 
 .otto-primary {
@@ -145,7 +145,7 @@
   border: 3px solid rgba(255,255,255,.96);
   border-radius: 24px;
   background: #fff;
-  box-shadow: 0 12px 34px rgba(15,23,42,.18);
+  box-shadow: 0 12px 34px rgba(38,54,74,.18);
   overflow: hidden;
   pointer-events: none;
 }
@@ -154,7 +154,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #edf8f6, #fff);
+  background: linear-gradient(180deg, #EDF3EE, #fff);
 }
 
 .otto-companion img {
@@ -183,7 +183,7 @@
 .otto-skin [class~="border-teal-300"],
 .otto-skin [class~="border-teal-500"],
 .otto-skin [class~="border-teal-600"] {
-  border-color: rgba(15,125,116,.28) !important;
+  border-color: rgba(65,111,113,.28) !important;
 }
 
 .otto-skin [class~="bg-teal-50"] {
@@ -195,7 +195,7 @@
 .otto-skin div[class*="bg-white"][class*="rounded-2xl"],
 .otto-skin div[class*="bg-white"][class*="rounded-3xl"] {
   border-color: rgba(255,255,255,.85);
-  box-shadow: 0 10px 28px rgba(15,23,42,.065);
+  box-shadow: 0 10px 28px rgba(38,54,74,.065);
 }
 
 .otto-skin button[class*="rounded-xl"],
@@ -219,8 +219,8 @@
   padding: 0.55rem 0.55rem;
   border: 1px solid rgba(255,255,255,.88);
   border-radius: 20px;
-  background: rgba(250,253,252,.92);
-  box-shadow: 0 8px 24px rgba(15,23,42,.075);
+  background: rgba(247,244,238,.92);
+  box-shadow: 0 8px 24px rgba(38,54,74,.075);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -279,6 +279,6 @@ html[data-otto-text-size="large"] button[aria-label="Секреты успешн
 }
 
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #eef4f3; }
-::-webkit-scrollbar-thumb { background: rgba(15,125,116,.35); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(15,125,116,.55); }
+::-webkit-scrollbar-track { background: #EDF3EE; }
+::-webkit-scrollbar-thumb { background: rgba(65,111,113,.35); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(65,111,113,.55); }
