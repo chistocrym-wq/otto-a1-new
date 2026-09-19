@@ -45,13 +45,14 @@ function normalizeProfile(value: unknown): UserProfile | null {
   const candidate = value as Partial<UserProfile>;
   const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
   const contact = typeof candidate.contact === 'string' ? candidate.contact.trim() : '';
-  const contactType = candidate.contactType === 'email' || candidate.contactType === 'telegram' ? candidate.contactType : null;
+  const contactType = candidate.contactType === 'email' || candidate.contactType === 'telegram' ? candidate.contactType : 'email';
   const learningMode = candidate.learningMode === 'guided' || candidate.learningMode === 'direct' ? candidate.learningMode : null;
-  if (!name || !contact || !contactType || !learningMode) return null;
+  if (!learningMode) return null;
   const createdAt = typeof candidate.createdAt === 'string' && candidate.createdAt ? candidate.createdAt : new Date().toISOString();
   const updatedAt = typeof candidate.updatedAt === 'string' && candidate.updatedAt ? candidate.updatedAt : createdAt;
   const contactVerified = candidate.contactVerified === true;
-  const authStatus: AuthStatus = contactVerified ? 'verified' : 'guest';
+  const authStatus: AuthStatus = candidate.authStatus === 'verified' && contactVerified ? 'verified' : 'guest';
+  if (authStatus === 'verified' && (!name || !contact)) return null;
   const gender: Gender | undefined = candidate.gender === 'female' || candidate.gender === 'male' ? candidate.gender : undefined;
   return {
     name,
@@ -104,7 +105,7 @@ export function useUserProfile() {
         contactType: draft.contactType,
         contact: draft.contact.trim(),
         contactVerified: draft.contactVerified,
-        authStatus: draft.contactVerified ? 'verified' : 'guest',
+        authStatus: draft.authStatus === 'verified' && draft.contactVerified ? 'verified' : 'guest',
         gender: draft.gender ?? previous?.gender,
         learningMode: draft.learningMode,
         createdAt: previous?.createdAt ?? now,
