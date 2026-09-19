@@ -123,6 +123,10 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     audio.pause();
     try{audio.currentTime=0}catch{/* metadata may not be ready yet */}
   },[]);
+  const finishFreshPlaybackReset=useCallback(()=>{
+    resetFreshPlaybackToStart();
+    playbackResetPendingRef.current=false;
+  },[resetFreshPlaybackToStart]);
 
   useLayoutEffect(()=>{
     if(!audioUrl)return;
@@ -203,7 +207,7 @@ export function VoiceRecorder({evaluation,onPracticed,onEvaluated,hint}:VoiceRec
     <div className="mb-4 flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold text-slate-950">Ответьте вслух</h3><p className="mt-1 text-sm leading-6 text-slate-500">{hint||'Нажмите микрофон, скажите ответ и остановите запись.'}</p></div><div className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-bold tabular-nums',isRecording?'bg-red-50 text-red-700':'bg-slate-50 text-slate-700')}>{formatTime(elapsed)}</div></div>
     {!audioUrl&&!isRecording&&<div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={start} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white"><Mic className="h-5 w-5"/>Записать ответ</button><button type="button" onClick={()=>fileRef.current?.click()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-bold text-slate-700"><Upload className="h-5 w-5"/>Добавить аудио</button><input ref={fileRef} type="file" accept="audio/*" className="hidden" onChange={handleFile}/></div>}
     {isRecording&&<button type="button" onClick={stop} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white"><Square className="h-5 w-5"/>Остановить запись</button>}
-    {audioUrl&&<div className="space-y-3"><audio key={audioUrl} ref={audioRef} src={audioUrl} controls preload="metadata" onLoadedMetadata={resetFreshPlaybackToStart} onDurationChange={resetFreshPlaybackToStart} onCanPlay={resetFreshPlaybackToStart} onPlay={()=>{playbackResetPendingRef.current=false}} className="w-full"/><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div></div>}
+    {audioUrl&&<div className="space-y-3"><audio key={audioUrl} ref={audioRef} src={audioUrl} controls preload="metadata" onLoadedMetadata={resetFreshPlaybackToStart} onDurationChange={resetFreshPlaybackToStart} onCanPlay={finishFreshPlaybackReset} onPlay={()=>{playbackResetPendingRef.current=false}} className="w-full"/><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={reset} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 font-bold"><RefreshCw className="h-4 w-4"/>Перезаписать</button><button type="button" onClick={check} disabled={checking||aiAvailable===false} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 font-bold text-white disabled:opacity-40"><Sparkles className="h-4 w-4"/>{checking?'Отто проверяет…':'Проверить с Отто'}</button></div></div>}
     {aiAvailable===false&&<p className="mt-3 text-sm text-amber-700">AI-проверка временно недоступна, но запись можно прослушать.</p>}
     {error&&<p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
     {result&&<EvaluationResultCard result={result}/>} 
