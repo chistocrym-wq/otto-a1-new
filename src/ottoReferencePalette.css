@@ -195,7 +195,7 @@ body,
 }
 .otto-view-home .otto-dashboard-time-option.is-selected,
 .otto-view-home .otto-dashboard-time-option[aria-pressed="true"] {
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
   border-color: var(--otto-ref-navy) !important;
   background: var(--otto-ref-navy) !important;
   box-shadow: 0 8px 18px rgba(16,42,58,.16) !important;
@@ -204,7 +204,7 @@ body,
 .otto-view-home .otto-dashboard-time-option.is-selected span,
 .otto-view-home .otto-dashboard-time-option[aria-pressed="true"] strong,
 .otto-view-home .otto-dashboard-time-option[aria-pressed="true"] span {
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
 }
 
 .otto-view-home .otto-dashboard-module-card {
@@ -304,7 +304,7 @@ body,
 .otto-skin section[class~="bg-slate-950"] h1,
 .otto-skin section[class~="bg-slate-950"] h2,
 .otto-skin section[class~="bg-slate-950"] strong {
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
 }
 .otto-skin .otto-readiness-hero p,
 .otto-skin section[class~="bg-slate-950"] p {
@@ -358,7 +358,7 @@ body,
   color: var(--otto-ref-navy) !important;
 }
 .otto-skin [class*="text-[#076CD4]"] {
-  color: var(--otto-ref-cta-start) !important;
+  color: var(--otto-ref-sky) !important;
 }
 
 /* Forms and focus. */
@@ -430,12 +430,12 @@ body,
 .otto-skin .otto-roadmap-duration button.is-active {
   border-color: var(--otto-ref-navy) !important;
   background: var(--otto-ref-navy) !important;
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
   box-shadow: 0 5px 14px rgba(16,42,58,.14) !important;
 }
 .otto-skin .otto-roadmap-duration button.is-active strong,
 .otto-skin .otto-roadmap-duration button.is-active span {
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
 }
 .otto-skin .otto-roadmap-back,
 .otto-skin .otto-roadmap-time-badge,

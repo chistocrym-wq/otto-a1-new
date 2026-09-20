@@ -213,7 +213,7 @@ body {
   color: #fff !important;
   background: linear-gradient(135deg, #C75A38 0%, #C75A38 52%, #A94429 100%) !important;
   border-color: #A94429 !important;
-  box-shadow: 0 10px 26px rgba(20,118,111,.30) !important;
+  box-shadow: 0 10px 26px rgba(169,68,41,.30) !important;
 }
 
 .otto-skin .otto-exam-button:hover,
@@ -347,7 +347,7 @@ html[data-otto-cta-variant="B"] .otto-skin button[class~="bg-teal-700"] {
 .otto-skin .otto-readiness-hero>div:first-child>svg{color:#E3F1EE!important}.otto-skin [class~="bg-teal-400"]{background:#14766F!important}.otto-skin [class~="text-teal-300"]{color:#E3F1EE!important}
 .otto-skin [class~="text-teal-600"],.otto-skin [class~="text-teal-700"],.otto-skin [class~="text-sky-600"],.otto-skin [class~="text-sky-700"]{color:#0D4F55!important}
 .otto-skin [class~="text-teal-800"],.otto-skin [class~="text-teal-900"],.otto-skin [class~="text-sky-800"],.otto-skin [class~="text-sky-900"]{color:#102A3A!important}
-.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg, #C75A38 0%, #C75A38 52%, #A94429 100%)!important;border-color:#0D4F55!important;color:#fff!important;box-shadow:0 10px 24px rgba(20,118,111,.30)!important}
+.otto-skin button[class~="bg-teal-800"],.otto-skin .otto-voice-test,.otto-skin .otto-roadmap-start,.otto-skin [class*="bg-[#9E543C]"]{background:linear-gradient(135deg, #C75A38 0%, #C75A38 52%, #A94429 100%)!important;border-color:#A94429!important;color:#fff!important;box-shadow:0 10px 24px rgba(169,68,41,.30)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(1),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(3){background:linear-gradient(135deg,#E3F1EE,#E3F1EE)!important}
 .telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(2),.telegram-app.otto-skin:not(.otto-view-home) .otto-module-row:nth-child(4){background:linear-gradient(135deg,#E3F1EE,#1D9A8D)!important}
 .telegram-app.otto-skin .otto-account-stat{border-color:rgba(20,118,111,.10)!important;background:linear-gradient(145deg,#E3F1EE,#E3F1EE)!important}
