@@ -117,7 +117,7 @@ body,
 /* Main brand moment: saturated hero only. */
 .otto-view-home .otto-dashboard-hero {
   border-color: #D7DDD8 !important;
-  background: linear-gradient(145deg, #0D4F55 0%, #14766F 55%, #1D9A8D 100%) !important;
+  background: linear-gradient(145deg, #0D4F55 0%, #1D9A8D 100%) !important;
   box-shadow: 0 14px 36px rgba(16,42,58,.10) !important;
 }
 .otto-view-home .otto-dashboard-hero h1,
