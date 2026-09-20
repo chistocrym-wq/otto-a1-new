@@ -38,9 +38,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 15px;
-  border: 1px solid #DFE4DF;
+  border: 1px solid #D7DDD8;
   border-radius: 16px;
-  background: #EDF3EE;
+  background: #E3F1EE;
   padding: 5px;
 }
 
@@ -49,14 +49,14 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #26364A;
+  color: #17242C;
   font-weight: 800;
 }
 
 .otto-voice-mode button.is-active {
-  background: #fff;
+  background: #FFFDFC;
   color: var(--otto-petrol-dark);
-  box-shadow: 0 3px 10px rgba(38,54,74,.07);
+  box-shadow: 0 3px 10px rgba(16,42,58,.07);
 }
 
 .otto-voice-test {
@@ -66,7 +66,7 @@
   justify-content: center;
   gap: 9px;
   margin-top: 12px;
-  border: 1px solid rgba(65,111,113,.22);
+  border: 1px solid rgba(20,118,111,.22);
   border-radius: 15px;
   background: var(--otto-petrol-soft);
   padding: 11px 16px;
@@ -81,7 +81,7 @@
 
 .otto-voice-disclosure {
   margin: 12px 0 0 !important;
-  color: rgba(38,54,74,.72) !important;
+  color: rgba(16,42,58,.72) !important;
   font-size: 12px !important;
   line-height: 1.5 !important;
 }
