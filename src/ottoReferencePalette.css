@@ -254,7 +254,7 @@ body,
 .otto-skin button[class~="bg-rose-600"],
 .otto-skin [class*="from-[#28ADF7]"],
 .otto-skin [class*="bg-[#9E543C]"] {
-  color: #FFFDFC !important;
+  color: #FFFFFF !important;
   border-color: var(--otto-ref-cta-end) !important;
   background: linear-gradient(135deg, var(--otto-ref-cta-start) 0%, var(--otto-ref-cta-end) 100%) !important;
   box-shadow: 0 9px 22px rgba(169,68,41,.20) !important;
